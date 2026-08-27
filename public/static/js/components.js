@@ -34,25 +34,32 @@ function iconAvatar(name, size = 40) {
 
 function renderTopbar(user, isAdmin = false) {
   return `
-  <header class="sticky top-0 z-40 glass-strong border-b border-white/5">
+  <header class="sticky top-0 z-40 glass-strong border-b ${isAdmin ? 'border-violet-500/20 bg-violet-500/[0.03]' : 'border-white/5'}">
     <div class="flex items-center justify-between px-4 lg:px-6 h-16">
       <div class="flex items-center gap-3">
         <button id="sidebar-toggle" class="lg:hidden w-9 h-9 rounded-lg glass flex items-center justify-center text-slate-300">
           <i class="fa-solid fa-bars"></i>
         </button>
+        ${isAdmin ? `
+        <span class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/15 text-violet-300 text-xs font-bold ring-1 ring-violet-500/30 uppercase tracking-wide">
+          <i class="fa-solid fa-shield-halved"></i> Admin Panel
+        </span>` : `
         <div class="hidden md:flex items-center gap-2 glass rounded-full px-4 py-2 w-72">
           <i class="fa-solid fa-magnifying-glass text-slate-500 text-sm"></i>
           <input id="topbar-search" type="text" placeholder="সার্ভিস খুঁজুন..." class="bg-transparent outline-none text-sm w-full placeholder:text-slate-500" />
-        </div>
+        </div>`}
       </div>
       <div class="flex items-center gap-3">
         ${!isAdmin ? `
         <a href="/dashboard/wallet" data-link class="hidden sm:flex items-center gap-2 glass rounded-full px-4 py-2 btn-glow">
           <i class="fa-solid fa-wallet text-brand-400"></i>
           <span id="topbar-balance" class="font-bold text-sm count-up">${formatMoney(user?.balance || 0)}</span>
-        </a>` : `<span class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-500/15 text-violet-300 text-xs font-semibold ring-1 ring-violet-500/30"><i class="fa-solid fa-shield-halved"></i> Admin Panel</span>`}
+        </a>` : `
+        <span class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-300 text-xs font-semibold ring-1 ring-amber-500/25">
+          <i class="fa-solid fa-triangle-exclamation"></i> এখানে করা পরিবর্তন সরাসরি প্ল্যাটফর্মে প্রভাব ফেলে
+        </span>`}
         <div class="relative">
-          <button id="notif-btn" class="relative w-10 h-10 rounded-full glass flex items-center justify-center text-slate-300 hover:text-brand-400 transition-colors">
+          <button id="notif-btn" class="relative w-10 h-10 rounded-full glass flex items-center justify-center text-slate-300 ${isAdmin ? 'hover:text-violet-400' : 'hover:text-brand-400'} transition-colors">
             <i class="fa-solid fa-bell"></i>
             <span id="notif-dot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-ink-900"></span>
           </button>
@@ -61,11 +68,12 @@ function renderTopbar(user, isAdmin = false) {
         <div class="relative">
           <button id="user-menu-btn" class="flex items-center gap-2">
             ${iconAvatar(user?.name, 36)}
+            ${isAdmin ? `<span class="hidden lg:inline-flex items-center gap-1 text-xs font-semibold text-violet-300"><i class="fa-solid fa-chevron-down text-[10px]"></i></span>` : ''}
           </button>
           <div id="user-dropdown" class="hidden absolute right-0 mt-3 w-56 glass-strong rounded-2xl shadow-2xl overflow-hidden animate-pop-in p-2">
             <div class="px-3 py-2.5 border-b border-white/5 mb-1">
               <p class="font-semibold text-sm truncate">${escapeHtml(user?.name || '')}</p>
-              <p class="text-xs text-slate-400 truncate">${escapeHtml(user?.phone || '')}</p>
+              <p class="text-xs ${isAdmin ? 'text-violet-400' : 'text-slate-400'} truncate">${isAdmin ? '<i class="fa-solid fa-shield-halved mr-1"></i>অ্যাডমিন অ্যাকাউন্ট' : escapeHtml(user?.phone || '')}</p>
             </div>
             ${isAdmin ? '' : `<a href="/dashboard/profile" data-link class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/5 text-sm"><i class="fa-solid fa-user w-4 text-slate-400"></i>প্রোফাইল</a>`}
             ${user?.role === 'admin' || user?.role === 'staff' ? `<a href="${isAdmin ? '/dashboard' : '/admin'}" data-link class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/5 text-sm"><i class="fa-solid fa-arrows-turn-to-dots w-4 text-slate-400"></i>${isAdmin ? 'ইউজার প্যানেল' : 'এডমিন প্যানেল'}</a>` : ''}
@@ -77,32 +85,42 @@ function renderTopbar(user, isAdmin = false) {
   </header>`
 }
 
-function renderSidebar(navItems, activePath, brandHref) {
+function renderSidebar(navItems, activePath, isAdmin = false) {
+  const accent = isAdmin ? 'violet' : 'brand'
   const items = navItems.map((item) => {
-    const active = activePath === item.path || (item.path !== brandHref && activePath.startsWith(item.path) && item.path !== '/dashboard' && item.path !== '/admin')
     const isExact = activePath === item.path
     return `
-    <a href="${item.path}" data-link class="nav-link ${isExact ? 'active' : ''} flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all hover:bg-white/5 ${isExact ? 'bg-white/[0.06] text-brand-400' : 'text-slate-400'}">
+    <a href="${item.path}" data-link class="nav-link ${isExact ? 'active' : ''} ${isAdmin ? 'admin-nav-link' : ''} flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all hover:bg-white/5 ${isExact ? `bg-white/[0.06] text-${accent}-400` : 'text-slate-400'}">
       <i class="fa-solid ${item.icon} w-5 text-center"></i>
       <span>${item.label}</span>
     </a>`
   }).join('')
 
   return `
-  <aside id="sidebar" class="fixed lg:sticky top-0 left-0 h-screen w-72 glass-strong border-r border-white/5 flex flex-col z-50 -translate-x-full lg:translate-x-0 transition-transform duration-300">
-    <div class="flex items-center gap-3 px-6 h-16 border-b border-white/5">
-      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-violet-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
-        <i class="fa-solid fa-file-shield text-white text-sm"></i>
+  <aside id="sidebar" class="fixed lg:sticky top-0 left-0 h-screen w-72 glass-strong border-r ${isAdmin ? 'border-violet-500/20' : 'border-white/5'} flex flex-col z-50 -translate-x-full lg:translate-x-0 transition-transform duration-300">
+    <div class="flex items-center gap-3 px-6 h-16 border-b ${isAdmin ? 'border-violet-500/20' : 'border-white/5'}">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br ${isAdmin ? 'from-violet-400 to-fuchsia-600' : 'from-brand-400 to-violet-500'} flex items-center justify-center shadow-lg ${isAdmin ? 'shadow-violet-500/30' : 'shadow-brand-500/20'}">
+        <i class="fa-solid ${isAdmin ? 'fa-shield-halved' : 'fa-file-shield'} text-white text-sm"></i>
       </div>
-      <span class="font-extrabold text-lg tracking-tight">DocFlow<span class="text-brand-400">BD</span></span>
+      <span class="font-extrabold text-lg tracking-tight">DocFlow<span class="text-${accent}-400">BD</span></span>
       <button id="sidebar-close" class="lg:hidden ml-auto text-slate-400"><i class="fa-solid fa-xmark"></i></button>
     </div>
+    ${isAdmin ? `
+    <div class="mx-4 mt-4 px-3 py-2 rounded-xl bg-violet-500/10 ring-1 ring-violet-500/30 flex items-center gap-2">
+      <span class="relative flex w-2 h-2">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full w-2 h-2 bg-violet-400"></span>
+      </span>
+      <span class="text-[11px] font-bold tracking-wider text-violet-300 uppercase">Admin Mode</span>
+    </div>` : ''}
     <nav class="flex-1 overflow-y-auto p-4 space-y-1">${items}</nav>
-    <div class="p-4 border-t border-white/5">
+    <div class="p-4 border-t ${isAdmin ? 'border-violet-500/20' : 'border-white/5'}">
       <div class="glass rounded-2xl p-4 text-center">
-        <i class="fa-solid fa-headset text-brand-400 text-xl mb-2"></i>
-        <p class="text-xs text-slate-400 mb-2">সাহায্য প্রয়োজন?</p>
-        <a href="/dashboard/support" data-link class="text-xs font-semibold text-brand-400 hover:underline">সাপোর্ট টিকেট খুলুন</a>
+        <i class="fa-solid ${isAdmin ? 'fa-shield-halved text-violet-400' : 'fa-headset text-brand-400'} text-xl mb-2"></i>
+        <p class="text-xs text-slate-400 mb-2">${isAdmin ? 'অ্যাডমিন হিসেবে আপনি লগইন করা আছেন' : 'সাহায্য প্রয়োজন?'}</p>
+        ${isAdmin
+          ? `<a href="/dashboard" data-link class="text-xs font-semibold text-violet-400 hover:underline">ইউজার প্যানেলে যান</a>`
+          : `<a href="/dashboard/support" data-link class="text-xs font-semibold text-brand-400 hover:underline">সাপোর্ট টিকেট খুলুন</a>`}
       </div>
     </div>
   </aside>
@@ -200,8 +218,9 @@ async function loadNotifDropdown(container) {
 function dashboardShell(navItems, activePath, isAdmin = false) {
   const user = getStoredUser()
   return `
-  <div class="flex">
-    ${renderSidebar(navItems, activePath)}
+  <div class="flex ${isAdmin ? 'admin-mode' : ''}">
+    ${isAdmin ? `<div class="fixed top-0 left-0 right-0 h-[3px] z-[60] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500 bg-[length:200%_100%] animate-shimmer"></div>` : ''}
+    ${renderSidebar(navItems, activePath, isAdmin)}
     <div class="flex-1 min-w-0">
       ${renderTopbar(user, isAdmin)}
       <main id="page-content" class="p-4 lg:p-6 max-w-[1600px] mx-auto"></main>

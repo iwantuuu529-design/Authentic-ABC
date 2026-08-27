@@ -9,6 +9,7 @@
   - ডাইনামিক ফর্ম-স্কিমা ভিত্তিক সার্ভিস (অ্যাডমিন যেকোনো নতুন সার্ভিস ফিল্ড-বিল্ডার দিয়ে যোগ করতে পারবে)
   - অ্যাডমিন-কনফিগারযোগ্য API Provider ইঞ্জিন (`fulfillment_mode`: manual/api/hybrid) — কোনো হার্ডকোডেড API ইন্টিগ্রেশন নেই, সব অ্যাডমিন প্যানেল থেকে যোগ/টেস্ট করা যায়
   - সম্পূর্ণ অ্যাডমিন প্যানেল: ড্যাশবোর্ড (Chart.js), অর্ডার ম্যানেজমেন্ট, রিচার্জ অনুমোদন, সার্ভিস+ক্যাটাগরি CRUD, API প্রোভাইডার CRUD+টেস্ট, ইউজার ম্যানেজমেন্ট, কুপন, সাপোর্ট টিকেট, সেটিংস (general/payment-methods/payment-gateways)
+  - **"Admin Mode" ভিজ্যুয়াল থিম**: অ্যাডমিন প্যানেল ইউজার প্যানেল থেকে স্পষ্টভাবে আলাদা দেখতে — violet/fuchsia অ্যাকসেন্ট কালার, শীর্ষে shimmer স্ট্রাইপ, পালসিং "Admin Mode" ব্যাজ, শিল্ড আইকন, এবং একটি সতর্কতা চিপ ("এখানে করা পরিবর্তন সরাসরি প্ল্যাটফর্মে প্রভাব ফেলে") — যাতে অ্যাডমিন একনজরেই বুঝতে পারে সে সাধারণ ইউজার প্যানেলে নেই
   - "Uncommon UI": aurora animated background, cursor-follow glow, spotlight cards, ripple buttons, glassmorphism — কোনো রেফারেন্স ভিডিওর হুবহু কপি নয়
 
 ## URLs
@@ -46,10 +47,13 @@
   pm2 start ecosystem.config.cjs
   curl http://localhost:3000
   ```
-- **Last Updated**: 2026-08-27
+- **Last Updated**: 2026-08-27 (Admin Mode ভিজ্যুয়াল থিম যোগ)
 
 ## Frontend Page Files (all completed)
 `landing.js`, `auth.js`, `dashboard.js`, `services.js`, `orders.js`, `wallet.js`, `reports.js`, `support.js`, `referral.js`, `profile.js`, `admin.js` (12 admin views: dashboard, orders+detail, recharge, services+categories+form-builder, providers+test, users+detail, coupons, support+detail, settings).
+
+## Admin Panel vs User Panel — RBAC Verified, Visual Distinction Added
+ব্যাকএন্ড (`adminRequired` middleware, প্রতিটি `/api/admin/*` রুটে JWT role চেক) এবং ফ্রন্টএন্ড রাউটার (`authRequired`/`adminRequired` route flag) — দুই লেয়ারেই role-based access সঠিকভাবে কাজ করে (curl + কোড রিভিউ + ব্রাউজার টেস্ট দিয়ে যাচাই করা হয়েছে; সাধারণ ইউজার `/api/admin/*` কল করলে 403 পায়, ফ্রন্টএন্ডেও `/admin/*` পেজে redirect হয়ে যায়)। তবে দুই প্যানেলের লেআউট একই "glass" শেল শেয়ার করায় দেখতে প্রায় একইরকম লাগছিল, তাই অ্যাডমিন প্যানেলে আলাদা ভিজ্যুয়াল থিম (violet/fuchsia, উপরে বর্ণিত) যোগ করা হয়েছে।
 
 ## Known Issue Fixed This Session
 - Hono 4.13.5 upgraded `verify()` in `hono/jwt` to require an explicit `alg` argument (breaking change vs. older Hono versions). This caused every authenticated request (including all admin routes) to fail with "সেশনের মেয়াদ শেষ হয়ে গেছে" even with a fresh, valid token. Fixed in `src/lib/jwt.ts` by passing `'HS256'` explicitly to `verify()`.

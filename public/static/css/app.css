@@ -84,6 +84,14 @@ html { scroll-behavior: smooth; }
   box-shadow: 0 0 12px #17b881aa;
 }
 
+/* ---------- Admin Mode override — violet/fuchsia accent instead of brand green ---------- */
+.admin-mode .nav-link.admin-nav-link.active { color: #c4b5fd; }
+.admin-mode .nav-link.admin-nav-link.active::before {
+  background: linear-gradient(180deg, #c4b5fd, #8b5cf6);
+  box-shadow: 0 0 12px #8b5cf6aa;
+}
+.admin-mode ::selection { background: rgba(139,92,246,0.35); }
+
 /* ---------- Floating orb decoration ---------- */
 .orb { border-radius: 999px; filter: blur(60px); position: absolute; pointer-events: none; }
 

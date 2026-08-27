@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html><head><title>Full Flow Test</title></head>
+<body>
+<div id="cursor-glow"></div>
+<div id="toast-container"></div>
+<div id="app"></div>
+<script src="/static/js/utils.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/components.js"></script>
+<script src="/static/js/pages/landing.js"></script>
+<script src="/static/js/pages/auth.js"></script>
+<script src="/static/js/pages/dashboard.js"></script>
+<script src="/static/js/pages/services.js"></script>
+<script src="/static/js/pages/orders.js"></script>
+<script src="/static/js/pages/wallet.js"></script>
+<script src="/static/js/pages/reports.js"></script>
+<script src="/static/js/pages/support.js"></script>
+<script src="/static/js/pages/referral.js"></script>
+<script src="/static/js/pages/profile.js"></script>
+<script src="/static/js/pages/admin.js"></script>
+<script>history.replaceState({}, '', '/login')</script>
+<script src="/static/js/router.js"></script>
+<script>
+window.addEventListener('load', async () => {
+  await new Promise(r => setTimeout(r, 500));
+  console.log('LOGIN_FORM_PRESENT: ' + !!qs('#login-form'));
+  console.log('INIT_STORED: ' + JSON.stringify(getStoredUser()));
+  qs('#login-phone').value = '01700000000';
+  qs('#login-password').value = 'Admin@12345';
+  qs('#login-form').dispatchEvent(new Event('submit', {cancelable:true}));
+  await new Promise(r => setTimeout(r, 1800));
+  console.log('AFTER_LOGIN_PATH: ' + window.location.pathname);
+  console.log('AFTER_LOGIN_STORED: ' + JSON.stringify(getStoredUser()));
+  const sidebarItems = Array.from(document.querySelectorAll('#sidebar nav a span')).map(s=>s.textContent).join(' | ');
+  console.log('SIDEBAR_AFTER_LOGIN: ' + sidebarItems);
+  const badge = document.querySelector('header .bg-violet-500\\/15');
+  console.log('ADMIN_BADGE_AFTER_LOGIN: ' + !!badge);
+  console.log('PAGE_CONTENT_HTML_SNIPPET: ' + (document.getElementById('page-content') ? document.getElementById('page-content').innerHTML.slice(0,200) : 'NO_PAGE_CONTENT_EL'));
+});
+</script>
+</body></html>

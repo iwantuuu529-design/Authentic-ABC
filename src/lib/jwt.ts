@@ -21,7 +21,7 @@ export async function signToken(
 
 export async function verifyToken(token: string, secret?: string): Promise<JwtPayload | null> {
   try {
-    const payload = await verify(token, secret || DEFAULT_SECRET)
+    const payload = await verify(token, secret || DEFAULT_SECRET, 'HS256')
     return payload as unknown as JwtPayload
   } catch {
     return null

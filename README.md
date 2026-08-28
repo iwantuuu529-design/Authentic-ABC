@@ -59,9 +59,7 @@
   # After schema changes, also run against --remote:
   npx wrangler d1 migrations apply webapp-production --remote
   ```
-- **Last Updated**: 2026-08-28 (পারফরম্যান্স অপ্টিমাইজেশন + প্রিমিয়াম হোভার-কার্ড — কোড কমিট ও পুশ সম্পন্ন, **প্রোডাকশনে ডিপ্লয় বাকি** — নিচের "Deploy" নোট দেখুন)
-
-> ⚠️ **পেন্ডিং ডিপ্লয়**: এই আপডেট (speed optimization + rotating-light hover cards) শুধু GitHub-এ পুশ হয়েছে এবং লোকাল স্যান্ডবক্সে টেস্ট করা হয়েছে। প্রোডাকশনে (`docflow-bd.pages.dev`) লাইভ করতে একটি বৈধ Cloudflare API টোকেন দরকার — **Deploy প্যানেল** থেকে টোকেন সেট করে দিলে সঙ্গে সঙ্গে ডিপ্লয় করে দেওয়া হবে। (আগের টোকেনটি চ্যাটে শেয়ার করা হয়েছিল বলে নিরাপত্তার জন্য সেটি ব্যবহার করা হয়নি — অনুগ্রহ করে Cloudflare ড্যাশবোর্ড থেকে সেটি revoke করে Deploy প্যানেলে নতুন টোকেন যোগ করুন।)
+- **Last Updated**: 2026-08-28 (পারফরম্যান্স অপ্টিমাইজেশন + প্রিমিয়াম রোটেটিং-লাইট হোভার-কার্ড — কোড কমিট, পুশ ও **প্রোডাকশন ডিপ্লয় সম্পন্ন**, Deploy প্যানেলে নতুন Cloudflare টোকেন সেভ করে সরাসরি deploy করা হয়েছে)
 
 ## Frontend Page Files (all completed)
 `landing.js`, `auth.js`, `dashboard.js`, `services.js`, `orders.js`, `wallet.js`, `reports.js`, `support.js`, `referral.js`, `profile.js`, `admin.js` (12 admin views: dashboard, orders+detail, recharge, services+categories+form-builder, providers+test, users+detail, coupons, support+detail, settings).

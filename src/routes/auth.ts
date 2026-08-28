@@ -194,6 +194,9 @@ auth.get('/me', authRequired, async (c) => {
 
 // ---------------------------------------------------------------
 // PUT /api/auth/profile
+// Phone number (login ID) change is optional and requires the CURRENT
+// password to confirm — it's the account's primary login credential, so
+// this mirrors the same security bar as change-password.
 // ---------------------------------------------------------------
 auth.put('/profile', authRequired, async (c) => {
   const authUser = c.get('user')!
@@ -201,6 +204,8 @@ auth.put('/profile', authRequired, async (c) => {
   const name = sanitizeText(body.name, 100)
   const email = body.email ? sanitizeText(body.email, 120) : null
   const whatsapp = body.whatsapp ? sanitizeText(body.whatsapp, 20) : null
+  const newPhone = body.phone ? sanitizeText(body.phone, 20) : null
+  const currentPassword = typeof body.current_password === 'string' ? body.current_password : ''
 
   if (!name || name.length < 2) {
     return c.json({ success: false, message: 'সঠিক নাম দিন।' }, 400)
@@ -209,11 +214,32 @@ auth.put('/profile', authRequired, async (c) => {
     return c.json({ success: false, message: 'সঠিক ইমেইল দিন।' }, 400)
   }
 
-  await c.env.DB.prepare('UPDATE users SET name = ?, email = ?, whatsapp = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
-    .bind(name, email, whatsapp, authUser.id)
+  const existingUser = await c.env.DB.prepare('SELECT phone, password_hash FROM users WHERE id = ?').bind(authUser.id).first<any>()
+
+  let phoneToSave = existingUser.phone
+  if (newPhone && newPhone !== existingUser.phone) {
+    if (!isValidBDPhone(newPhone)) {
+      return c.json({ success: false, message: 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন (যেমন: 01712345678)।' }, 400)
+    }
+    if (!currentPassword) {
+      return c.json({ success: false, message: 'মোবাইল নম্বর (লগইন আইডি) পরিবর্তনের জন্য বর্তমান পাসওয়ার্ড দিতে হবে।' }, 400)
+    }
+    const valid = await verifyPassword(currentPassword, existingUser.password_hash)
+    if (!valid) {
+      return c.json({ success: false, message: 'বর্তমান পাসওয়ার্ড সঠিক নয়।' }, 400)
+    }
+    const dup = await c.env.DB.prepare('SELECT id FROM users WHERE phone = ? AND id != ?').bind(newPhone, authUser.id).first()
+    if (dup) {
+      return c.json({ success: false, message: 'এই মোবাইল নম্বরে অন্য একটি অ্যাকাউন্ট আছে।' }, 400)
+    }
+    phoneToSave = newPhone
+  }
+
+  await c.env.DB.prepare('UPDATE users SET name = ?, email = ?, whatsapp = ?, phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+    .bind(name, email, whatsapp, phoneToSave, authUser.id)
     .run()
 
-  return c.json({ success: true, message: 'প্রোফাইল আপডেট হয়েছে।' })
+  return c.json({ success: true, message: phoneToSave !== existingUser.phone ? 'প্রোফাইল ও লগইন মোবাইল নম্বর আপডেট হয়েছে।' : 'প্রোফাইল আপডেট হয়েছে।', phone: phoneToSave })
 })
 
 // ---------------------------------------------------------------

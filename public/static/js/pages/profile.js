@@ -3,7 +3,11 @@
 // ============================================================
 
 async function renderProfilePage() {
-  qs('#app').innerHTML = `<div class="page-enter">${dashboardShell(USER_NAV, '/dashboard/profile')}</div>`
+  // Admin/staff also need to reach this page (to change their own name/email/
+  // password) — render with the correct nav+theme for whoever is actually
+  // logged in, instead of forcing the customer-facing USER_NAV/shell.
+  const isAdminUser = ['admin', 'staff'].includes(getStoredUser()?.role)
+  qs('#app').innerHTML = `<div class="page-enter">${dashboardShell(isAdminUser ? ADMIN_NAV : USER_NAV, isAdminUser ? '' : '/dashboard/profile', isAdminUser)}</div>`
   bindShellEvents()
 
   const content = qs('#page-content')
@@ -47,8 +51,12 @@ async function renderProfilePage() {
               <input type="text" id="pf-name" required value="${escapeHtml(user.name)}" class="w-full glass rounded-xl px-4 py-3 text-sm outline-none input-glow" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-2">মোবাইল নম্বর</label>
-              <input type="text" value="${escapeHtml(user.phone)}" disabled class="w-full glass rounded-xl px-4 py-3 text-sm outline-none opacity-60 cursor-not-allowed" />
+              <label class="block text-sm font-medium text-slate-300 mb-2 flex items-center justify-between">
+                <span>মোবাইল নম্বর (লগইন আইডি)</span>
+                <button type="button" id="pf-phone-edit-toggle" class="text-brand-400 text-xs font-semibold hover:underline">পরিবর্তন করুন</button>
+              </label>
+              <input type="text" id="pf-phone" value="${escapeHtml(user.phone)}" disabled class="w-full glass rounded-xl px-4 py-3 text-sm outline-none opacity-60 cursor-not-allowed" />
+              <p id="pf-phone-hint" class="hidden text-[11px] text-amber-300 mt-1.5"><i class="fa-solid fa-triangle-exclamation mr-1"></i>নম্বর পরিবর্তন করলে নতুন নম্বরটিই আপনার লগইন আইডি হয়ে যাবে — নিচে বর্তমান পাসওয়ার্ড দিয়ে কনফার্ম করুন।</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-300 mb-2">ইমেইল</label>
@@ -57,6 +65,10 @@ async function renderProfilePage() {
             <div>
               <label class="block text-sm font-medium text-slate-300 mb-2">WhatsApp নম্বর</label>
               <input type="text" id="pf-whatsapp" value="${escapeHtml(user.whatsapp || '')}" placeholder="01XXXXXXXXX" class="w-full glass rounded-xl px-4 py-3 text-sm outline-none input-glow" />
+            </div>
+            <div id="pf-phone-confirm-wrap" class="hidden">
+              <label class="block text-sm font-medium text-slate-300 mb-2">নম্বর পরিবর্তনের জন্য বর্তমান পাসওয়ার্ড <span class="text-rose-400">*</span></label>
+              <input type="password" id="pf-phone-confirm-password" class="w-full glass rounded-xl px-4 py-3 text-sm outline-none input-glow" />
             </div>
           </div>
           <button type="submit" id="pf-submit" class="btn-glow bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2">
@@ -86,20 +98,45 @@ async function renderProfilePage() {
     </div>
   `
 
+  let phoneEditEnabled = false
+  qs('#pf-phone-edit-toggle').addEventListener('click', () => {
+    phoneEditEnabled = !phoneEditEnabled
+    const phoneInput = qs('#pf-phone')
+    phoneInput.disabled = !phoneEditEnabled
+    phoneInput.classList.toggle('opacity-60', !phoneEditEnabled)
+    phoneInput.classList.toggle('cursor-not-allowed', !phoneEditEnabled)
+    qs('#pf-phone-hint').classList.toggle('hidden', !phoneEditEnabled)
+    qs('#pf-phone-confirm-wrap').classList.toggle('hidden', !phoneEditEnabled)
+    qs('#pf-phone-edit-toggle').textContent = phoneEditEnabled ? 'বাতিল করুন' : 'পরিবর্তন করুন'
+    if (!phoneEditEnabled) phoneInput.value = user.phone
+  })
+
   qs('#profile-form').addEventListener('submit', async (e) => {
     e.preventDefault()
     const btn = qs('#pf-submit')
     btn.disabled = true
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> সংরক্ষণ হচ্ছে...`
     try {
-      const res = await API.put('/auth/profile', {
+      const payload = {
         name: qs('#pf-name').value,
         email: qs('#pf-email').value,
         whatsapp: qs('#pf-whatsapp').value,
-      })
+      }
+      if (phoneEditEnabled) {
+        const newPhone = qs('#pf-phone').value.trim()
+        if (newPhone !== user.phone) {
+          payload.phone = newPhone
+          payload.current_password = qs('#pf-phone-confirm-password').value
+        }
+      }
+      const res = await API.put('/auth/profile', payload)
       showToast(res.message, 'success')
       const u = getStoredUser()
-      if (u) setStoredUser({ ...u, name: qs('#pf-name').value })
+      if (u) setStoredUser({ ...u, name: qs('#pf-name').value, phone: res.phone || u.phone })
+      if (res.phone && res.phone !== user.phone) {
+        // Login ID changed — reload so every part of the UI (topbar, etc.) reflects it.
+        setTimeout(() => window.location.reload(), 900)
+      }
     } catch (err) {
       showToast(getErrorMessage(err), 'error')
     } finally {

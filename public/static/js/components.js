@@ -75,7 +75,7 @@ function renderTopbar(user, isAdmin = false) {
               <p class="font-semibold text-sm truncate">${escapeHtml(user?.name || '')}</p>
               <p class="text-xs ${isAdmin ? 'text-violet-400' : 'text-slate-400'} truncate">${isAdmin ? '<i class="fa-solid fa-shield-halved mr-1"></i>অ্যাডমিন অ্যাকাউন্ট' : escapeHtml(user?.phone || '')}</p>
             </div>
-            ${isAdmin ? '' : `<a href="/dashboard/profile" data-link class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/5 text-sm"><i class="fa-solid fa-user w-4 text-slate-400"></i>প্রোফাইল</a>`}
+            <a href="/dashboard/profile" data-link class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/5 text-sm"><i class="fa-solid fa-user w-4 text-slate-400"></i>প্রোফাইল (নাম/ইমেইল/পাসওয়ার্ড)</a>
             ${user?.role === 'admin' || user?.role === 'staff' ? `<a href="${isAdmin ? '/dashboard' : '/admin'}" data-link class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-white/5 text-sm"><i class="fa-solid fa-arrows-turn-to-dots w-4 text-slate-400"></i>${isAdmin ? 'ইউজার প্যানেল' : 'এডমিন প্যানেল'}</a>` : ''}
             <button id="logout-btn" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-rose-500/10 text-sm text-rose-400"><i class="fa-solid fa-right-from-bracket w-4"></i>লগআউট</button>
           </div>

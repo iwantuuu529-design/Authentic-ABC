@@ -461,9 +461,15 @@ function promptDialog(title, label, danger = false) {
 }
 
 // ---------- Dynamic form field renderer (drives every service's order form) ----------
+// NOTE: field.name (the raw admin-defined key, possibly containing spaces or
+// slashes) is always used as the actual `name`/form_data key so submitted
+// data keeps the exact key the admin configured. For DOM ids/classes we use
+// fieldDomId() to derive a CSS-selector-safe token, since raw names with
+// spaces or "/" break querySelector (e.g. "#dropzone-Father/Mother Docs").
 function renderFormField(field) {
   const req = field.required ? '<span class="text-rose-400">*</span>' : ''
-  const common = `id="field-${field.name}" name="${field.name}" ${field.required ? 'required' : ''} class="w-full glass rounded-xl px-4 py-3 text-sm outline-none input-glow placeholder:text-slate-500"`
+  const domId = fieldDomId(field.name)
+  const common = `id="field-${domId}" name="${escapeHtml(field.name)}" data-field-name="${escapeHtml(field.name)}" ${field.required ? 'required' : ''} class="w-full glass rounded-xl px-4 py-3 text-sm outline-none input-glow placeholder:text-slate-500"`
   let inputHtml = ''
   switch (field.type) {
     case 'textarea':
@@ -480,17 +486,17 @@ function renderFormField(field) {
       break
     case 'file':
       inputHtml = `
-        <label for="field-${field.name}" class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-white/15 rounded-xl px-4 py-6 cursor-pointer hover:border-brand-400/50 hover:bg-white/[0.02] transition-colors" id="dropzone-${field.name}">
+        <label for="field-${domId}" class="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-white/15 rounded-xl px-4 py-6 cursor-pointer hover:border-brand-400/50 hover:bg-white/[0.02] transition-colors" id="dropzone-${domId}">
           <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-500"></i>
-          <span class="text-xs text-slate-400 text-center file-label-${field.name}">ফাইল নির্বাচন করুন অথবা এখানে টেনে আনুন</span>
+          <span class="text-xs text-slate-400 text-center file-label-${domId}">ফাইল নির্বাচন করুন অথবা এখানে টেনে আনুন</span>
         </label>
-        <input type="file" id="field-${field.name}" name="${field.name}" ${field.required ? 'required' : ''} accept="${field.accept || '*'}" class="hidden" />`
+        <input type="file" id="field-${domId}" name="${escapeHtml(field.name)}" data-field-name="${escapeHtml(field.name)}" ${field.required ? 'required' : ''} accept="${field.accept || '*'}" class="hidden" />`
       break
     default:
       inputHtml = `<input type="text" ${common} placeholder="${escapeHtml(field.placeholder || '')}" />`
   }
   return `
-  <div class="form-field" data-field-type="${field.type}" data-field-name="${field.name}">
+  <div class="form-field" data-field-type="${field.type}" data-field-name="${escapeHtml(field.name)}">
     <label class="block text-sm font-medium text-slate-300 mb-2">${escapeHtml(field.label_bn)} ${req}</label>
     ${inputHtml}
   </div>`
@@ -498,11 +504,12 @@ function renderFormField(field) {
 
 function bindFileDropzones(container) {
   qsa('input[type=file]', container).forEach((input) => {
+    const domId = fieldDomId(input.dataset.fieldName || input.name)
     input.addEventListener('change', () => {
-      const label = qs(`.file-label-${input.name}`, container)
+      const label = qs(`.file-label-${domId}`, container)
       if (label && input.files[0]) label.textContent = input.files[0].name
     })
-    const dz = qs(`#dropzone-${input.name}`, container)
+    const dz = qs(`#dropzone-${domId}`, container)
     if (!dz) return
     ;['dragover', 'dragleave', 'drop'].forEach((evt) => {
       dz.addEventListener(evt, (e) => e.preventDefault())

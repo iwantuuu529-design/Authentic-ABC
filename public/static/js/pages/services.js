@@ -178,7 +178,7 @@ async function renderServiceOrderPage(params) {
       } else {
         const formData = {}
         service.form_schema.forEach((f) => {
-          formData[f.name] = qs(`#field-${f.name}`)?.value || ''
+          formData[f.name] = qs(`#field-${fieldDomId(f.name)}`)?.value || ''
         })
         const payload = { service_slug: service.slug, form_data: formData }
         if (service.requires_captcha) {

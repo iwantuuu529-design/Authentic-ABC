@@ -85,6 +85,16 @@ function debounce(fn, delay = 350) {
 function qs(sel, root = document) { return root.querySelector(sel) }
 function qsa(sel, root = document) { return Array.from(root.querySelectorAll(sel)) }
 
+// Convert an arbitrary dynamic form-field name (may contain spaces, slashes,
+// or other characters an admin typed in the field builder) into a safe token
+// usable inside a DOM id/class/selector. The original field.name is always
+// kept intact as the HTML `name` attribute / form_data key — this is only
+// used for internally wiring up elements (dropzones, labels, value lookup).
+function fieldDomId(name) {
+  const safe = String(name || '').trim().replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '')
+  return safe || 'f'
+}
+
 // Animate a counting-up number
 function animateCount(el, target, duration = 900, formatter = (n) => Math.round(n).toLocaleString()) {
   const start = 0

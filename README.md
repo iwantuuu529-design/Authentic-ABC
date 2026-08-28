@@ -14,8 +14,8 @@
 
 ## URLs
 - **Local Sandbox Preview**: (see GetServiceUrl output in this session — service running on port 3000)
-- **Production**: not yet deployed (pending user request to deploy to Cloudflare Pages)
-- **GitHub**: not yet connected (call `setup_github_environment` first when ready)
+- **Production**: https://docflow-bd.pages.dev (Cloudflare Pages, BYOK deploy)
+- **GitHub**: https://github.com/iwantuuu529-design/Authentic-ABC
 
 ## Data Architecture
 - **Storage**: Cloudflare D1 (SQLite) — single relational database, **free tier**. No KV usage (settings stored as D1 key-value table).
@@ -36,7 +36,11 @@
 
 ## Deployment
 - **Platform**: Cloudflare Pages + Workers (Hono framework)
-- **Status**: ✅ Running locally in sandbox via PM2 + `wrangler pages dev --local` (D1 + R2 emulated locally). ❌ Not yet deployed to production Cloudflare account.
+- **Status**: ✅ Deployed to production Cloudflare Pages (BYOK — user's own Cloudflare account, project name `docflow-bd`). ✅ Also running locally in sandbox via PM2 + `wrangler pages dev --local`.
+- **Production resources**:
+  - Pages project: `docflow-bd` → https://docflow-bd.pages.dev
+  - D1 database: `webapp-production` (id `9c2e960d-2d99-41f5-861f-ddebe7005c08`), migrated + seeded
+  - R2 bucket: `webapp-files` (binding `FILES`)
 - **Tech Stack**: Hono (TypeScript backend) + vanilla-JS SPA frontend (custom router, no framework) + Tailwind CSS (CDN) + Chart.js (CDN) + Cloudflare D1 + Cloudflare R2
 - **Local dev commands**:
   ```bash
@@ -47,7 +51,14 @@
   pm2 start ecosystem.config.cjs
   curl http://localhost:3000
   ```
-- **Last Updated**: 2026-08-27 (Admin Mode ভিজ্যুয়াল থিম যোগ)
+- **Production redeploy commands**:
+  ```bash
+  npm run build
+  npx wrangler pages deploy dist --project-name docflow-bd
+  # After schema changes, also run against --remote:
+  npx wrangler d1 migrations apply webapp-production --remote
+  ```
+- **Last Updated**: 2026-08-28 (প্রোডাকশন Cloudflare Pages ডিপ্লয় সম্পন্ন — D1 + R2 লাইভ)
 
 ## Frontend Page Files (all completed)
 `landing.js`, `auth.js`, `dashboard.js`, `services.js`, `orders.js`, `wallet.js`, `reports.js`, `support.js`, `referral.js`, `profile.js`, `admin.js` (12 admin views: dashboard, orders+detail, recharge, services+categories+form-builder, providers+test, users+detail, coupons, support+detail, settings).
@@ -60,8 +71,6 @@
 - Two admin.js API calls used a trailing slash (`/admin/settings/`) which didn't match the Hono route registered without a trailing slash, causing the SPA fallback HTML to be returned instead of JSON. Fixed by removing the trailing slash.
 
 ## Not Yet Implemented / Next Steps
-- Push code to GitHub (call `setup_github_environment` first)
-- Deploy to production Cloudflare Pages (`setup_cloudflare_api_key` + `wrangler pages deploy`, or use a deploy skill)
 - Real UddoktaPay (or other) auto payment-gateway webhook/callback integration — currently only a placeholder inactive DB row + admin config UI; the actual payment-collect + webhook-verify code path has not been implemented
 - End-to-end UI testing of every admin.js modal/flow in a real browser (only API-level curl testing done this session due to sandbox constraints)
 - OTP/SMS provider integration for phone verification (currently `otp_codes` table exists but no real SMS gateway wired up)

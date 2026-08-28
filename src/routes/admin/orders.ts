@@ -78,6 +78,39 @@ adminOrders.get('/:id', async (c) => {
   return c.json({ success: true, order: { ...order, form_data: formData, form_schema: formSchema }, logs })
 })
 
+// GET /api/admin/orders/:id/upload/:fieldName — stream a user-uploaded
+// form file (e.g. NID scan, photo) for this order so admin can review it.
+// This is DIFFERENT from GET /api/orders/:id/result-file, which serves the
+// file the ADMIN attaches as the order's *result* — this one serves what
+// the USER submitted as part of the order form.
+adminOrders.get('/:id/upload/:fieldName', async (c) => {
+  const id = c.req.param('id')
+  const fieldName = c.req.param('fieldName')
+
+  const order = await c.env.DB.prepare('SELECT form_data FROM orders WHERE id = ?').bind(id).first<any>()
+  if (!order) return c.json({ success: false, message: 'অর্ডার পাওয়া যায়নি।' }, 404)
+
+  let formData: Record<string, any> = {}
+  try {
+    formData = JSON.parse(order.form_data)
+  } catch {}
+
+  const objectKey = formData[fieldName]
+  if (!objectKey || typeof objectKey !== 'string' || !objectKey.startsWith(`orders/`)) {
+    return c.json({ success: false, message: 'ফাইল পাওয়া যায়নি।' }, 404)
+  }
+
+  const object = await c.env.FILES.get(objectKey)
+  if (!object) return c.json({ success: false, message: 'ফাইল পাওয়া যায়নি।' }, 404)
+
+  return new Response(object.body, {
+    headers: {
+      'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
+      'Content-Disposition': `inline; filename="${objectKey.split('/').pop()}"`,
+    },
+  })
+})
+
 // PUT /api/admin/orders/:id/approve — mark completed, attach result
 adminOrders.put('/:id/approve', async (c) => {
   const admin = c.get('user')!

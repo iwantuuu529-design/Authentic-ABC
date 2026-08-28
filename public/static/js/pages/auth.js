@@ -44,9 +44,6 @@ async function renderLoginPage() {
       </button>
     </form>
     <p class="text-center text-sm text-slate-400 mt-6">অ্যাকাউন্ট নেই? <a href="/register" data-link class="text-brand-400 font-semibold hover:underline">রেজিস্ট্রেশন করুন</a></p>
-    <div class="mt-4 pt-4 border-t border-white/5 text-center text-xs text-slate-500">
-      ডেমো এডমিন: <code class="text-brand-400">01700000000</code> / <code class="text-brand-400">Admin@12345</code>
-    </div>
   `)
 
   qs('#login-form').addEventListener('submit', async (e) => {

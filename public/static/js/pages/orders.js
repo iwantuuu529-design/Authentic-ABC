@@ -148,6 +148,8 @@ async function renderOrderDetailPage(params) {
   const order = data.order
   const logs = data.logs || []
   const formEntries = Object.entries(order.form_data || {}).filter(([k]) => k !== 'captcha_token' && k !== 'captcha_answer')
+  const fieldTypeByName = {}
+  ;(order.form_schema || []).forEach((f) => { fieldTypeByName[f.name] = f.type })
 
   content.innerHTML = `
     <div class="max-w-4xl mx-auto space-y-6">
@@ -176,11 +178,16 @@ async function renderOrderDetailPage(params) {
             <h3 class="font-bold mb-4"><i class="fa-solid fa-file-lines text-brand-400 mr-2"></i>জমাকৃত তথ্য</h3>
             ${formEntries.length ? `
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                ${formEntries.map(([k, v]) => `
+                ${formEntries.map(([k, v]) => {
+                  const isFile = fieldTypeByName[k] === 'file' && v
+                  return `
                   <div>
                     <p class="text-xs text-slate-500 mb-1">${escapeHtml(prettifyFieldName(k))}</p>
-                    <p class="text-sm font-medium break-words">${escapeHtml(String(v ?? '-')) || '-'}</p>
-                  </div>`).join('')}
+                    ${isFile
+                      ? `<a href="/api/orders/${order.id}/upload/${encodeURIComponent(k)}" target="_blank" class="btn-glow inline-flex items-center gap-2 bg-brand-500/15 text-brand-400 ring-1 ring-brand-500/30 text-xs font-semibold px-3 py-2 rounded-lg"><i class="fa-solid fa-file-arrow-up"></i> আপলোড করা ফাইল দেখুন</a>`
+                      : `<p class="text-sm font-medium break-words">${escapeHtml(String(v ?? '-')) || '-'}</p>`}
+                  </div>`
+                }).join('')}
               </div>` : `<p class="text-sm text-slate-500">কোনো তথ্য পাওয়া যায়নি।</p>`}
           </div>
 

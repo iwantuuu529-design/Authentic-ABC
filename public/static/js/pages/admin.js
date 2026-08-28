@@ -320,6 +320,12 @@ async function renderAdminOrderDetail(params) {
     const order = data.order
     const logs = data.logs || []
     const formEntries = Object.entries(order.form_data || {}).filter(([k]) => k !== 'captcha_token' && k !== 'captcha_answer')
+    // Map field name -> schema type so uploaded documents (NID scans, photos,
+    // etc.) render as a downloadable/viewable link instead of a raw R2 object
+    // key string. Without this, the admin could see the file name but had no
+    // way to actually open the user's uploaded document.
+    const fieldTypeByName = {}
+    ;(order.form_schema || []).forEach((f) => { fieldTypeByName[f.name] = f.type })
     const canAct = !['completed', 'rejected', 'refunded'].includes(order.status)
 
     content.innerHTML = `
@@ -355,11 +361,16 @@ async function renderAdminOrderDetail(params) {
               <h3 class="font-bold mb-4"><i class="fa-solid fa-file-lines text-brand-400 mr-2"></i>জমাকৃত তথ্য</h3>
               ${formEntries.length ? `
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  ${formEntries.map(([k, v]) => `
+                  ${formEntries.map(([k, v]) => {
+                    const isFile = fieldTypeByName[k] === 'file' && v
+                    return `
                     <div>
                       <p class="text-xs text-slate-500 mb-1">${escapeHtml(prettifyFieldName(k))}</p>
-                      <p class="text-sm font-medium break-words">${escapeHtml(String(v ?? '-')) || '-'}</p>
-                    </div>`).join('')}
+                      ${isFile
+                        ? `<a href="/api/admin/orders/${order.id}/upload/${encodeURIComponent(k)}" target="_blank" class="btn-glow inline-flex items-center gap-2 bg-brand-500/15 text-brand-400 ring-1 ring-brand-500/30 text-xs font-semibold px-3 py-2 rounded-lg"><i class="fa-solid fa-file-arrow-down"></i> ইউজারের আপলোড করা ডকুমেন্ট দেখুন/ডাউনলোড করুন</a>`
+                        : `<p class="text-sm font-medium break-words">${escapeHtml(String(v ?? '-')) || '-'}</p>`}
+                    </div>`
+                  }).join('')}
                 </div>` : `<p class="text-sm text-slate-500">কোনো তথ্য পাওয়া যায়নি।</p>`}
             </div>
 
@@ -1862,6 +1873,7 @@ const ADMIN_SETTINGS_TABS = [
   { key: 'methods', label: 'পেমেন্ট মেথড', icon: 'fa-wallet' },
   { key: 'gateways', label: 'পেমেন্ট গেটওয়ে', icon: 'fa-plug' },
   { key: 'notice', label: 'নোটিস ও অফার', icon: 'fa-bullhorn' },
+  { key: 'storage', label: 'ডকুমেন্ট স্টোরেজ', icon: 'fa-database' },
 ]
 
 const GENERAL_SETTINGS_FIELDS = [
@@ -1911,6 +1923,7 @@ async function renderAdminSettings() {
     if (tab === 'methods') return loadMethodsTab(el)
     if (tab === 'gateways') return loadGatewaysTab(el)
     if (tab === 'notice') return loadNoticeTab(el)
+    if (tab === 'storage') return loadStorageTab(el)
   }
 
   async function loadGeneralTab(el) {
@@ -2048,6 +2061,90 @@ async function renderAdminSettings() {
         btn.disabled = false
       }
     })
+  }
+
+  function formatBytes(bytes) {
+    if (!bytes) return '০ MB'
+    const mb = bytes / (1024 * 1024)
+    if (mb < 1) return toBnDigits((bytes / 1024).toFixed(1)) + ' KB'
+    if (mb < 1024) return toBnDigits(mb.toFixed(1)) + ' MB'
+    return toBnDigits((mb / 1024).toFixed(2)) + ' GB'
+  }
+
+  async function loadStorageTab(el) {
+    el.innerHTML = skeletonCard('h-64')
+    let data
+    try {
+      data = await API.get('/admin/storage/usage')
+    } catch (err) {
+      el.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
+      return
+    }
+    renderStorage(data)
+
+    function renderStorage(d) {
+      const cats = Object.entries(d.categories).filter(([, v]) => v.count > 0)
+      el.innerHTML = `
+      <div class="space-y-6 max-w-2xl">
+        <div class="glass rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-sm"><i class="fa-solid fa-database text-brand-400 mr-2"></i>মোট ডকুমেন্ট স্টোরেজ (R2)</h3>
+            <span class="text-lg font-extrabold text-brand-400">${formatBytes(d.total.size)}</span>
+          </div>
+          <p class="text-xs text-slate-500 mb-4">মোট ${toBnDigits(d.total.count)}টি ফাইল সংরক্ষিত আছে — ইউজারের আপলোড করা অর্ডার ডকুমেন্ট, এডমিনের সংযুক্ত ফলাফল ফাইল, এবং রিচার্জ পেমেন্ট প্রুফ।</p>
+          <div class="space-y-2.5">
+            ${cats.length ? cats.map(([, v]) => `
+              <div class="flex items-center justify-between text-sm py-2 px-3 rounded-xl bg-white/[0.03]">
+                <span class="text-slate-300">${escapeHtml(v.label)}</span>
+                <span class="font-semibold text-slate-400">${toBnDigits(v.count)}টি • ${formatBytes(v.size)}</span>
+              </div>
+            `).join('') : `<p class="text-xs text-slate-500 text-center py-4">কোনো ফাইল নেই</p>`}
+          </div>
+        </div>
+
+        <div class="glass rounded-2xl p-6 ${d.orphaned.count > 0 ? 'bg-amber-500/5 border-amber-500/15' : ''}">
+          <h3 class="font-bold text-sm mb-2"><i class="fa-solid fa-broom ${d.orphaned.count > 0 ? 'text-amber-400' : 'text-slate-500'} mr-2"></i>অব্যবহৃত ফাইল পরিষ্কার করুন</h3>
+          <p class="text-xs text-slate-500 mb-4">যে ফাইলগুলো এখন আর কোনো অর্ডার বা রিচার্জ রিকোয়েস্টের সাথে যুক্ত নেই (যেমন — টেস্ট অর্ডার বা ডিলিট হওয়া রিকোয়েস্টের পুরনো ফাইল), সেগুলো এখান থেকে নিরাপদে মুছে স্টোরেজ খালি করা যাবে। বর্তমানে সক্রিয় কোনো ইউজারের ডকুমেন্ট এতে প্রভাবিত হবে না।</p>
+          ${d.orphaned.count > 0 ? `
+            <div class="flex items-center justify-between mb-4 p-3 rounded-xl bg-amber-500/10 ring-1 ring-amber-500/25">
+              <span class="text-sm font-semibold text-amber-300">${toBnDigits(d.orphaned.count)}টি অব্যবহৃত ফাইল পাওয়া গেছে</span>
+              <span class="text-sm font-extrabold text-amber-300">${formatBytes(d.orphaned.size)}</span>
+            </div>
+            <button id="storage-purge-btn" class="btn-glow w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2">
+              <i class="fa-solid fa-trash-can"></i> অব্যবহৃত ফাইল মুছে স্টোরেজ খালি করুন
+            </button>
+          ` : `<p class="text-sm text-brand-400 flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> কোনো অব্যবহৃত ফাইল নেই, স্টোরেজ পরিষ্কার আছে।</p>`}
+        </div>
+      </div>`
+
+      qs('#storage-purge-btn', el)?.addEventListener('click', async () => {
+        openModal(`
+          <div class="p-6">
+            <h3 class="font-bold text-lg mb-2"><i class="fa-solid fa-triangle-exclamation text-rose-400 mr-2"></i>নিশ্চিত করুন</h3>
+            <p class="text-sm text-slate-400 mb-6">${toBnDigits(d.orphaned.count)}টি অব্যবহৃত ফাইল (${formatBytes(d.orphaned.size)}) স্থায়ীভাবে মুছে ফেলা হবে। এই কাজটি ফিরিয়ে নেওয়া যাবে না। এগিয়ে যাবেন?</p>
+            <div class="flex gap-3">
+              <button id="storage-purge-cancel" class="flex-1 glass py-2.5 rounded-xl text-sm font-semibold">বাতিল</button>
+              <button id="storage-purge-confirm" class="flex-1 btn-glow bg-rose-500 hover:bg-rose-600 text-white py-2.5 rounded-xl text-sm font-bold">নিশ্চিত, মুছে ফেলুন</button>
+            </div>
+          </div>
+        `, { maxWidth: 'max-w-md' })
+        qs('#storage-purge-cancel')?.addEventListener('click', closeModal)
+        qs('#storage-purge-confirm')?.addEventListener('click', async (e) => {
+          e.target.disabled = true
+          e.target.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> মুছে ফেলা হচ্ছে...`
+          try {
+            const res = await API.del('/admin/storage/orphaned')
+            closeModal()
+            showToast(res.message || 'অব্যবহৃত ফাইল মুছে ফেলা হয়েছে', 'success')
+            loadStorageTab(el)
+          } catch (err) {
+            showToast(getErrorMessage(err), 'error')
+            e.target.disabled = false
+            e.target.innerHTML = 'নিশ্চিত, মুছে ফেলুন'
+          }
+        })
+      })
+    }
   }
 
   async function loadMethodsTab(el) {

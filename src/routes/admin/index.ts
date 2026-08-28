@@ -9,6 +9,7 @@ import adminCoupons from './coupons'
 import adminProviders from './providers'
 import adminSupport from './support'
 import adminSettings from './settings'
+import adminStorage from './storage'
 
 const admin = new Hono<AppEnv>()
 
@@ -88,5 +89,6 @@ admin.route('/coupons', adminCoupons)
 admin.route('/api-providers', adminProviders)
 admin.route('/support', adminSupport)
 admin.route('/settings', adminSettings)
+admin.route('/storage', adminStorage)
 
 export default admin

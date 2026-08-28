@@ -53,7 +53,7 @@ orders.get('/:id', authRequired, async (c) => {
   const id = c.req.param('id')
 
   const order = await c.env.DB.prepare(
-    `SELECT o.*, s.name_bn as service_name, s.icon as service_icon
+    `SELECT o.*, s.name_bn as service_name, s.icon as service_icon, s.form_schema
      FROM orders o JOIN services s ON s.id = o.service_id
      WHERE o.id = ? AND o.user_id = ?`
   )
@@ -70,6 +70,7 @@ orders.get('/:id', authRequired, async (c) => {
 
   let formData = {}
   let resultData = null
+  let formSchema = []
   try {
     formData = JSON.parse(order.form_data)
   } catch {}
@@ -78,11 +79,51 @@ orders.get('/:id', authRequired, async (c) => {
   } catch {
     resultData = order.result_data
   }
+  try {
+    formSchema = JSON.parse(order.form_schema)
+  } catch {}
 
   return c.json({
     success: true,
-    order: { ...order, form_data: formData, result_data: resultData },
+    order: { ...order, form_data: formData, result_data: resultData, form_schema: formSchema },
     logs: logs.results,
+  })
+})
+
+// ---------------------------------------------------------------
+// GET /api/orders/:id/upload/:fieldName — download/view a file the
+// current user themselves uploaded as part of this order's form
+// (e.g. NID scan). Ownership-checked via user_id, mirrors the admin
+// version at /api/admin/orders/:id/upload/:fieldName.
+// ---------------------------------------------------------------
+orders.get('/:id/upload/:fieldName', authRequired, async (c) => {
+  const user = c.get('user')!
+  const id = c.req.param('id')
+  const fieldName = c.req.param('fieldName')
+
+  const order = await c.env.DB.prepare('SELECT form_data FROM orders WHERE id = ? AND user_id = ?')
+    .bind(id, user.id)
+    .first<any>()
+  if (!order) return c.json({ success: false, message: 'অর্ডার পাওয়া যায়নি।' }, 404)
+
+  let formData: Record<string, any> = {}
+  try {
+    formData = JSON.parse(order.form_data)
+  } catch {}
+
+  const objectKey = formData[fieldName]
+  if (!objectKey || typeof objectKey !== 'string' || !objectKey.startsWith(`orders/${user.id}/`)) {
+    return c.json({ success: false, message: 'ফাইল পাওয়া যায়নি।' }, 404)
+  }
+
+  const object = await c.env.FILES.get(objectKey)
+  if (!object) return c.json({ success: false, message: 'ফাইল পাওয়া যায়নি।' }, 404)
+
+  return new Response(object.body, {
+    headers: {
+      'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
+      'Content-Disposition': `inline; filename="${objectKey.split('/').pop()}"`,
+    },
   })
 })
 

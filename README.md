@@ -10,7 +10,8 @@
   - অ্যাডমিন-কনফিগারযোগ্য API Provider ইঞ্জিন (`fulfillment_mode`: manual/api/hybrid) — কোনো হার্ডকোডেড API ইন্টিগ্রেশন নেই, সব অ্যাডমিন প্যানেল থেকে যোগ/টেস্ট করা যায়
   - সম্পূর্ণ অ্যাডমিন প্যানেল: ড্যাশবোর্ড (Chart.js), অর্ডার ম্যানেজমেন্ট, রিচার্জ অনুমোদন, সার্ভিস+ক্যাটাগরি CRUD, API প্রোভাইডার CRUD+টেস্ট, ইউজার ম্যানেজমেন্ট, কুপন, সাপোর্ট টিকেট, সেটিংস (general/payment-methods/payment-gateways)
   - **"Admin Mode" ভিজ্যুয়াল থিম**: অ্যাডমিন প্যানেল ইউজার প্যানেল থেকে স্পষ্টভাবে আলাদা দেখতে — violet/fuchsia অ্যাকসেন্ট কালার, শীর্ষে shimmer স্ট্রাইপ, পালসিং "Admin Mode" ব্যাজ, শিল্ড আইকন, এবং একটি সতর্কতা চিপ ("এখানে করা পরিবর্তন সরাসরি প্ল্যাটফর্মে প্রভাব ফেলে") — যাতে অ্যাডমিন একনজরেই বুঝতে পারে সে সাধারণ ইউজার প্যানেলে নেই
-  - "Uncommon UI": aurora animated background, cursor-follow glow, spotlight cards, ripple buttons, glassmorphism — কোনো রেফারেন্স ভিডিওর হুবহু কপি নয়
+  - "Uncommon UI": aurora animated background, cursor-follow glow, **প্রিমিয়াম rotating-light spotlight cards** (মাউস-ফলো গ্লো + অবিরাম ঘূর্ণায়মান বর্ডার-লাইট + hover lift/glow — অ্যাডমিন ও ইউজার উভয় ড্যাশবোর্ডে একইভাবে প্রযোজ্য), ripple buttons, glassmorphism — কোনো রেফারেন্স ভিডিওর হুবহু কপি নয়
+  - **পারফরম্যান্স অপ্টিমাইজেশন**: সব পেজ-স্ক্রিপ্ট `defer` করা হয়েছে (HTML পার্সিং ব্লক হয় না), Chart.js শুধু রিপোর্ট/অ্যাডমিন ড্যাশবোর্ড পেজে লেজি-লোড হয় (অন্য কোনো পেজে লোড হয় না), CDN রিসোর্সে `preconnect` হিন্ট যোগ করা হয়েছে
 
 ## URLs
 - **Local Sandbox Preview**: (see GetServiceUrl output in this session — service running on port 3000)
@@ -58,7 +59,9 @@
   # After schema changes, also run against --remote:
   npx wrangler d1 migrations apply webapp-production --remote
   ```
-- **Last Updated**: 2026-08-28 (প্রোডাকশন Cloudflare Pages ডিপ্লয় সম্পন্ন — D1 + R2 লাইভ)
+- **Last Updated**: 2026-08-28 (পারফরম্যান্স অপ্টিমাইজেশন + প্রিমিয়াম হোভার-কার্ড — কোড কমিট ও পুশ সম্পন্ন, **প্রোডাকশনে ডিপ্লয় বাকি** — নিচের "Deploy" নোট দেখুন)
+
+> ⚠️ **পেন্ডিং ডিপ্লয়**: এই আপডেট (speed optimization + rotating-light hover cards) শুধু GitHub-এ পুশ হয়েছে এবং লোকাল স্যান্ডবক্সে টেস্ট করা হয়েছে। প্রোডাকশনে (`docflow-bd.pages.dev`) লাইভ করতে একটি বৈধ Cloudflare API টোকেন দরকার — **Deploy প্যানেল** থেকে টোকেন সেট করে দিলে সঙ্গে সঙ্গে ডিপ্লয় করে দেওয়া হবে। (আগের টোকেনটি চ্যাটে শেয়ার করা হয়েছিল বলে নিরাপত্তার জন্য সেটি ব্যবহার করা হয়নি — অনুগ্রহ করে Cloudflare ড্যাশবোর্ড থেকে সেটি revoke করে Deploy প্যানেলে নতুন টোকেন যোগ করুন।)
 
 ## Frontend Page Files (all completed)
 `landing.js`, `auth.js`, `dashboard.js`, `services.js`, `orders.js`, `wallet.js`, `reports.js`, `support.js`, `referral.js`, `profile.js`, `admin.js` (12 admin views: dashboard, orders+detail, recharge, services+categories+form-builder, providers+test, users+detail, coupons, support+detail, settings).

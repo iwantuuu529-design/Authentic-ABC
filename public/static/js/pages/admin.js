@@ -1241,6 +1241,7 @@ async function renderAdminUsers() {
       </div>
       <select id="admin-user-status" class="glass rounded-xl px-4 py-2.5 text-sm outline-none input-glow">
         <option value="">সব অবস্থা</option>
+        <option value="pending">অনুমোদনের অপেক্ষায়</option>
         <option value="active">সক্রিয়</option>
         <option value="suspended">সাসপেন্ড</option>
         <option value="banned">ব্যান</option>
@@ -1371,9 +1372,22 @@ async function renderAdminUserDetail(params) {
           </div>
         </div>
 
+        ${user.status === 'pending' ? `
+        <div class="glass rounded-2xl p-5 border border-amber-500/25 bg-amber-500/[0.04] flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center text-amber-400 shrink-0"><i class="fa-solid fa-clock"></i></div>
+            <div>
+              <p class="text-sm font-bold text-amber-300">এই অ্যাকাউন্টটি অনুমোদনের অপেক্ষায় আছে</p>
+              <p class="text-xs text-slate-400">অনুমোদন না করা পর্যন্ত ইউজার লগইন করতে পারবেন না।</p>
+            </div>
+          </div>
+          <button id="au-approve-btn" class="btn-glow bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl flex items-center gap-2 shrink-0"><i class="fa-solid fa-circle-check"></i> অনুমোদন করুন</button>
+        </div>` : ''}
+
         <div class="glass rounded-2xl p-6 flex flex-wrap gap-3">
           <button id="au-adjust-btn" class="btn-glow bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl flex items-center gap-2"><i class="fa-solid fa-coins"></i> ব্যালেন্স সমন্বয়</button>
           <select id="au-status-select" class="glass rounded-xl px-4 py-2.5 text-sm outline-none input-glow">
+            <option value="pending" ${user.status === 'pending' ? 'selected' : ''}>অনুমোদনের অপেক্ষায়</option>
             <option value="active" ${user.status === 'active' ? 'selected' : ''}>সক্রিয়</option>
             <option value="suspended" ${user.status === 'suspended' ? 'selected' : ''}>সাসপেন্ড</option>
             <option value="banned" ${user.status === 'banned' ? 'selected' : ''}>ব্যান</option>
@@ -1418,6 +1432,15 @@ async function renderAdminUserDetail(params) {
     `
 
     qs('#au-adjust-btn').addEventListener('click', () => openBalanceAdjustModal(user, load))
+    qs('#au-approve-btn')?.addEventListener('click', async () => {
+      try {
+        const res = await API.put(`/admin/users/${user.id}/status`, { status: 'active' })
+        showToast(res.message, 'success')
+        load()
+      } catch (err) {
+        showToast(getErrorMessage(err), 'error')
+      }
+    })
     qs('#au-status-select').addEventListener('change', async (e) => {
       try {
         const res = await API.put(`/admin/users/${user.id}/status`, { status: e.target.value })

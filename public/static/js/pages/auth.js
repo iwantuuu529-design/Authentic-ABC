@@ -120,6 +120,10 @@ async function renderRegisterPage() {
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> তৈরি হচ্ছে...`
     try {
       const res = await API.post('/auth/register', payload)
+      if (res.pending) {
+        renderPendingApprovalNotice()
+        return
+      }
       setStoredUser(res.user)
       showToast(res.message, 'success')
       navigate('/dashboard', true)
@@ -129,4 +133,19 @@ async function renderRegisterPage() {
       btn.innerHTML = `<span>রেজিস্ট্রেশন সম্পন্ন করুন</span>`
     }
   })
+}
+
+function renderPendingApprovalNotice() {
+  qs('#app').innerHTML = authShellWrap(`
+    <div class="text-center">
+      <div class="w-16 h-16 rounded-full bg-amber-500/15 flex items-center justify-center mx-auto mb-5 text-amber-400 text-2xl">
+        <i class="fa-solid fa-clock"></i>
+      </div>
+      <h1 class="text-xl font-extrabold mb-2">রেজিস্ট্রেশন সফল হয়েছে!</h1>
+      <p class="text-slate-400 text-sm leading-relaxed mb-6">আপনার অ্যাকাউন্টটি সফলভাবে তৈরি হয়েছে এবং এখন <b class="text-amber-400">অ্যাডমিন অনুমোদনের অপেক্ষায়</b> আছে। অনুমোদন হয়ে গেলে আপনি লগইন করে সকল সার্ভিস ব্যবহার করতে পারবেন।</p>
+      <a href="/login" data-link class="btn-glow inline-flex items-center justify-center gap-2 w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-500/25">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i><span>লগইন পেজে যান</span>
+      </a>
+    </div>
+  `)
 }

@@ -22,6 +22,12 @@ export const authRequired = createMiddleware<AppEnv>(async (c, next) => {
   if (!user) {
     return c.json({ success: false, message: 'ইউজার পাওয়া যায়নি।' }, 401)
   }
+  if (user.status === 'pending') {
+    return c.json(
+      { success: false, pending: true, message: 'আপনার অ্যাকাউন্টটি এখনও অ্যাডমিন অনুমোদনের অপেক্ষায় আছে। অনুমোদন হলে আপনাকে জানানো হবে।' },
+      403
+    )
+  }
   if (user.status !== 'active') {
     return c.json({ success: false, message: 'আপনার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে। সাপোর্টে যোগাযোগ করুন।' }, 403)
   }

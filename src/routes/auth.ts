@@ -63,8 +63,8 @@ auth.post('/register', async (c) => {
   }
 
   const result = await c.env.DB.prepare(
-    `INSERT INTO users (name, phone, email, whatsapp, password_hash, referral_code, referred_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO users (name, phone, email, whatsapp, password_hash, referral_code, referred_by, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`
   )
     .bind(name, phone, email, whatsapp, passwordHash, referralCode, referrer?.id || null)
     .run()
@@ -81,18 +81,15 @@ auth.post('/register', async (c) => {
     c.env.DB,
     userId,
     'স্বাগতম! 🎉',
-    'আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে। এখনই ওয়ালেটে ব্যালেন্স যোগ করে সার্ভিস নেওয়া শুরু করুন।',
-    'success',
-    '/dashboard/wallet'
+    'আপনার অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে এবং এখন অ্যাডমিন অনুমোদনের অপেক্ষায় আছে। অনুমোদন হলে আপনাকে জানানো হবে।',
+    'info'
   )
 
-  const token = await signToken({ sub: userId, role: 'user', phone }, getJwtSecret(c.env))
-  setCookie(c, 'auth_token', token, COOKIE_OPTS)
-
+  // Pending accounts are NOT auto-logged-in — no cookie/token is issued until admin approval.
   return c.json({
     success: true,
-    message: 'রেজিস্ট্রেশন সফল হয়েছে!',
-    user: { id: userId, name, phone, email, role: 'user', balance: 0, referral_code: referralCode },
+    pending: true,
+    message: 'রেজিস্ট্রেশন সফল হয়েছে! আপনার অ্যাকাউন্টটি এখন অ্যাডমিন অনুমোদনের অপেক্ষায় আছে। অনুমোদন হলে আপনি লগইন করতে পারবেন।',
   })
 })
 
@@ -139,6 +136,12 @@ auth.post('/login', async (c) => {
     return c.json({ success: false, message: 'ভুল মোবাইল নম্বর বা পাসওয়ার্ড।' }, 401)
   }
 
+  if (user.status === 'pending') {
+    return c.json(
+      { success: false, pending: true, message: 'আপনার অ্যাকাউন্টটি এখনও অ্যাডমিন অনুমোদনের অপেক্ষায় আছে। অনুমোদন হলে আপনাকে জানানো হবে।' },
+      403
+    )
+  }
   if (user.status !== 'active') {
     return c.json({ success: false, message: 'আপনার অ্যাকাউন্ট সাসপেন্ড করা হয়েছে। সাপোর্টে যোগাযোগ করুন।' }, 403)
   }

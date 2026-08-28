@@ -60,21 +60,35 @@ adminUsers.get('/:id', async (c) => {
   return c.json({ success: true, user, orders, transactions })
 })
 
-// PUT /api/admin/users/:id/status — suspend/activate/ban
+// PUT /api/admin/users/:id/status — approve (pending→active) / suspend / activate / ban
 adminUsers.put('/:id/status', async (c) => {
   const admin = c.get('user')!
   const id = c.req.param('id')
   const body = await c.req.json().catch(() => ({}))
   const status = sanitizeText(body.status, 20)
 
-  if (!['active', 'suspended', 'banned'].includes(status)) {
+  if (!['pending', 'active', 'suspended', 'banned'].includes(status)) {
     return c.json({ success: false, message: 'সঠিক স্ট্যাটাস দিন।' }, 400)
   }
+
+  const before = await c.env.DB.prepare('SELECT status FROM users WHERE id = ?').bind(id).first<any>()
 
   await c.env.DB.prepare('UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').bind(status, id).run()
   await logAdminAction(c.env.DB, admin.id, 'user_status_change', 'user', parseInt(id), `Status changed to ${status}`)
 
-  return c.json({ success: true, message: 'ইউজারের স্ট্যাটাস আপডেট হয়েছে।' })
+  // Notify the user when their account moves from pending → active (i.e. admin approval)
+  if (before?.status === 'pending' && status === 'active') {
+    await pushNotification(
+      c.env.DB,
+      parseInt(id),
+      'অ্যাকাউন্ট অনুমোদিত হয়েছে! ✅',
+      'আপনার অ্যাকাউন্টটি অ্যাডমিন কর্তৃক অনুমোদিত হয়েছে। এখন আপনি লগইন করে সকল সার্ভিস ব্যবহার করতে পারবেন।',
+      'success',
+      '/dashboard'
+    )
+  }
+
+  return c.json({ success: true, message: status === 'active' && before?.status === 'pending' ? 'ইউজার অনুমোদন করা হয়েছে।' : 'ইউজারের স্ট্যাটাস আপডেট হয়েছে।' })
 })
 
 // POST /api/admin/users/:id/adjust-balance — manual credit/debit with reason

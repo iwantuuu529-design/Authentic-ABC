@@ -249,14 +249,14 @@ function emptyState(icon, title, subtitle, actionHtml = '') {
 function statCard({ icon, label, value, sub, gradient, id }) {
   return `
   <div class="spot-card glass rounded-2xl p-5 relative overflow-hidden group">
-    <div class="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-gradient-to-br ${gradient} opacity-20 blur-2xl group-hover:opacity-30 transition-opacity"></div>
-    <div class="flex items-center justify-between mb-3">
-      <div class="w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg">
-        <i class="fa-solid ${icon} text-white"></i>
+    <div class="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-gradient-to-br ${gradient} opacity-[0.12] blur-2xl group-hover:opacity-20 transition-opacity duration-500"></div>
+    <div class="flex items-center justify-between mb-3.5">
+      <div class="w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+        <i class="fa-solid ${icon} text-white text-[15px]"></i>
       </div>
     </div>
-    <p class="text-slate-400 text-xs font-medium mb-1">${label}</p>
-    <p id="${id || ''}" class="text-2xl font-extrabold count-up">${value}</p>
+    <p class="text-slate-400 text-xs font-medium mb-1 tracking-wide">${label}</p>
+    <p id="${id || ''}" class="text-2xl font-extrabold count-up tabular-nums">${value}</p>
     ${sub ? `<p class="text-xs text-slate-500 mt-1">${sub}</p>` : ''}
   </div>`
 }

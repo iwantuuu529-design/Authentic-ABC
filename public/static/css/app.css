@@ -273,8 +273,24 @@ html { scroll-behavior: smooth; }
   100% { border-radius: 50%; }
 }
 @media (max-width: 640px) {
-  .whatsapp-fab { bottom: 1.1rem; right: 1.1rem; width: 3.1rem; height: 3.1rem; }
-  .whatsapp-fab-core { font-size: 22px; }
+  /* !important is required here: Tailwind's CDN script injects its utility
+     stylesheet AFTER this file loads, so the inline w-14/h-14/bottom-6/right-6
+     classes on the <a id="whatsapp-float-btn"> element win the cascade on
+     equal specificity and silently overrode this smaller mobile size.
+     Moved to bottom-LEFT on mobile: every card/list/table action button in
+     this app (order buttons, CTA pills, primary actions) is right-aligned,
+     so a bottom-right fixed FAB was unavoidably sitting on top of them as
+     the user scrolled (confirmed overlap on the Services page order button).
+     The bottom-left corner has no competing interactive elements anywhere
+     in the app, so this fully removes the overlap. */
+  #whatsapp-float-btn.whatsapp-fab {
+    bottom: 1.1rem !important;
+    right: auto !important;
+    left: 1rem !important;
+    width: 2.9rem !important;
+    height: 2.9rem !important;
+  }
+  .whatsapp-fab-core { font-size: 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .whatsapp-fab-ripple { animation: none; opacity: .35; }

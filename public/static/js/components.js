@@ -291,6 +291,12 @@ function isTruthySetting(v) {
 async function syncLiveNoticeBar() {
   const bar = document.getElementById('live-notice-bar')
   if (!bar) return
+  // Marketing notice is customer-facing only — never show it inside the admin panel.
+  const u = getStoredUser()
+  if (u && (u.role === 'admin' || u.role === 'staff')) {
+    bar.classList.add('hidden')
+    return
+  }
   const s = await getPublicSettings()
   const text = String(s.live_notice_text || '').trim()
   if (!isTruthySetting(s.live_notice_enabled) || !text) {
@@ -313,6 +319,12 @@ async function syncLiveNoticeBar() {
 async function syncPromoCard() {
   const modal = document.getElementById('promo-card-modal')
   if (!modal) return
+  // Promotional offer popup is customer-facing only — never show it to admin/staff.
+  const u = getStoredUser()
+  if (u && (u.role === 'admin' || u.role === 'staff')) {
+    modal.classList.add('hidden')
+    return
+  }
   const s = await getPublicSettings()
   const title = String(s.promo_card_title || '').trim()
   if (!isTruthySetting(s.promo_card_enabled) || !title) {

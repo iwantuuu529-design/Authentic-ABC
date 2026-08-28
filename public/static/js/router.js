@@ -66,6 +66,14 @@ async function renderRoute() {
     waBtn.classList.add('hidden')
   }
 
+  // Live notice bar + promo card are customer-facing marketing widgets whose
+  // visibility depends on the CURRENT user's role. app.js only checks this
+  // once at initial page load, so re-check on every route change too — this
+  // correctly hides them the moment an admin logs in/navigates into /admin,
+  // and correctly re-shows them again after logging out to a public page.
+  syncLiveNoticeBar()
+  syncPromoCard()
+
   // Re-bind global effects after each route render
   initPageEffects()
   qsa('a[data-link]').forEach((a) => {

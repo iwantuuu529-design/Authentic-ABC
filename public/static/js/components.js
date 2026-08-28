@@ -128,12 +128,19 @@ function renderSidebar(navItems, activePath, isAdmin = false) {
 function bindShellEvents() {
   const sidebar = qs('#sidebar')
   const overlay = qs('#sidebar-overlay')
+  const waBtn = qs('#whatsapp-float-btn')
+  // On mobile, the sidebar's own support card sits in the same bottom-left
+  // corner as the WhatsApp FAB (fixed, z-[70], stacked above the sidebar's
+  // z-50) — so opening the sidebar visually overlaps the FAB on top of it.
+  // Hide the FAB while the sidebar is open and restore it on close.
   qs('#sidebar-toggle')?.addEventListener('click', () => {
     sidebar?.classList.remove('-translate-x-full')
     overlay?.classList.remove('hidden')
+    waBtn?.classList.add('hidden')
   })
   const closeSidebar = () => {
     sidebar?.classList.add('-translate-x-full')
+    if (waBtn && !window.location.pathname.startsWith('/admin')) waBtn.classList.remove('hidden')
     overlay?.classList.add('hidden')
   }
   qs('#sidebar-close')?.addEventListener('click', closeSidebar)
@@ -291,7 +298,14 @@ function isTruthySetting(v) {
 async function syncLiveNoticeBar() {
   const bar = document.getElementById('live-notice-bar')
   if (!bar) return
-  // Marketing notice is customer-facing only — never show it inside the admin panel.
+  // Marketing notice is customer-facing only — never show it inside the admin panel,
+  // and never on the guest-only auth pages (login/register) where it must not sit
+  // on top of or otherwise interfere with the auth form.
+  const path = window.location.pathname
+  if (path === '/login' || path === '/register') {
+    bar.classList.add('hidden')
+    return
+  }
   const u = getStoredUser()
   if (u && (u.role === 'admin' || u.role === 'staff')) {
     bar.classList.add('hidden')
@@ -319,7 +333,15 @@ async function syncLiveNoticeBar() {
 async function syncPromoCard() {
   const modal = document.getElementById('promo-card-modal')
   if (!modal) return
-  // Promotional offer popup is customer-facing only — never show it to admin/staff.
+  // Promotional offer popup is customer-facing only — never show it to admin/staff,
+  // and never on the guest-only auth pages (login/register). This is a full-viewport
+  // overlay, so on /login or /register it would otherwise intercept pointer events
+  // and block the submit button, preventing new users from logging in/registering.
+  const path = window.location.pathname
+  if (path === '/login' || path === '/register') {
+    modal.classList.add('hidden')
+    return
+  }
   const u = getStoredUser()
   if (u && (u.role === 'admin' || u.role === 'staff')) {
     modal.classList.add('hidden')

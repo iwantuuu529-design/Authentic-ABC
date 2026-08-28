@@ -58,6 +58,14 @@ async function renderRoute() {
     showToast(getErrorMessage(err), 'error')
   }
 
+  // WhatsApp float button only belongs on the (non-admin) user dashboard pages.
+  // Pages that never call dashboardShell (landing/login/register) won't touch
+  // its visibility themselves, so enforce it here on every route change.
+  const waBtn = document.getElementById('whatsapp-float-btn')
+  if (waBtn && !path.startsWith('/dashboard')) {
+    waBtn.classList.add('hidden')
+  }
+
   // Re-bind global effects after each route render
   initPageEffects()
   qsa('a[data-link]').forEach((a) => {

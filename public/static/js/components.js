@@ -226,41 +226,41 @@ function dashboardShell(navItems, activePath, isAdmin = false) {
       <main id="page-content" class="p-4 lg:p-6 max-w-[1600px] mx-auto"></main>
     </div>
   </div>
-  ${!isAdmin ? whatsappFloatButton() : ''}`
+  ${syncWhatsappFloatButton(isAdmin)}`
 }
 
 // ------------------------------------------------------------
 // Persistent WhatsApp contact button — user dashboard only
+// Lives OUTSIDE the SPA-rendered #app (see src/index.tsx body-level
+// anchor) so page-enter's CSS transform never re-parents it into a
+// new containing block — this keeps it truly fixed to the viewport
+// even while page content scrolls/animates in.
 // ------------------------------------------------------------
 let _whatsappNumberCache = null
 
-function whatsappFloatButton() {
-  // Render immediately; number resolved async and wired onto the anchor once available.
-  setTimeout(initWhatsappFloatButton, 0)
-  return `
-  <a id="whatsapp-float-btn" href="https://wa.me/" target="_blank" rel="noopener"
-     class="whatsapp-fab fixed bottom-6 right-6 z-[70] w-14 h-14 rounded-full flex items-center justify-center"
-     title="হোয়াটসঅ্যাপে অ্যাডমিনের সাথে যোগাযোগ করুন" aria-label="WhatsApp">
-    <span class="whatsapp-fab-ripple"></span>
-    <span class="whatsapp-fab-ripple whatsapp-fab-ripple-delay"></span>
-    <span class="whatsapp-fab-core"><i class="fa-brands fa-whatsapp"></i></span>
-  </a>`
+function syncWhatsappFloatButton(isAdmin) {
+  const btn = document.getElementById('whatsapp-float-btn')
+  if (!btn) return ''
+  if (isAdmin) {
+    btn.classList.add('hidden')
+    return ''
+  }
+  btn.classList.remove('hidden')
+  resolveWhatsappNumber().then((digits) => {
+    if (digits) btn.href = `https://wa.me/${digits}`
+  })
+  return ''
 }
 
-async function initWhatsappFloatButton() {
-  const btn = qs('#whatsapp-float-btn')
-  if (!btn) return
+async function resolveWhatsappNumber() {
   try {
     if (_whatsappNumberCache === null) {
       const res = await API.get('/settings')
       _whatsappNumberCache = (res.settings && res.settings.support_whatsapp) || ''
     }
-    const digits = String(_whatsappNumberCache || '').replace(/[^0-9]/g, '')
-    if (digits) {
-      btn.href = `https://wa.me/${digits}`
-    }
+    return String(_whatsappNumberCache || '').replace(/[^0-9]/g, '')
   } catch {
-    // Keep default href fallback silently on failure
+    return ''
   }
 }
 

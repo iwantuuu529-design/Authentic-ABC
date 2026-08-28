@@ -61,6 +61,7 @@
   npx wrangler d1 migrations apply webapp-production --remote
   ```
 - **Last Updated**: 2026-08-28 (রেজিস্ট্রেশন এখন pending-approval ফ্লো — অ্যাডমিন অনুমোদন ছাড়া লগইন সম্ভব নয়; ইউজার ড্যাশবোর্ডে সবসময়-দৃশ্যমান বৃত্তাকার WhatsApp ফ্লোটিং বাটন, watery/liquid-ripple হোভার ইফেক্ট সহ — কোড কমিট, পুশ ও **প্রোডাকশন ডিপ্লয় সম্পন্ন**)
+- **Bug Fix (2026-08-28)**: WhatsApp ফ্লোটিং বাটন স্ক্রল করলে নির্ধারিত স্থান থেকে সরে যাচ্ছিল (bug: `.page-enter` wrapper-এর CSS `transform` অ্যানিমেশন `position: fixed` চাইল্ডের জন্য নতুন containing block তৈরি করছিল, ফলে বাটনটি viewport-এর বদলে সেই transformed div-এর সাপেক্ষে ফিক্সড হয়ে যাচ্ছিল)। **সমাধান**: বাটনটি SPA-এর `#app` div-এর বাইরে, body-লেভেলে (`src/index.tsx`) স্থানান্তর করা হয়েছে — এখন এটি সত্যিকারের viewport-fixed, স্ক্রল করলেও নির্ধারিত স্থানেই থাকে (bottom-right corner)। দৃশ্যমানতা নিয়ন্ত্রিত হয় `syncWhatsappFloatButton()` (dashboardShell থেকে কল হয়) + রাউটার-লেভেল সেফটি-নেট দিয়ে (non-dashboard পেজে স্বয়ংক্রিয়ভাবে hidden)। Playwright দিয়ে scripted scroll test করে visually + প্রোগ্রাম্যাটিকালি যাচাই করা হয়েছে (bounding box scroll-এর আগে/পরে অভিন্ন) এবং **প্রোডাকশনে ডিপ্লয় সম্পন্ন** (`https://f7d82151.docflow-bd.pages.dev` → `docflow-bd.pages.dev`)।
 
 ## Frontend Page Files (all completed)
 `landing.js`, `auth.js`, `dashboard.js`, `services.js`, `orders.js`, `wallet.js`, `reports.js`, `support.js`, `referral.js`, `profile.js`, `admin.js` (12 admin views: dashboard, orders+detail, recharge, services+categories+form-builder, providers+test, users+detail, coupons, support+detail, settings).

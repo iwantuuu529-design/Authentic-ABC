@@ -146,6 +146,14 @@ const HTML_SHELL = `<!DOCTYPE html>
 
   <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 items-end"></div>
 
+  <a id="whatsapp-float-btn" href="https://wa.me/" target="_blank" rel="noopener"
+     class="whatsapp-fab fixed bottom-6 right-6 z-[70] w-14 h-14 rounded-full flex items-center justify-center hidden"
+     title="হোয়াটসঅ্যাপে অ্যাডমিনের সাথে যোগাযোগ করুন" aria-label="WhatsApp">
+    <span class="whatsapp-fab-ripple"></span>
+    <span class="whatsapp-fab-ripple whatsapp-fab-ripple-delay"></span>
+    <span class="whatsapp-fab-core"><i class="fa-brands fa-whatsapp"></i></span>
+  </a>
+
   <div id="app"></div>
 
   <script src="/static/js/utils.js" defer></script>

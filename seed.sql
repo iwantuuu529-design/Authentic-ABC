@@ -9,7 +9,15 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('referral_bonus_amount', '20'),
   ('min_recharge_amount', '50'),
   ('captcha_enabled', '1'),
-  ('support_whatsapp', '8801700000000');
+  ('support_whatsapp', '8801700000000'),
+  ('live_notice_enabled', '0'),
+  ('live_notice_text', ''),
+  ('promo_card_enabled', '0'),
+  ('promo_card_badge', ''),
+  ('promo_card_title', ''),
+  ('promo_card_desc', ''),
+  ('promo_card_cta_label', ''),
+  ('promo_card_cta_url', '');
 
 -- Default admin account
 -- Login phone: 01700000000  |  password: Admin@12345

@@ -130,9 +130,14 @@ async function renderRechargeTab(container) {
               <div class="glass rounded-xl p-4">
                 <div class="flex items-center gap-3 mb-2">
                   <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${meta.color} flex items-center justify-center shrink-0"><i class="fa-solid ${meta.icon} text-white"></i></div>
-                  <div class="min-w-0">
+                  <div class="min-w-0 flex-1">
                     <p class="font-semibold text-sm">${escapeHtml(meta.label)} <span class="text-[10px] text-slate-500 font-normal">(${escapeHtml(m.account_type || 'Personal')})</span></p>
-                    <p class="text-sm font-mono font-bold text-brand-400">${escapeHtml(m.account_number)}</p>
+                    <div class="flex items-center gap-2 mt-0.5">
+                      <p class="text-sm font-mono font-bold text-brand-400 truncate">${escapeHtml(m.account_number)}</p>
+                      <button type="button" class="copy-account-btn shrink-0 w-7 h-7 rounded-lg glass flex items-center justify-center text-slate-400 hover:text-brand-400 transition-colors" data-account="${escapeHtml(m.account_number)}" title="নম্বর কপি করুন" aria-label="নম্বর কপি করুন">
+                        <i class="fa-regular fa-copy text-xs"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 ${m.instructions_bn ? `<p class="text-[11px] text-slate-500">${escapeHtml(m.instructions_bn)}</p>` : ''}
@@ -206,6 +211,19 @@ async function renderRechargeTab(container) {
       </div>
     </div>
   `
+
+  qsa('.copy-account-btn', container).forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault()
+      const num = btn.dataset.account || ''
+      copyToClipboard(num, 'নম্বরটি কপি হয়েছে!')
+      const icon = btn.querySelector('i')
+      if (icon) {
+        icon.className = 'fa-solid fa-check text-xs text-brand-400'
+        setTimeout(() => { icon.className = 'fa-regular fa-copy text-xs' }, 1500)
+      }
+    })
+  })
 
   bindFileDropzones(container)
   qs('#rf-proof', container)?.addEventListener('change', () => {

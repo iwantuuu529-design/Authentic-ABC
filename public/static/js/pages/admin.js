@@ -1861,6 +1861,7 @@ const ADMIN_SETTINGS_TABS = [
   { key: 'general', label: 'সাধারণ সেটিংস', icon: 'fa-sliders' },
   { key: 'methods', label: 'পেমেন্ট মেথড', icon: 'fa-wallet' },
   { key: 'gateways', label: 'পেমেন্ট গেটওয়ে', icon: 'fa-plug' },
+  { key: 'notice', label: 'নোটিস ও অফার', icon: 'fa-bullhorn' },
 ]
 
 const GENERAL_SETTINGS_FIELDS = [
@@ -1909,6 +1910,7 @@ async function renderAdminSettings() {
     if (tab === 'general') return loadGeneralTab(el)
     if (tab === 'methods') return loadMethodsTab(el)
     if (tab === 'gateways') return loadGatewaysTab(el)
+    if (tab === 'notice') return loadNoticeTab(el)
   }
 
   async function loadGeneralTab(el) {
@@ -1940,6 +1942,103 @@ async function renderAdminSettings() {
       btn.disabled = true
       const payload = {}
       qsa('.general-setting-input', el).forEach((inp) => { payload[inp.dataset.key] = inp.value })
+      try {
+        const res = await API.put('/admin/settings', payload)
+        showToast(res.message || 'সংরক্ষণ সফল হয়েছে', 'success')
+      } catch (err) {
+        showToast(getErrorMessage(err), 'error')
+      } finally {
+        btn.disabled = false
+      }
+    })
+  }
+
+  async function loadNoticeTab(el) {
+    let data
+    try {
+      data = await API.get('/admin/settings')
+    } catch (err) {
+      el.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
+      return
+    }
+    const s = data.settings || {}
+    const on = (v) => v === '1' || v === 1 || v === true
+    el.innerHTML = `
+      <form id="notice-settings-form" class="space-y-6 max-w-2xl">
+        <div class="glass rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm"><i class="fa-solid fa-bullhorn text-amber-400 mr-2"></i>লাইভ নোটিস (স্ক্রলিং বার)</h3>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="ns-notice-enabled" class="sr-only peer" ${on(s.live_notice_enabled) ? 'checked' : ''}>
+              <div class="w-11 h-6 bg-white/10 peer-checked:bg-brand-500 rounded-full transition-colors relative">
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+              </div>
+            </label>
+          </div>
+          <p class="text-xs text-slate-500">চালু করলে সাইটের উপরে একটি স্ক্রলিং নোটিস বার দেখাবে। খালি রাখলে বা বন্ধ রাখলে কিছু দেখাবে না।</p>
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">নোটিস টেক্সট</label>
+            <textarea id="ns-notice-text" rows="2" placeholder="যেমন: দেশের সবচেয়ে কম দামে ও নিরাপদে জন্ম নিবন্ধন, NID কারেকশন ও সব সেবা পান আমাদের কাছে!" class="w-full glass rounded-xl px-4 py-3 text-sm outline-none input-glow">${escapeHtml(s.live_notice_text || '')}</textarea>
+          </div>
+        </div>
+
+        <div class="glass rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm"><i class="fa-solid fa-star text-fuchsia-400 mr-2"></i>অফার / নতুন সেবা পপ-আপ কার্ড</h3>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="ns-promo-enabled" class="sr-only peer" ${on(s.promo_card_enabled) ? 'checked' : ''}>
+              <div class="w-11 h-6 bg-white/10 peer-checked:bg-brand-500 rounded-full transition-colors relative">
+                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+              </div>
+            </label>
+          </div>
+          <p class="text-xs text-slate-500">চালু করলে ব্যবহারকারীরা একটি আকর্ষণীয় পপ-আপ কার্ড দেখবে (একবার বন্ধ করলে আর দেখাবে না, যতক্ষণ না নিচের তথ্য পরিবর্তন করা হয়)।</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-2">ব্যাজ টেক্সট</label>
+              <input type="text" id="ns-promo-badge" placeholder="যেমন: নতুন অফার" value="${escapeHtml(s.promo_card_badge || '')}" class="w-full glass rounded-xl px-4 py-3 text-sm outline-none input-glow" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-2">টাইটেল <span class="text-rose-400">*</span></label>
+              <input type="text" id="ns-promo-title" placeholder="যেমন: ২০% ছাড়ে জন্ম নিবন্ধন করুন!" value="${escapeHtml(s.promo_card_title || '')}" class="w-full glass rounded-xl px-4 py-3 text-sm outline-none input-glow" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-2">বিবরণ</label>
+            <textarea id="ns-promo-desc" rows="2" placeholder="অফারের বিস্তারিত লিখুন..." class="w-full glass rounded-xl px-4 py-3 text-sm outline-none input-glow">${escapeHtml(s.promo_card_desc || '')}</textarea>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-2">বাটন লেবেল</label>
+              <input type="text" id="ns-promo-cta-label" placeholder="যেমন: এখনই দেখুন" value="${escapeHtml(s.promo_card_cta_label || '')}" class="w-full glass rounded-xl px-4 py-3 text-sm outline-none input-glow" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-300 mb-2">বাটন লিংক (URL)</label>
+              <input type="text" id="ns-promo-cta-url" placeholder="/services অথবা https://..." value="${escapeHtml(s.promo_card_cta_url || '')}" class="w-full glass rounded-xl px-4 py-3 text-sm outline-none input-glow" />
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="notice-settings-submit" class="btn-glow bg-brand-500 hover:bg-brand-600 text-white font-bold px-6 py-3 rounded-xl flex items-center gap-2">
+          <i class="fa-solid fa-floppy-disk"></i> সংরক্ষণ করুন
+        </button>
+      </form>
+    `
+    initPageEffects(el)
+    qs('#notice-settings-form', el).addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const btn = qs('#notice-settings-submit', el)
+      btn.disabled = true
+      const payload = {
+        live_notice_enabled: qs('#ns-notice-enabled', el).checked ? '1' : '0',
+        live_notice_text: qs('#ns-notice-text', el).value.trim(),
+        promo_card_enabled: qs('#ns-promo-enabled', el).checked ? '1' : '0',
+        promo_card_badge: qs('#ns-promo-badge', el).value.trim(),
+        promo_card_title: qs('#ns-promo-title', el).value.trim(),
+        promo_card_desc: qs('#ns-promo-desc', el).value.trim(),
+        promo_card_cta_label: qs('#ns-promo-cta-label', el).value.trim(),
+        promo_card_cta_url: qs('#ns-promo-cta-url', el).value.trim(),
+      }
       try {
         const res = await API.put('/admin/settings', payload)
         showToast(res.message || 'সংরক্ষণ সফল হয়েছে', 'success')

@@ -262,6 +262,102 @@ async function resolveWhatsappNumber() {
   }
 }
 
+// ------------------------------------------------------------
+// Live Notice ticker + Promo/Offer popup card — truly global,
+// body-level elements (see src/index.tsx). Both are OFF by default
+// and only appear when the admin has explicitly enabled + filled
+// them in via Admin → সেটিংস → নোটিস ও অফার. Both read from the
+// same public /settings endpoint the WhatsApp button already uses,
+// so a single fetch (cached) serves all three features.
+// ------------------------------------------------------------
+let _settingsCache = null
+
+async function getPublicSettings() {
+  try {
+    if (_settingsCache === null) {
+      const res = await API.get('/settings')
+      _settingsCache = res.settings || {}
+    }
+    return _settingsCache
+  } catch {
+    return {}
+  }
+}
+
+function isTruthySetting(v) {
+  return v === '1' || v === 1 || v === true || v === 'true'
+}
+
+async function syncLiveNoticeBar() {
+  const bar = document.getElementById('live-notice-bar')
+  if (!bar) return
+  const s = await getPublicSettings()
+  const text = String(s.live_notice_text || '').trim()
+  if (!isTruthySetting(s.live_notice_enabled) || !text) {
+    bar.classList.add('hidden')
+    return
+  }
+  const a = document.getElementById('live-notice-text-a')
+  const b = document.getElementById('live-notice-text-b')
+  if (a) a.textContent = text
+  if (b) b.textContent = text
+  const track = document.getElementById('live-notice-track')
+  if (track) {
+    // Longer text needs a slower scroll so it stays readable.
+    const duration = Math.max(14, Math.min(45, text.length / 6 + 10))
+    track.style.setProperty('--notice-duration', `${duration}s`)
+  }
+  bar.classList.remove('hidden')
+}
+
+async function syncPromoCard() {
+  const modal = document.getElementById('promo-card-modal')
+  if (!modal) return
+  const s = await getPublicSettings()
+  const title = String(s.promo_card_title || '').trim()
+  if (!isTruthySetting(s.promo_card_enabled) || !title) {
+    modal.classList.add('hidden')
+    return
+  }
+  // Re-show a NEW/changed promo even if an older one was dismissed —
+  // the dismiss flag is keyed to the actual content, not just a boolean.
+  const fingerprint = [title, s.promo_card_desc, s.promo_card_cta_url].join('|')
+  if (localStorage.getItem('df_promo_dismissed') === fingerprint) {
+    modal.classList.add('hidden')
+    return
+  }
+
+  const badge = document.getElementById('promo-card-badge')
+  const desc = document.getElementById('promo-card-desc')
+  const cta = document.getElementById('promo-card-cta')
+  const badgeText = String(s.promo_card_badge || 'অফার').trim()
+  if (badge) badge.innerHTML = `<i class="fa-solid fa-star"></i> ${escapeHtml(badgeText)}`
+  const titleEl = document.getElementById('promo-card-title')
+  if (titleEl) titleEl.textContent = title
+  if (desc) desc.textContent = String(s.promo_card_desc || '')
+  const ctaUrl = String(s.promo_card_cta_url || '').trim()
+  const ctaLabel = String(s.promo_card_cta_label || 'বিস্তারিত দেখুন').trim()
+  if (cta) {
+    if (ctaUrl) {
+      cta.href = ctaUrl
+      cta.classList.remove('hidden')
+      cta.innerHTML = `${escapeHtml(ctaLabel)} <i class="fa-solid fa-arrow-right"></i>`
+    } else {
+      cta.classList.add('hidden')
+    }
+  }
+
+  modal.classList.remove('hidden')
+  const closeBtn = document.getElementById('promo-card-close')
+  if (closeBtn && !closeBtn.dataset.bound) {
+    closeBtn.dataset.bound = '1'
+    closeBtn.addEventListener('click', () => {
+      modal.classList.add('hidden')
+      localStorage.setItem('df_promo_dismissed', fingerprint)
+    })
+  }
+}
+
 // ---------- Small UI atoms ----------
 
 function skeletonCard(h = 'h-28') {

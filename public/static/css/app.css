@@ -281,3 +281,132 @@ html { scroll-behavior: smooth; }
   .whatsapp-fab:hover .whatsapp-fab-core { animation: none; }
   .whatsapp-fab:hover { transform: translateY(-2px); }
 }
+
+/* ============================================================
+   Live Notice ticker — admin-controlled marquee bar
+   Body-level fixed pill at top-center; dark glass base with a warm
+   orange "LIVE NOTICE" badge and an infinitely-scrolling message track.
+   ============================================================ */
+.live-notice-wrap {
+  /* Static, full-width banner at the very top of the document flow —
+     NOT position:fixed — so it naturally pushes the sticky nav/topbar/
+     sidebar down instead of floating over them. It sits as the first
+     child of <body>, before #aurora-bg, so every page (landing,
+     dashboard, admin) gets it above their own sticky headers for free. */
+  position: relative;
+  z-index: 90;
+  padding: 2px 0;
+  background: linear-gradient(90deg, rgba(217,70,239,0.6), rgba(251,146,60,0.6), rgba(56,189,248,0.55), rgba(217,70,239,0.6));
+  background-size: 300% 100%;
+  animation: liveNoticeBorderFlow 8s linear infinite;
+  box-shadow: 0 4px 20px -6px rgba(0,0,0,0.5);
+}
+@keyframes liveNoticeBorderFlow { to { background-position: 300% 0; } }
+.live-notice-inner {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(180deg, rgba(10,14,22,0.96), rgba(6,9,15,0.98));
+  overflow: hidden;
+  height: 2.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.live-notice-badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 100%;
+  padding: 0 0.85rem;
+  background: linear-gradient(135deg, rgba(120,53,15,0.55), rgba(154,52,18,0.4));
+  color: #fb923c;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  white-space: nowrap;
+}
+.live-notice-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #fb923c;
+  box-shadow: 0 0 8px #fb923c;
+  animation: liveNoticeDotBlink 1.4s ease-in-out infinite;
+}
+@keyframes liveNoticeDotBlink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+.live-notice-track-wrap {
+  flex: 1; min-width: 0; height: 100%;
+  position: relative;
+  overflow: hidden;
+  padding: 0 1rem;
+  display: flex; align-items: center;
+}
+.live-notice-track {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  animation: liveNoticeScroll var(--notice-duration, 22s) linear infinite;
+}
+.live-notice-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #f1f5f9;
+  padding-right: 3.5rem;
+}
+@keyframes liveNoticeScroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (max-width: 640px) {
+  .live-notice-inner { height: 2.3rem; }
+  .live-notice-badge { padding: 0 0.65rem; font-size: 0.62rem; }
+  .live-notice-text { font-size: 0.74rem; padding-right: 2.5rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-notice-wrap { animation: none; }
+  .live-notice-track { animation-duration: 40s; }
+  .live-notice-dot { animation: none; }
+}
+
+/* ============================================================
+   Promo / Offer popup card — eye-catching announcement modal
+   Neon gradient border + dark glass panel, admin-controlled content.
+   ============================================================ */
+.promo-modal-backdrop {
+  background: rgba(3,5,9,0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fadeIn .3s ease both;
+}
+.promo-modal-panel {
+  animation: promoPopIn .45s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes promoPopIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.promo-modal-inner {
+  border-radius: 1.5rem;
+  padding: 1.75rem;
+  background: linear-gradient(165deg, rgba(20,16,30,0.97), rgba(8,10,16,0.98));
+  border: 1px solid rgba(255,255,255,0.09);
+  box-shadow:
+    0 0 0 1px rgba(217,70,239,0.15),
+    0 20px 60px -15px rgba(217,70,239,0.35),
+    0 25px 70px -20px rgba(0,0,0,0.6);
+}
+.promo-badge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, rgba(217,70,239,0.22), rgba(251,146,60,0.22));
+  color: #f0abfc;
+  border: 1px solid rgba(217,70,239,0.35);
+}
+@media (max-width: 640px) {
+  .promo-modal-inner { padding: 1.4rem; border-radius: 1.25rem; }
+}

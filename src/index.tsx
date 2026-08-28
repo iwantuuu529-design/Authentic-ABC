@@ -138,6 +138,26 @@ const HTML_SHELL = `<!DOCTYPE html>
   <link href="/static/css/app.css" rel="stylesheet">
 </head>
 <body class="bg-ink-950 text-slate-100 font-sans antialiased min-h-screen overflow-x-hidden">
+  <!-- Live Notice ticker — admin-controlled, body-level (outside #app) so it
+       persists untouched across SPA route changes. Hidden by default;
+       syncLiveNoticeBar() in components.js shows it only when the admin has
+       enabled it with non-empty text via Admin → সেটিংস → নোটিস ও অফার. -->
+  <div id="live-notice-bar" class="hidden live-notice-wrap">
+    <div class="live-notice-inner">
+      <div class="live-notice-badge">
+        <span class="live-notice-dot"></span>
+        <i class="fa-solid fa-bullhorn"></i>
+        <span class="hidden sm:inline">LIVE NOTICE</span>
+      </div>
+      <div class="live-notice-track-wrap">
+        <div class="live-notice-track" id="live-notice-track">
+          <span class="live-notice-text" id="live-notice-text-a"></span>
+          <span class="live-notice-text" id="live-notice-text-b" aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="aurora-bg" class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
     <div class="absolute -top-40 -left-40 w-[36rem] h-[36rem] bg-brand-500/25 rounded-full blur-[110px] animate-aurora-1"></div>
     <div class="absolute top-1/3 -right-32 w-[30rem] h-[30rem] bg-violet-500/20 rounded-full blur-[110px] animate-aurora-2"></div>
@@ -156,6 +176,29 @@ const HTML_SHELL = `<!DOCTYPE html>
     <span class="whatsapp-fab-ripple whatsapp-fab-ripple-delay"></span>
     <span class="whatsapp-fab-core"><i class="fa-brands fa-whatsapp"></i></span>
   </a>
+
+  <!-- Promo / Offer popup card — admin-controlled, body-level anchor so it
+       renders as a true fixed viewport overlay regardless of SPA page
+       transitions. Hidden by default; syncPromoCard() in components.js
+       shows it only when the admin has an active offer configured. -->
+  <div id="promo-card-modal" class="hidden fixed inset-0 z-[85] flex items-center justify-center p-4 promo-modal-backdrop">
+    <div class="promo-modal-panel w-full max-w-sm sm:max-w-md">
+      <div class="promo-modal-inner relative overflow-hidden">
+        <div class="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-gradient-to-br from-fuchsia-500/25 to-amber-400/20 blur-3xl pointer-events-none"></div>
+        <button id="promo-card-close" type="button" aria-label="বন্ধ করুন"
+          class="absolute top-3.5 right-3.5 w-8 h-8 rounded-full glass flex items-center justify-center text-slate-400 hover:text-white transition-colors z-10">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="relative">
+          <span id="promo-card-badge" class="promo-badge inline-flex items-center gap-1.5"></span>
+          <h3 id="promo-card-title" class="text-xl sm:text-2xl font-extrabold mt-4 mb-2 leading-snug"></h3>
+          <p id="promo-card-desc" class="text-sm text-slate-300 mb-5 leading-relaxed"></p>
+          <a id="promo-card-cta" target="_blank" rel="noopener"
+            class="btn-glow inline-flex items-center justify-center gap-2 w-full bg-gradient-to-r from-fuchsia-500 via-orange-400 to-amber-400 text-ink-950 font-bold px-5 py-3 rounded-xl shadow-lg shadow-fuchsia-500/25"></a>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="app"></div>
 

@@ -74,6 +74,15 @@
 - Hono 4.13.5 upgraded `verify()` in `hono/jwt` to require an explicit `alg` argument (breaking change vs. older Hono versions). This caused every authenticated request (including all admin routes) to fail with "সেশনের মেয়াদ শেষ হয়ে গেছে" even with a fresh, valid token. Fixed in `src/lib/jwt.ts` by passing `'HS256'` explicitly to `verify()`.
 - Two admin.js API calls used a trailing slash (`/admin/settings/`) which didn't match the Hono route registered without a trailing slash, causing the SPA fallback HTML to be returned instead of JSON. Fixed by removing the trailing slash.
 
+## New Feature (2026-08-28): Live Notice ticker + Promo/Offer card + Wallet copy buttons
+- **পেমেন্ট নম্বর কপি বাটন**: ওয়ালেট পেজের "ম্যানুয়াল রিচার্জ পদ্ধতি" কার্ডে প্রতিটি bKash/Nagad/Rocket/Upay নম্বরের পাশে এখন একটি কপি বাটন আছে (`renderRechargeTab()` in `wallet.js`, `copyToClipboard()` reused from `referral.js`)।
+- **Live Notice ticker**: সাইটের সবচেয়ে উপরে একটি ফুল-উইথ স্ক্রলিং নোটিস ব্যানার (lovablecredit.com রেফারেন্স স্টাইলে) — ডিফল্টভাবে **hidden**, শুধু অ্যাডমিন সক্রিয় করলে ও টেক্সট দিলে দেখায়। Body-level anchor (`#live-notice-bar` in `src/index.tsx`, normal document flow — sticky nav-কে push করে দেয়, overlap করে না)।
+- **Promo/Offer পপ-আপ কার্ড**: আকর্ষণীয় গ্র্যাডিয়েন্ট-বর্ডার মোডাল কার্ড, অফার/নতুন সেবা ঘোষণার জন্য — ডিফল্টভাবে **hidden**, অ্যাডমিন টাইটেল দিয়ে সক্রিয় করলেই দেখায়। বন্ধ করলে সেই কনটেন্টের জন্য আর দেখাবে না (localStorage fingerprint dismiss), কিন্তু নতুন/পরিবর্তিত অফার আবার দেখাবে।
+- **Admin নিয়ন্ত্রণ**: Admin → সেটিংস → নতুন "নোটিস ও অফার" ট্যাব (`loadNoticeTab()` in `admin.js`) — enable/disable toggle + টেক্সট/টাইটেল/বিবরণ/বাটন ফিল্ড, generic `/api/admin/settings` PUT endpoint ব্যবহার করে (কোনো backend route পরিবর্তন প্রয়োজন হয়নি)।
+- **JS sync logic**: `syncLiveNoticeBar()` + `syncPromoCard()` in `components.js`, বুটস্ট্র্যাপে (`app.js`) একবার কল হয় — সব পেজে (landing/dashboard/admin) কাজ করে, রাউট পরিবর্তনে টিকে থাকে।
+- **মোবাইল রেসপন্সিভ**: দুটোই ডেস্কটপ (1280px) ও মোবাইল (390px) ভিউপোর্টে Playwright দিয়ে visually যাচাই করা হয়েছে — নোটিস ব্যানার ও প্রোমো কার্ড উভয়ই ছোট স্ক্রিনে সঠিকভাবে scale/wrap হয়।
+- **নতুন settings keys** (seed.sql, সব ডিফল্ট disabled/empty): `live_notice_enabled`, `live_notice_text`, `promo_card_enabled`, `promo_card_badge`, `promo_card_title`, `promo_card_desc`, `promo_card_cta_label`, `promo_card_cta_url`।
+
 ## Not Yet Implemented / Next Steps
 - Real UddoktaPay (or other) auto payment-gateway webhook/callback integration — currently only a placeholder inactive DB row + admin config UI; the actual payment-collect + webhook-verify code path has not been implemented
 - End-to-end UI testing of every admin.js modal/flow in a real browser (only API-level curl testing done this session due to sandbox constraints)

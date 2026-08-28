@@ -10,7 +10,7 @@
     {
       "binding": "DB",
       "database_name": "webapp-production",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+      "database_id": "9c2e960d-2d99-41f5-861f-ddebe7005c08"
     }
   ],
   "r2_buckets": [

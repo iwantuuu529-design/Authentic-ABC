@@ -10,9 +10,9 @@ function authShellWrap(innerHtml) {
     <div class="w-full max-w-md relative z-10">
       <a href="/" data-link class="flex items-center justify-center gap-2.5 mb-8">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-violet-500 flex items-center justify-center shadow-lg shadow-brand-500/30">
-          <i class="fa-solid fa-file-shield text-white"></i>
-        </div>
-        <span class="font-extrabold text-xl tracking-tight">DocFlow<span class="text-brand-400">BD</span></span>
+        <i class="fa-solid fa-shield-check text-white"></i>
+      </div>
+      <span class="font-extrabold text-xl tracking-tight">ABC<span class="text-brand-400">Authentic</span></span>
       </a>
       <div class="glass-strong rounded-3xl p-8 shadow-2xl">
         ${innerHtml}

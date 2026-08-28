@@ -41,8 +41,8 @@ const HTML_SHELL = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>DocFlow BD — স্মার্ট সরকারি ডকুমেন্ট সার্ভিস</title>
-  <meta name="description" content="দ্রুত, নিরাপদ ও স্বয়ংক্রিয় জন্ম নিবন্ধন, এনআইডি ও ভূমি সেবা প্ল্যাটফর্ম।">
+  <title>ABC Authentic — দ্রুত, নিরাপদ, নির্ভরযোগ্য</title>
+  <meta name="description" content="ABC Authentic — দ্রুত, নিরাপদ ও নির্ভরযোগ্য জন্ম নিবন্ধন, এনআইডি ও ভূমি সেবা প্ল্যাটফর্ম।">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
 
   <script src="https://cdn.tailwindcss.com"></script>

@@ -22,9 +22,9 @@ async function renderLandingPage() {
       <div class="max-w-7xl mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
         <a href="/" data-link class="flex items-center gap-2.5">
           <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-violet-500 flex items-center justify-center shadow-lg shadow-brand-500/30">
-            <i class="fa-solid fa-file-shield text-white text-sm"></i>
+            <i class="fa-solid fa-shield-check text-white text-sm"></i>
           </div>
-          <span class="font-extrabold text-lg tracking-tight">DocFlow<span class="text-brand-400">BD</span></span>
+          <span class="font-extrabold text-lg tracking-tight">ABC<span class="text-brand-400">Authentic</span></span>
         </a>
         <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
           <a href="#services" class="hover:text-brand-400 transition-colors">সার্ভিসসমূহ</a>
@@ -45,7 +45,7 @@ async function renderLandingPage() {
 
       <div class="inline-flex items-center gap-2 glass rounded-full px-4 py-1.5 text-xs font-semibold text-brand-400 mb-6 animate-fade-up">
         <span class="w-2 h-2 rounded-full bg-brand-400 animate-pulse"></span>
-        ২৪/৭ স্বয়ংক্রিয় সার্ভিস • নিরাপদ প্ল্যাটফর্ম
+        দ্রুত, নিরাপদ, নির্ভরযোগ্য
       </div>
       <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 animate-fade-up" style="animation-delay:.08s">
         সরকারি ডকুমেন্ট সেবা এখন<br class="hidden sm:block" />
@@ -172,11 +172,11 @@ async function renderLandingPage() {
       <div class="max-w-7xl mx-auto px-4 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-400 to-violet-500 flex items-center justify-center">
-            <i class="fa-solid fa-file-shield text-white text-xs"></i>
+            <i class="fa-solid fa-shield-check text-white text-xs"></i>
           </div>
-          <span class="font-bold">DocFlow<span class="text-brand-400">BD</span></span>
+          <span class="font-bold">ABC<span class="text-brand-400">Authentic</span></span>
         </div>
-        <p class="text-xs text-slate-500">© ${new Date().getFullYear()} DocFlow BD — সর্বস্বত্ব সংরক্ষিত।</p>
+        <p class="text-xs text-slate-500">© ${new Date().getFullYear()} ABC Authentic — সর্বস্বত্ব সংরক্ষিত।</p>
       </div>
     </footer>
   </div>`

@@ -100,9 +100,9 @@ function renderSidebar(navItems, activePath, isAdmin = false) {
   <aside id="sidebar" class="fixed lg:sticky top-0 left-0 h-screen w-72 glass-strong border-r ${isAdmin ? 'border-violet-500/20' : 'border-white/5'} flex flex-col z-50 -translate-x-full lg:translate-x-0 transition-transform duration-300">
     <div class="flex items-center gap-3 px-6 h-16 border-b ${isAdmin ? 'border-violet-500/20' : 'border-white/5'}">
       <div class="w-9 h-9 rounded-xl bg-gradient-to-br ${isAdmin ? 'from-violet-400 to-fuchsia-600' : 'from-brand-400 to-violet-500'} flex items-center justify-center shadow-lg ${isAdmin ? 'shadow-violet-500/30' : 'shadow-brand-500/20'}">
-        <i class="fa-solid ${isAdmin ? 'fa-shield-halved' : 'fa-file-shield'} text-white text-sm"></i>
+        <i class="fa-solid ${isAdmin ? 'fa-shield-halved' : 'fa-shield-check'} text-white text-sm"></i>
       </div>
-      <span class="font-extrabold text-lg tracking-tight">DocFlow<span class="text-${accent}-400">BD</span></span>
+      <span class="font-extrabold text-lg tracking-tight">ABC<span class="text-${accent}-400">Authentic</span></span>
       <button id="sidebar-close" class="lg:hidden ml-auto text-slate-400"><i class="fa-solid fa-xmark"></i></button>
     </div>
     ${isAdmin ? `

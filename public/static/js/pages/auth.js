@@ -7,11 +7,10 @@ function authShellWrap(innerHtml) {
   <div class="min-h-screen flex items-center justify-center px-4 py-12 page-enter relative overflow-hidden">
     <div class="absolute top-1/4 left-1/4 orb w-64 h-64 bg-brand-500/20 animate-float-slow"></div>
     <div class="absolute bottom-1/4 right-1/4 orb w-64 h-64 bg-violet-500/15 animate-float-slow" style="animation-delay:1s"></div>
+    <img src="/static/img/logo.png" alt="" aria-hidden="true" class="pointer-events-none select-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] max-w-none opacity-[0.04] blur-[1px]" />
     <div class="w-full max-w-md relative z-10">
       <a href="/" data-link class="flex items-center justify-center gap-2.5 mb-8">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-violet-500 flex items-center justify-center shadow-lg shadow-brand-500/30">
-        <i class="fa-solid fa-shield-check text-white"></i>
-      </div>
+        <img src="/static/img/logo.png" alt="ABC Authentic" class="w-10 h-10 object-contain drop-shadow-[0_2px_10px_rgba(23,184,129,0.35)]" />
       <span class="font-extrabold text-xl tracking-tight">ABC<span class="text-brand-400">Authentic</span></span>
       </a>
       <div class="glass-strong rounded-3xl p-8 shadow-2xl">

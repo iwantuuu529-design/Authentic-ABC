@@ -21,9 +21,7 @@ async function renderLandingPage() {
     <nav class="sticky top-0 z-40 glass-strong border-b border-white/5">
       <div class="max-w-7xl mx-auto px-4 lg:px-6 h-16 flex items-center justify-between">
         <a href="/" data-link class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-violet-500 flex items-center justify-center shadow-lg shadow-brand-500/30">
-            <i class="fa-solid fa-shield-check text-white text-sm"></i>
-          </div>
+          <img src="/static/img/logo.png" alt="ABC Authentic" class="w-9 h-9 object-contain drop-shadow-[0_2px_10px_rgba(23,184,129,0.35)]" />
           <span class="font-extrabold text-lg tracking-tight">ABC<span class="text-brand-400">Authentic</span></span>
         </a>
         <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
@@ -171,9 +169,7 @@ async function renderLandingPage() {
     <footer class="border-t border-white/5 py-10">
       <div class="max-w-7xl mx-auto px-4 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-400 to-violet-500 flex items-center justify-center">
-            <i class="fa-solid fa-shield-check text-white text-xs"></i>
-          </div>
+          <img src="/static/img/logo.png" alt="ABC Authentic" class="w-8 h-8 object-contain drop-shadow-[0_2px_8px_rgba(23,184,129,0.3)]" />
           <span class="font-bold">ABC<span class="text-brand-400">Authentic</span></span>
         </div>
         <p class="text-xs text-slate-500">© ${new Date().getFullYear()} ABC Authentic — সর্বস্বত্ব সংরক্ষিত।</p>

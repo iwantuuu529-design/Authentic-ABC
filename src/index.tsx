@@ -43,7 +43,10 @@ const HTML_SHELL = `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>ABC Authentic — দ্রুত, নিরাপদ, নির্ভরযোগ্য</title>
   <meta name="description" content="ABC Authentic — দ্রুত, নিরাপদ ও নির্ভরযোগ্য জন্ম নিবন্ধন, এনআইডি ও ভূমি সেবা প্ল্যাটফর্ম।">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/static/img/favicon-64.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/img/favicon-192.png">
+  <link rel="apple-touch-icon" href="/static/img/favicon-192.png">
 
   <link rel="preconnect" href="https://cdn.tailwindcss.com">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>

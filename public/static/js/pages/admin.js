@@ -142,11 +142,10 @@ async function renderAdminDashboard() {
   animateCount(qs('#ad-today-revenue'), s.today_revenue || 0, 900, (n) => formatMoney(n))
   animateCount(qs('#ad-wallet-liability'), s.total_wallet_liability || 0, 900, (n) => formatMoney(n))
 
-  if (window.Chart) {
-    Chart.defaults.color = '#94a3b8'
-    Chart.defaults.font.family = "'Hind Siliguri', 'Manrope', sans-serif"
-    Chart.defaults.borderColor = 'rgba(255,255,255,0.06)'
-  }
+  await loadChartJs()
+  Chart.defaults.color = '#94a3b8'
+  Chart.defaults.font.family = "'Hind Siliguri', 'Manrope', sans-serif"
+  Chart.defaults.borderColor = 'rgba(255,255,255,0.06)'
 
   if (daily.length && qs('#chart-admin-revenue')) {
     const ctx = qs('#chart-admin-revenue').getContext('2d')

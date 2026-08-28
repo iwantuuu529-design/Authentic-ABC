@@ -71,12 +71,11 @@ async function renderReportsPage() {
     </div>
   `
 
-  // Chart.js global defaults for dark theme
-  if (window.Chart) {
-    Chart.defaults.color = '#94a3b8'
-    Chart.defaults.font.family = "'Hind Siliguri', 'Manrope', sans-serif"
-    Chart.defaults.borderColor = 'rgba(255,255,255,0.06)'
-  }
+  // Lazy-load Chart.js only when this page actually needs charts
+  await loadChartJs()
+  Chart.defaults.color = '#94a3b8'
+  Chart.defaults.font.family = "'Hind Siliguri', 'Manrope', sans-serif"
+  Chart.defaults.borderColor = 'rgba(255,255,255,0.06)'
 
   if (dailySpending.length && qs('#chart-spending')) {
     const ctx = qs('#chart-spending').getContext('2d')

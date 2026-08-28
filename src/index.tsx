@@ -45,11 +45,14 @@ const HTML_SHELL = `<!DOCTYPE html>
   <meta name="description" content="ABC Authentic — দ্রুত, নিরাপদ ও নির্ভরযোগ্য জন্ম নিবন্ধন, এনআইডি ও ভূমি সেবা প্ল্যাটফর্ম।">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
 
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js" defer></script>
 
   <script>
     tailwind.config = {
@@ -145,22 +148,22 @@ const HTML_SHELL = `<!DOCTYPE html>
 
   <div id="app"></div>
 
-  <script src="/static/js/utils.js"></script>
-  <script src="/static/js/api.js"></script>
-  <script src="/static/js/components.js"></script>
-  <script src="/static/js/pages/landing.js"></script>
-  <script src="/static/js/pages/auth.js"></script>
-  <script src="/static/js/pages/dashboard.js"></script>
-  <script src="/static/js/pages/services.js"></script>
-  <script src="/static/js/pages/orders.js"></script>
-  <script src="/static/js/pages/wallet.js"></script>
-  <script src="/static/js/pages/reports.js"></script>
-  <script src="/static/js/pages/support.js"></script>
-  <script src="/static/js/pages/referral.js"></script>
-  <script src="/static/js/pages/profile.js"></script>
-  <script src="/static/js/pages/admin.js"></script>
-  <script src="/static/js/router.js"></script>
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/utils.js" defer></script>
+  <script src="/static/js/api.js" defer></script>
+  <script src="/static/js/components.js" defer></script>
+  <script src="/static/js/pages/landing.js" defer></script>
+  <script src="/static/js/pages/auth.js" defer></script>
+  <script src="/static/js/pages/dashboard.js" defer></script>
+  <script src="/static/js/pages/services.js" defer></script>
+  <script src="/static/js/pages/orders.js" defer></script>
+  <script src="/static/js/pages/wallet.js" defer></script>
+  <script src="/static/js/pages/reports.js" defer></script>
+  <script src="/static/js/pages/support.js" defer></script>
+  <script src="/static/js/pages/referral.js" defer></script>
+  <script src="/static/js/pages/profile.js" defer></script>
+  <script src="/static/js/pages/admin.js" defer></script>
+  <script src="/static/js/router.js" defer></script>
+  <script src="/static/js/app.js" defer></script>
 </body>
 </html>`
 

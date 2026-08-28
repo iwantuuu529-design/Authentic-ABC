@@ -176,3 +176,21 @@ function getErrorMessage(err) {
   if (err && err.message) return err.message
   return 'একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।'
 }
+
+// ============================================================
+// Lazy-load Chart.js only on pages that actually render charts
+// (keeps it off the critical path for every other page load)
+// ============================================================
+let _chartJsPromise = null
+function loadChartJs() {
+  if (window.Chart) return Promise.resolve(window.Chart)
+  if (_chartJsPromise) return _chartJsPromise
+  _chartJsPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js'
+    script.onload = () => resolve(window.Chart)
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+  return _chartJsPromise
+}

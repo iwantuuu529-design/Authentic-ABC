@@ -170,7 +170,7 @@ html { scroll-behavior: smooth; }
 @keyframes toastIn { from { opacity: 0; transform: translateX(40px) scale(0.9); } to { opacity: 1; transform: translateX(0) scale(1); } }
 
 /* ---------- Sidebar link underline glow ---------- */
-.nav-link { position: relative; }
+.nav-link { position: relative; transition: background-color .15s ease; }
 .nav-link.active { color: #3ed49c; }
 .nav-link.active::before {
   content: ''; position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
@@ -220,6 +220,49 @@ html { scroll-behavior: smooth; }
 
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ============================================================
+   Dashboard click comfort — tactile press feedback + tap targets
+   Applies globally to every clickable control across dashboard/admin:
+   sidebar nav links, list-row links (spot-card, hover:bg-white/5 rows),
+   pagination buttons, small icon-only buttons (copy/edit/delete/toggle),
+   notif/user-menu/sidebar-toggle icon buttons. Two problems fixed:
+   1) No visual "press" acknowledgment on tap — button just re-styles on
+      the NEXT frame with no feel of having been pressed.
+   2) Mobile browsers paint a gray flash rectangle on tap (default
+      -webkit-tap-highlight-color) that looks broken next to our custom
+      glass/gradient press effects — disabled in favor of our own scale
+      feedback below, which is instant and consistent on every device.
+   ============================================================ */
+a[data-link], button, .page-btn, .nav-link, #notif-btn, #user-menu-btn,
+#sidebar-toggle, #sidebar-close, .copy-account-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+a[data-link]:active, button:not(:disabled):active, .page-btn:not(:disabled):active {
+  transform: scale(0.96);
+}
+.nav-link:active { background-color: rgba(255,255,255,0.09); }
+a.spot-card:active { transform: scale(0.985) translateY(0); }
+a[data-link].block:active, div[class*="hover:bg-white/5"]:active {
+  background-color: rgba(255,255,255,0.09);
+}
+a[data-link], button, .page-btn {
+  transition: transform .12s cubic-bezier(.34,1.56,.64,1), background-color .12s ease;
+}
+/* Icon-only buttons (notif bell, user avatar toggle, sidebar hamburger,
+   copy-account, edit/delete/toggle) — Tailwind sizes some as small as
+   28px (w-7 h-7); pad their hit area invisibly up to the ~40px minimum
+   comfortable mobile tap target without changing their visual size. */
+#notif-btn, #user-menu-btn, #sidebar-toggle, #sidebar-close,
+.copy-account-btn, .method-edit-btn, .method-delete-btn, .page-btn {
+  position: relative;
+}
+.copy-account-btn::before, .method-edit-btn::before, .method-delete-btn::before {
+  content: ''; position: absolute; inset: -6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  a[data-link]:active, button:active, .page-btn:active, a.spot-card:active { transform: none; }
+}
 
 /* ---------- WhatsApp floating contact button — circular, watery/liquid-ripple hover ---------- */
 .whatsapp-fab {

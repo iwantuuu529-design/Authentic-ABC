@@ -10,7 +10,7 @@
   - অ্যাডমিন-কনফিগারযোগ্য API Provider ইঞ্জিন (`fulfillment_mode`: manual/api/hybrid) — কোনো হার্ডকোডেড API ইন্টিগ্রেশন নেই, সব অ্যাডমিন প্যানেল থেকে যোগ/টেস্ট করা যায়
   - সম্পূর্ণ অ্যাডমিন প্যানেল: ড্যাশবোর্ড (Chart.js), অর্ডার ম্যানেজমেন্ট, রিচার্জ অনুমোদন, সার্ভিস+ক্যাটাগরি CRUD, API প্রোভাইডার CRUD+টেস্ট, ইউজার ম্যানেজমেন্ট, কুপন, সাপোর্ট টিকেট, সেটিংস (general/payment-methods/payment-gateways)
   - **"Admin Mode" ভিজ্যুয়াল থিম**: অ্যাডমিন প্যানেল ইউজার প্যানেল থেকে স্পষ্টভাবে আলাদা দেখতে — violet/fuchsia অ্যাকসেন্ট কালার, শীর্ষে shimmer স্ট্রাইপ, পালসিং "Admin Mode" ব্যাজ, শিল্ড আইকন, এবং একটি সতর্কতা চিপ ("এখানে করা পরিবর্তন সরাসরি প্ল্যাটফর্মে প্রভাব ফেলে") — যাতে অ্যাডমিন একনজরেই বুঝতে পারে সে সাধারণ ইউজার প্যানেলে নেই
-  - "Uncommon UI": aurora animated background, cursor-follow glow, **প্রিমিয়াম rotating-light spotlight cards** (মাউস-ফলো গ্লো + অবিরাম ঘূর্ণায়মান বর্ডার-লাইট + hover lift/glow — অ্যাডমিন ও ইউজার উভয় ড্যাশবোর্ডে একইভাবে প্রযোজ্য), ripple buttons, glassmorphism — কোনো রেফারেন্স ভিডিওর হুবহু কপি নয়
+  - "Uncommon UI": aurora animated background, cursor-follow glow, **প্রিমিয়াম hover cards** — কার্ডের ১.৫px বর্ডার-রিংয়ে ধিরে ঘূর্ণায়মান মাল্টি-স্টপ লাইট (কার্ডের ভেতরে কখনো ছড়ায় না, `mask-composite: exclude` দিয়ে কনফাইন করা) + খুব হালকা ৭s ডায়াগোনাল শাইন-সুইপ + মাউস-ফলো গ্লো + hover lift — অ্যাডমিন (ভায়োলেট) ও ইউজার (গ্রিন) উভয় ড্যাশবোর্ডে ব্র্যান্ড-কালারে প্রযোজ্য, ripple buttons, glassmorphism — কোনো রেফারেন্স সাইট/ভিডিওর হুবহু কপি নয়, শুধু কৌশল (নেস্টেড রিং কনফাইনমেন্ট + শাইন-সুইপ) থেকে অনুপ্রাণিত ও আমাদের নিজস্ব ব্র্যান্ড-প্যালেটে পুনর্নির্মিত
   - **পারফরম্যান্স অপ্টিমাইজেশন**: সব পেজ-স্ক্রিপ্ট `defer` করা হয়েছে (HTML পার্সিং ব্লক হয় না), Chart.js শুধু রিপোর্ট/অ্যাডমিন ড্যাশবোর্ড পেজে লেজি-লোড হয় (অন্য কোনো পেজে লোড হয় না), CDN রিসোর্সে `preconnect` হিন্ট যোগ করা হয়েছে
 
 ## URLs
@@ -59,7 +59,7 @@
   # After schema changes, also run against --remote:
   npx wrangler d1 migrations apply webapp-production --remote
   ```
-- **Last Updated**: 2026-08-28 (পারফরম্যান্স অপ্টিমাইজেশন + প্রিমিয়াম রোটেটিং-লাইট হোভার-কার্ড — কোড কমিট, পুশ ও **প্রোডাকশন ডিপ্লয় সম্পন্ন**, Deploy প্যানেলে নতুন Cloudflare টোকেন সেভ করে সরাসরি deploy করা হয়েছে)
+- **Last Updated**: 2026-08-28 (হোভার-কার্ড ডিজাইন আরও পলিশড — বর্ডার-রিং লাইট এখন রিচার মাল্টি-স্টপ কালার + একটি নতুন হালকা ডায়াগোনাল শাইন-সুইপ যোগ হয়েছে, নিজস্ব ব্র্যান্ড-কালারে (গ্রিন/ভায়োলেট) — কোড কমিট, পুশ ও **প্রোডাকশন ডিপ্লয় সম্পন্ন**)
 
 ## Frontend Page Files (all completed)
 `landing.js`, `auth.js`, `dashboard.js`, `services.js`, `orders.js`, `wallet.js`, `reports.js`, `support.js`, `referral.js`, `profile.js`, `admin.js` (12 admin views: dashboard, orders+detail, recharge, services+categories+form-builder, providers+test, users+detail, coupons, support+detail, settings).

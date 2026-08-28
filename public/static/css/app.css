@@ -25,32 +25,56 @@ html { scroll-behavior: smooth; }
   -webkit-backdrop-filter: blur(24px);
 }
 
-/* ---------- Premium hover card: calm border-light + soft lift ---------- */
+/* ---------- Premium hover card: rich rotating border-light + calm shine sweep ----------
+   Design reference: studied a well-known BD fintech reseller site's premium
+   product-card treatment (rotating conic-gradient ring confined to a thin
+   border + a slow diagonal shine pass). Re-implemented here entirely in our
+   own brand palette (emerald/teal for user, violet/fuchsia for admin) — no
+   colors, markup or code copied. */
 @property --card-angle {
   syntax: '<angle>';
   initial-value: 0deg;
   inherits: false;
 }
+@property --glow-o {
+  syntax: '<number>';
+  initial-value: 0;
+  inherits: false;
+}
 .spot-card {
   position: relative; overflow: hidden; isolation: isolate;
   --card-angle: 0deg;
+  --glow-o: 0;
   transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s ease, border-color .3s ease;
 }
 
-/* Subtle mouse-follow glow (very soft, does not wash the whole card) */
+/* Layer 1: soft mouse-follow glow (hover-only) + a continuous, very faint
+   diagonal shine pass (always animating, low opacity — reads as calm
+   "polish", not a distracting wash). Both confined to the card by
+   overflow:hidden above. */
 .spot-card::before {
   content: '';
   position: absolute; inset: 0;
   border-radius: inherit;
-  background: radial-gradient(240px circle at var(--x, 50%) var(--y, 50%), rgba(23,184,129,0.10), transparent 65%);
-  opacity: 0; transition: opacity .4s ease; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(240px circle at var(--x, 50%) var(--y, 50%), rgba(62,212,156, var(--glow-o)), transparent 65%),
+    linear-gradient(115deg, transparent 44%, rgba(255,255,255,0.05) 50%, transparent 56%);
+  background-size: auto, 260% 260%;
+  background-position: 0 0, -30% -30%;
+  animation: cardShineSweep 7s ease-in-out infinite;
+  transition: --glow-o .4s ease;
+  pointer-events: none; z-index: 0;
 }
-.spot-card:hover::before { opacity: 1; }
+.spot-card:hover::before { --glow-o: 1; }
+@keyframes cardShineSweep {
+  0%, 100% { background-position: 0 0, -30% -30%; }
+  50%      { background-position: 0 0, 130% 130%; }
+}
 
-/* Ambient border light — a slim, slow-moving arc confined strictly to the
-   1.5px card edge (never bleeds into the interior). Runs continuously at
-   very low opacity so it reads as "light occasionally sweeping the rim",
-   not a busy, distracting glow. */
+/* Layer 2: ambient rotating border light — a richer, multi-stop arc confined
+   strictly to the 1.5px card edge (mask-composite: exclude keeps it off the
+   interior entirely). Slow (13s) continuous rotation so it reads as light
+   gently travelling around the rim, never a busy glow. */
 .spot-card::after {
   content: '';
   position: absolute; inset: 0;
@@ -58,45 +82,51 @@ html { scroll-behavior: smooth; }
   border-radius: inherit;
   padding: 1.5px;
   background: conic-gradient(from var(--card-angle),
-    transparent 0deg, transparent 270deg,
-    rgba(62,212,156,0.7) 300deg,
-    rgba(62,212,156,0.15) 320deg,
-    transparent 340deg, transparent 360deg);
+    transparent 0deg, transparent 258deg,
+    rgba(23,184,129,0.5) 282deg,
+    rgba(62,212,156,0.9) 304deg,
+    rgba(110,231,183,0.55) 320deg,
+    transparent 344deg, transparent 360deg);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
-  opacity: 0.55;
+  opacity: 0.6;
   transition: opacity .4s ease;
   animation: cardBeamSpin 13s linear infinite;
 }
 @keyframes cardBeamSpin { to { --card-angle: 360deg; } }
-.spot-card:hover::after { opacity: 0.9; }
+.spot-card:hover::after { opacity: 1; }
 
 .spot-card > * { position: relative; z-index: 1; }
 
 /* Gentle lift on hover — tactile without being jarring */
 .spot-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 26px -10px rgba(23,184,129,0.18), 0 3px 10px -4px rgba(0,0,0,0.35);
-  border-color: rgba(62,212,156,0.22);
+  box-shadow: 0 10px 28px -10px rgba(23,184,129,0.22), 0 3px 10px -4px rgba(0,0,0,0.35);
+  border-color: rgba(62,212,156,0.24);
 }
 .admin-mode .spot-card:hover {
-  box-shadow: 0 10px 26px -10px rgba(139,92,246,0.22), 0 3px 10px -4px rgba(0,0,0,0.35);
-  border-color: rgba(167,139,250,0.26);
+  box-shadow: 0 10px 28px -10px rgba(139,92,246,0.26), 0 3px 10px -4px rgba(0,0,0,0.35);
+  border-color: rgba(167,139,250,0.28);
 }
 .admin-mode .spot-card::after {
   background: conic-gradient(from var(--card-angle),
-    transparent 0deg, transparent 270deg,
-    rgba(167,139,250,0.7) 300deg,
-    rgba(167,139,250,0.15) 320deg,
-    transparent 340deg, transparent 360deg);
+    transparent 0deg, transparent 258deg,
+    rgba(124,58,237,0.5) 282deg,
+    rgba(167,139,250,0.9) 304deg,
+    rgba(216,180,254,0.55) 320deg,
+    transparent 344deg, transparent 360deg);
 }
 .admin-mode .spot-card::before {
-  background: radial-gradient(240px circle at var(--x, 50%) var(--y, 50%), rgba(139,92,246,0.10), transparent 65%);
+  background:
+    radial-gradient(240px circle at var(--x, 50%) var(--y, 50%), rgba(139,92,246, var(--glow-o)), transparent 65%),
+    linear-gradient(115deg, transparent 44%, rgba(255,255,255,0.05) 50%, transparent 56%);
+  background-size: auto, 260% 260%;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .spot-card::after { animation: none; opacity: 0.3; }
+  .spot-card::before { animation: none; }
   .spot-card { transition: none; }
   .spot-card:hover { transform: none; }
 }

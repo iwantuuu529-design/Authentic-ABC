@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
-import { serveStatic } from 'hono/cloudflare-workers'
+import { serveStatic } from '@hono/node-server/serve-static'
 import type { AppEnv } from './types/bindings'
+import { createLocalD1Database, createLocalR2Bucket } from './lib/d1Adapter'
 
 import auth from './routes/auth'
 import services from './routes/services'
@@ -15,6 +16,27 @@ import misc from './routes/misc'
 import admin from './routes/admin'
 
 const app = new Hono<AppEnv>()
+
+// Ensure local SQLite D1 database and local R2 bucket are initialized
+const localDb = createLocalD1Database()
+const localFiles = createLocalR2Bucket()
+
+// Middleware to inject Cloudflare bindings (D1 DB, R2 FILES, JWT_SECRET)
+app.use('*', async (c, next) => {
+  if (!c.env) {
+    ;(c as any).env = {}
+  }
+  if (!c.env.DB) {
+    c.env.DB = localDb
+  }
+  if (!c.env.FILES) {
+    c.env.FILES = localFiles
+  }
+  if (!c.env.JWT_SECRET) {
+    c.env.JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-abc-authentic-2026'
+  }
+  await next()
+})
 
 // -----------------------------------------------------------------
 // API Routes

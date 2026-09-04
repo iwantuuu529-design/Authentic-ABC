@@ -1,0 +1,8 @@
+{
+  "name": "ABC Authentic",
+  "description": "BDRIS-style Bangladeshi government document service (birth registration, NID, land services) reseller portal with user wallet, dynamic form-builder, and admin management panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

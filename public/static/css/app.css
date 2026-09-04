@@ -469,3 +469,69 @@ a[data-link], button, .page-btn {
 @media (max-width: 640px) {
   .promo-modal-inner { padding: 1.4rem; border-radius: 1.25rem; }
 }
+
+/* ---------- Super Fast PDF Service Styles ---------- */
+.pdf-drop-active {
+  border-color: #38bdf8 !important;
+  background-color: rgba(56, 189, 248, 0.12) !important;
+  transform: scale(1.01);
+}
+
+.modal-backdrop-blur {
+  background-color: rgba(5, 7, 10, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Bangladesh Government Birth Certificate Styles */
+.bdris-cert-container {
+  background: #ffffff;
+  color: #111827;
+  font-family: 'Hind Siliguri', 'Segoe UI', Tahoma, sans-serif;
+  line-height: 1.4;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.bdris-cert-border {
+  border: 4px double #15803d;
+  outline: 2px solid #bbf7d0;
+  outline-offset: -8px;
+}
+
+.bdris-cert-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-25deg);
+  font-size: 5rem;
+  font-weight: 900;
+  color: rgba(22, 163, 74, 0.05);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #certificate-print-wrap, #certificate-print-wrap * {
+    visibility: visible;
+  }
+  #certificate-print-wrap {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    background: #ffffff !important;
+    z-index: 99999;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+

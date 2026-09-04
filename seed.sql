@@ -88,7 +88,12 @@ VALUES
 (10, 4, 'অন্যান্য কাস্টম সার্ভিস', 'Custom Request Service', 'custom-request',
  'তালিকায় নেই এমন যেকোনো সরকারি ডকুমেন্ট সংক্রান্ত অনুরোধ জানান।', 'fa-headset', 0.00, 0.00, 'manual', NULL, NULL,
  '[{"name":"request_title","label_bn":"অনুরোধের বিষয়","type":"text","required":true},{"name":"details","label_bn":"বিস্তারিত বর্ণনা","type":"textarea","required":true},{"name":"attachment","label_bn":"সংযুক্তি (ঐচ্ছিক)","type":"file","accept":".pdf,image/*","required":false}]',
- 1440, 0, 0, 10, 'active');
+ 1440, 0, 0, 10, 'active'),
+
+(11, 1, 'নিবন্ধন পিডিএফ তৈরি', 'NIBANDAN PDF CREATE', 'nibandan-pdf-create',
+ 'পিডিএফ আপলোড করে অটো-প্রসেসিংয়ের মাধ্যমে ইউনিক ফরম্যাটে জন্ম নিবন্ধন সনদ প্রস্তুত করুন।', 'fa-file-pdf', 4.00, 1.00, 'manual', NULL, NULL,
+ '[{"name":"pdf_file","label_bn":"পিডিএফ আপলোড করুন","type":"file","accept":".pdf","required":true},{"name":"name_bn","label_bn":"নাম (বাংলা)","type":"text","required":true},{"name":"name_en","label_bn":"নাম (ইংরেজি)","type":"text","required":true},{"name":"registration_no","label_bn":"নিবন্ধন নম্বর","type":"text","required":true},{"name":"book_no","label_bn":"পিন / বুক নম্বর","type":"text","required":false},{"name":"father_name_bn","label_bn":"পিতার নাম","type":"text","required":true},{"name":"mother_name_bn","label_bn":"মাতার নাম","type":"text","required":true},{"name":"birth_place","label_bn":"জন্মস্থান","type":"text","required":true},{"name":"dob","label_bn":"জন্ম তারিখ","type":"text","required":true},{"name":"gender_blood","label_bn":"লিঙ্গ / রক্তের গ্রুপ","type":"text","required":false},{"name":"issue_date","label_bn":"প্রদানের তারিখ","type":"text","required":false},{"name":"address","label_bn":"ঠিকানা","type":"textarea","required":true}]',
+ 5, 0, 1, 1, 'active');
 
 -- Payment methods (manual)
 INSERT OR IGNORE INTO payment_methods (id, method, account_number, account_type, instructions_bn, sort_order) VALUES

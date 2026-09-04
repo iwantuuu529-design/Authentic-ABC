@@ -1,7 +1,5 @@
 import { Hono } from 'hono'
-import { serveStatic } from '@hono/node-server/serve-static'
 import type { AppEnv } from './types/bindings'
-import { createLocalD1Database, createLocalR2Bucket } from './lib/d1Adapter'
 
 import auth from './routes/auth'
 import services from './routes/services'
@@ -17,23 +15,16 @@ import admin from './routes/admin'
 
 const app = new Hono<AppEnv>()
 
-// Ensure local SQLite D1 database and local R2 bucket are initialized
-const localDb = createLocalD1Database()
-const localFiles = createLocalR2Bucket()
-
-// Middleware to inject Cloudflare bindings (D1 DB, R2 FILES, JWT_SECRET)
+// Middleware to ensure environment variables are safely present
 app.use('*', async (c, next) => {
   if (!c.env) {
     ;(c as any).env = {}
   }
-  if (!c.env.DB) {
-    c.env.DB = localDb
-  }
-  if (!c.env.FILES) {
-    c.env.FILES = localFiles
+  if (!c.env.JWT_SECRET && typeof process !== 'undefined' && process.env?.JWT_SECRET) {
+    c.env.JWT_SECRET = process.env.JWT_SECRET
   }
   if (!c.env.JWT_SECRET) {
-    c.env.JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-abc-authentic-2026'
+    c.env.JWT_SECRET = 'dev-secret-key-abc-authentic-2026'
   }
   await next()
 })
@@ -52,11 +43,6 @@ app.route('/api/reports', reports)
 app.route('/api/referral', referral)
 app.route('/api', misc)
 app.route('/api/admin', admin)
-
-// -----------------------------------------------------------------
-// Static assets + SPA fallback
-// -----------------------------------------------------------------
-app.use('/static/*', serveStatic({ root: './public' }))
 
 const HTML_SHELL = `<!DOCTYPE html>
 <html lang="bn">

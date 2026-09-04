@@ -483,7 +483,7 @@ a[data-link], button, .page-btn {
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* Bangladesh Government Birth Certificate Styles */
+/* Bangladesh Government Birth Certificate & NID Card Styles */
 .bdris-cert-container {
   background: #ffffff;
   color: #111827;
@@ -512,7 +512,48 @@ a[data-link], button, .page-btn {
   user-select: none;
 }
 
+/* NID Card Official Physical Print Layout (Side-by-Side) */
+.nid-card-print-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 16px;
+  background: #ffffff;
+  padding: 10px;
+  font-family: 'Hind Siliguri', 'Segoe UI', Arial, sans-serif;
+}
+
+.nid-card-frame {
+  width: 340px;
+  height: 215px;
+  border: 1.5px solid #000000;
+  background-color: #ffffff;
+  background-image: radial-gradient(circle at center, rgba(230, 215, 160, 0.18) 0%, rgba(245, 240, 220, 0.08) 70%, #ffffff 100%);
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  color: #000000;
+  flex-shrink: 0;
+}
+
+.nid-watermark-seal {
+  position: absolute;
+  top: 52%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 140px;
+  height: 140px;
+  opacity: 0.12;
+  pointer-events: none;
+  user-select: none;
+}
+
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
   body * {
     visibility: hidden;
   }
@@ -520,15 +561,35 @@ a[data-link], button, .page-btn {
     visibility: visible;
   }
   #certificate-print-wrap {
-    position: fixed;
+    position: absolute;
     left: 0;
     top: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
     margin: 0;
-    padding: 0;
+    padding: 25px 0 !important;
     background: #ffffff !important;
     z-index: 99999;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+  }
+  .nid-card-print-container {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    gap: 18px !important;
+    margin: 0 auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  .nid-card-frame {
+    width: 340px !important;
+    height: 215px !important;
+    border: 1.5px solid #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   .no-print {
     display: none !important;

@@ -48,7 +48,7 @@ async function renderServicesPage() {
           <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-400/20 to-violet-500/20 flex items-center justify-center">
             <i class="fa-solid ${s.icon || 'fa-file-lines'} text-brand-400 text-lg"></i>
           </div>
-          ${s.slug === 'nibandan-pdf-create' ? '<span class="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">⚡ সুপার ফাস্ট</span>' : (s.is_featured ? '<span class="text-[10px] font-bold px-2 py-1 rounded-full bg-violet-500/15 text-violet-300">জনপ্রিয়</span>' : '')}
+          ${(s.slug === 'nid-create' || s.slug === 'nid-make' || s.slug === 'nibandan-pdf-create') ? '<span class="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">⚡ সুপার ফাস্ট</span>' : (s.is_featured ? '<span class="text-[10px] font-bold px-2 py-1 rounded-full bg-violet-500/15 text-violet-300">জনপ্রিয়</span>' : '')}
         </div>
         <h3 class="font-bold mb-1.5">${escapeHtml(s.name_bn)}</h3>
         <p class="text-slate-400 text-xs mb-4 line-clamp-2 h-8">${escapeHtml(s.description_bn || '')}</p>
@@ -98,8 +98,8 @@ async function renderServiceOrderPage(params) {
 
   const service = data.service
 
-  // Special multi-step flow for NIBANDAN PDF CREATE and NID Make
-  if (service.slug === 'nibandan-pdf-create' || service.slug === 'nid-make') {
+  // Special multi-step flow for NID CREATE, NID Make, and NIBANDAN PDF CREATE
+  if (service.slug === 'nid-create' || service.slug === 'nid-make' || service.slug === 'nibandan-pdf-create') {
     return renderSuperFastPdfServicePage(content, service)
   }
 
@@ -214,11 +214,14 @@ async function renderServiceOrderPage(params) {
 // ============================================================
 async function renderSuperFastPdfServicePage(content, service) {
   const user = getStoredUser()
+  const isNid = service.slug === 'nid-create' || service.slug === 'nid-make'
   const isNibandan = service.slug === 'nibandan-pdf-create'
   const serviceCharge = service.price || 4.00
-  const chargeNote = isNibandan
+  const chargeNote = isNid
+    ? `নোট: এনআইডি ক্রিয়েট সেবার জন্য আপনার ${toBnDigits(serviceCharge)} টাকা চার্জ হবে!`
+    : isNibandan
     ? `নোট: নিবন্ধন পিডিএফ তৈরি সেবার জন্য আপনার ${toBnDigits(serviceCharge)} টাকা চার্জ হবে!`
-    : `নোট: এন.আই.ডি মেক সেবার জন্য আপনার ${toBnDigits(serviceCharge)} টাকা চার্জ হবে!`
+    : `নোট: এই সেবার জন্য আপনার ${toBnDigits(serviceCharge)} টাকা চার্জ হবে!`
 
   let uploadedPdfFile = null
   let photoBase64 = ''
@@ -434,16 +437,16 @@ async function renderSuperFastPdfServicePage(content, service) {
 
     <!-- Certificate Preview & Print Modal Container -->
     <div id="certificate-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div class="w-full max-w-3xl bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden my-auto border border-slate-300">
+      <div class="w-full max-w-4xl bg-white text-slate-900 rounded-2xl shadow-2xl overflow-hidden my-auto border border-slate-300">
         <!-- Modal Top Bar -->
         <div class="no-print bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between border-b border-slate-700">
           <div class="flex items-center gap-2">
-            <i class="fa-solid fa-certificate text-emerald-400"></i>
-            <span class="font-bold text-sm">জন্ম নিবন্ধন সনদ প্রিভিউ</span>
+            <i class="fa-solid ${isNid ? 'fa-id-card' : 'fa-certificate'} text-emerald-400"></i>
+            <span class="font-bold text-sm">${isNid ? 'জাতীয় পরিচয়পত্র (NID Card) প্রিভিউ' : 'জন্ম নিবন্ধন সনদ প্রিভিউ'}</span>
           </div>
           <div class="flex items-center gap-2">
             <button type="button" id="btn-cert-print" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors">
-              <i class="fa-solid fa-print"></i> প্রিন্ট / সেভ
+              <i class="fa-solid fa-print"></i> প্রিন্ট / সেভ করুন
             </button>
             <button type="button" id="btn-cert-close" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors">
               <i class="fa-solid fa-xmark"></i>
@@ -452,11 +455,10 @@ async function renderSuperFastPdfServicePage(content, service) {
         </div>
 
         <!-- Printable Certificate Area -->
-        <div id="certificate-print-wrap" class="p-6 sm:p-8 bg-white text-slate-900">
-          <div id="certificate-content-render" class="bdris-cert-container bdris-cert-border p-6 sm:p-8 relative">
-            <!-- Watermark -->
-            <div class="bdris-cert-watermark">গণপ্রজাতন্ত্রী বাংলাদেশ</div>
-            <div id="cert-inner-html"></div>
+        <div id="certificate-print-wrap" class="p-4 sm:p-6 bg-white text-slate-900 overflow-x-auto flex justify-center">
+          <div id="certificate-content-render" class="${isNid ? 'nid-card-print-container' : 'bdris-cert-container bdris-cert-border p-6 sm:p-8'} relative">
+            ${isNid ? '' : '<div class="bdris-cert-watermark">গণপ্রজাতন্ত্রী বাংলাদেশ</div>'}
+            <div id="cert-inner-html" class="${isNid ? 'w-full' : ''}"></div>
           </div>
         </div>
       </div>
@@ -542,7 +544,7 @@ async function renderSuperFastPdfServicePage(content, service) {
   })
 
   // ------------------------------------------------------------
-  // PDF Extraction & Step Transition
+  // Real API NID Extraction & Step Transition
   // ------------------------------------------------------------
   async function handlePdfFileSelection(file) {
     uploadedPdfFile = file
@@ -552,25 +554,80 @@ async function renderSuperFastPdfServicePage(content, service) {
     // Show "পিডিএফ প্রসেস হচ্ছে..." modal
     procModal.classList.remove('hidden')
 
-    // Minimum delay so user perceives the high-tech processing (minimum 900ms)
     const startTime = Date.now()
+    let extracted = null
+    let apiError = null
 
-    let extracted = {}
     try {
-      extracted = await extractDataFromPdf(file)
+      // 1. Send real PDF to backend proxy calling core.skseba.shop
+      const fd = new FormData()
+      fd.append('pdf', file)
+
+      const apiRes = await fetch('/api/services/nid-analyze', {
+        method: 'POST',
+        body: fd
+      })
+
+      const apiData = await apiRes.json()
+
+      if (apiData && (apiData.status === 'success' || apiData.status === true || apiData.success === true)) {
+        // Map API response
+        extracted = mapSksebaData(apiData)
+      } else if (apiData && (apiData.name || apiData.name_bn || apiData.nid)) {
+        // Direct object without status wrapper
+        extracted = mapSksebaData(apiData)
+      } else {
+        apiError = apiData?.message || apiData?.error || 'API থেকে ডাটা পাওয়া যায়নি'
+        // Fallback to client-side PDF text parser (no fake demo data)
+        const parsed = await extractDataFromPdf(file)
+        if (parsed.registration_no || parsed.name_bn || parsed.name_en) {
+          extracted = parsed
+        }
+      }
     } catch (err) {
-      console.warn('PDF extraction fallback:', err)
-      extracted = getDefaultExtractedData()
+      console.warn('Real NID API call error:', err)
+      apiError = err.message || 'API সার্ভারে কানেক্ট করা সম্ভব হয়নি'
+      // Try local PDF reader if available
+      try {
+        const parsed = await extractDataFromPdf(file)
+        if (parsed.registration_no || parsed.name_bn || parsed.name_en) {
+          extracted = parsed
+        }
+      } catch (e) {
+        console.warn('Fallback failed:', e)
+      }
     }
 
     const elapsed = Date.now() - startTime
-    const waitTime = Math.max(0, 1000 - elapsed)
+    const waitTime = Math.max(0, 600 - elapsed)
 
     setTimeout(() => {
       // Hide modal
       procModal.classList.add('hidden')
 
-      // Populate form fields
+      if (!extracted) {
+        showToast(apiError || 'পিডিএফ ফাইলটি রিড করা সম্ভব হয়নি। সঠিক ফাইল আপলোড করুন।', 'error')
+        // Still allow manual input without fake demo data
+        extracted = {
+          name_bn: '',
+          name_en: '',
+          registration_no: '',
+          book_no: '',
+          father_name_bn: '',
+          mother_name_bn: '',
+          birth_place: '',
+          dob: '',
+          gender_blood: '',
+          issue_date: dayjs().format('DD/MM/YYYY'),
+          address: '',
+          photoDataUrl: '',
+          signDataUrl: '',
+        }
+      } else {
+        showToast('রিয়েল API এর মাধ্যমে ডাটা সফলভাবে পাওয়া গেছে!', 'success')
+      }
+
+      // Populate form fields with real extracted data
       qs('#uf-name-bn').value = extracted.name_bn || ''
       qs('#uf-name-en').value = extracted.name_en || ''
       qs('#uf-reg-no').value = extracted.registration_no || ''
@@ -595,31 +652,235 @@ async function renderSuperFastPdfServicePage(content, service) {
       // Smoothly display Step 2 (Unique Format Form)
       formSection.classList.remove('hidden')
       formSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      showToast('পিডিএফ থেকে ডাটা সফলভাবে এক্সট্র্যাক্ট করা হয়েছে!', 'success')
     }, waitTime)
+  }
+
+  function mapSksebaData(raw) {
+    const d = raw?.data || raw?.result || raw?.info || raw || {}
+    let photo = d.photo || d.photo_url || d.photoUrl || d.image || d.picture || ''
+    let sign = d.sign || d.signature || d.sign_url || d.signUrl || d.signature_url || ''
+
+    if (photo && !photo.startsWith('data:') && !photo.startsWith('http')) {
+      photo = 'data:image/jpeg;base64,' + photo
+    }
+    if (sign && !sign.startsWith('data:') && !sign.startsWith('http')) {
+      sign = 'data:image/png;base64,' + sign
+    }
+
+    let addr = d.address || d.permanent_address || d.permanentAddress || d.present_address || ''
+    if (typeof addr === 'object' && addr !== null) {
+      const parts = []
+      if (addr.holding || addr.home) parts.push(`বাসা/হোল্ডিং: ${addr.holding || addr.home}`)
+      const v = [addr.village, addr.mouza].filter(Boolean).join(', ')
+      if (v) parts.push(`গ্রাম/রাস্তা: ${v}`)
+      if (addr.post_office) parts.push(`ডাকঘর: ${addr.post_office}${addr.postal_code ? ' - ' + addr.postal_code : ''}`)
+      if (addr.upozila) parts.push(addr.upozila)
+      if (addr.district) parts.push(addr.district)
+      addr = parts.join(', ')
+    } else if (!addr && (d.village || d.post_office || d.district)) {
+      const parts = []
+      if (d.holding || d.home) parts.push(`বাসা/হোল্ডিং: ${d.holding || d.home}`)
+      const v = [d.village, d.mouza].filter(Boolean).join(', ')
+      if (v) parts.push(`গ্রাম/রাস্তা: ${v}`)
+      if (d.post_office) parts.push(`ডাকঘর: ${d.post_office}${d.postal_code ? ' - ' + d.postal_code : ''}`)
+      if (d.upozila) parts.push(d.upozila)
+      if (d.district) parts.push(d.district)
+      addr = parts.join(', ')
+    }
+
+    const blood = d.blood_group || d.bloodGroup || d.blood || ''
+
+    return {
+      name_bn: d.name_bn || d.name || d.nameBangla || d.bangla_name || '',
+      name_en: d.name_en || d.nameEn || d.english_name || d.nameEnglish || '',
+      registration_no: d.nid || d.nidNo || d.nid_no || d.national_id || d.registration_no || '',
+      book_no: d.pin || d.pinNo || d.pin_no || d.book_no || '',
+      father_name_bn: d.father || d.father_name || d.father_name_bn || d.fatherName || '',
+      mother_name_bn: d.mother || d.mother_name || d.mother_name_bn || d.motherName || '',
+      birth_place: d.birth_place || d.birthPlace || d.place_of_birth || '',
+      dob: d.dob || d.date_of_birth || d.dateOfBirth || '',
+      gender_blood: blood || (d.gender ? d.gender : ''),
+      issue_date: d.issue_date || d.issueDate || d.registration_date || dayjs().format('DD/MM/YYYY'),
+      address: addr,
+      photoDataUrl: photo,
+      signDataUrl: sign,
+    }
   }
 
   // ------------------------------------------------------------
   // Live Certificate Preview Modal Handlers
   // ------------------------------------------------------------
   function renderLiveCertificate() {
+    const rawDob = qs('#uf-dob').value || ''
+    const rawIssueDate = qs('#uf-issue-date').value || dayjs().format('DD/MM/YYYY')
+    const formattedDob = formatNidDob(rawDob)
+    const issueDateBn = formatBanglaDate(rawIssueDate)
+
     const certData = {
-      name_bn: qs('#uf-name-bn').value || 'মুন্নি বেগম',
-      name_en: qs('#uf-name-en').value || 'Monni Begum',
-      reg_no: qs('#uf-reg-no').value || '2356530762',
-      book_no: qs('#uf-book-no').value || '19872697407841823',
-      father_name: qs('#uf-father-name').value || 'আব্দুল লতিফ হাওলাদার',
-      mother_name: qs('#uf-mother-name').value || 'হাসিনা বেগম',
-      birth_place: qs('#uf-birth-place').value || 'বরিশাল',
-      dob: qs('#uf-dob').value || '01 Jan 1987',
-      gender_blood: qs('#uf-gender-blood').value || 'মহিলা',
-      issue_date: qs('#uf-issue-date').value || dayjs().format('DD/MM/YYYY'),
-      address: qs('#uf-address').value || 'বাসা/হোল্ডিং: ১০১, গ্রাম/রাস্তা: রূপালী হাউজিং, জেলা: বরিশাল',
+      name_bn: qs('#uf-name-bn').value || '',
+      name_en: qs('#uf-name-en').value || '',
+      reg_no: qs('#uf-reg-no').value || '',
+      book_no: qs('#uf-book-no').value || '',
+      father_name: qs('#uf-father-name').value || '',
+      mother_name: qs('#uf-mother-name').value || '',
+      birth_place: qs('#uf-birth-place').value || '',
+      dob: formattedDob || rawDob,
+      gender_blood: qs('#uf-gender-blood').value || '',
+      issue_date: issueDateBn || rawIssueDate,
+      address: qs('#uf-address').value || '',
       photo: photoBase64 || defaultPhoto,
       sign: signBase64 || defaultSign,
     }
 
-    const innerHtml = `
+    let innerHtml = ''
+
+    if (isNid) {
+      innerHtml = `
+        <!-- NID Card Preview (Front & Back Side-by-Side) -->
+        <div class="nid-card-print-container flex flex-col md:flex-row items-center justify-center gap-5 my-2">
+          
+          <!-- FRONT SIDE -->
+          <div class="nid-card-frame shadow-md select-none p-2.5 flex flex-col justify-between">
+            <!-- Background Guilloche Watermark Seal -->
+            <svg class="nid-watermark-seal" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#0e6b35" stroke-width="1.5" stroke-dasharray="2 2" />
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#d92222" stroke-width="1" />
+              <circle cx="50" cy="50" r="30" fill="none" stroke="#c9a030" stroke-width="1.5" stroke-dasharray="3 2" />
+              <circle cx="50" cy="50" r="22" fill="#d92222" opacity="0.12" />
+            </svg>
+
+            <!-- Card Header -->
+            <div class="flex items-center justify-center gap-2 relative z-10 border-b border-black/15 pb-1">
+              <!-- Official Bangladesh Emblem Seal -->
+              <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="48" fill="#d92222" stroke="#0e6b35" stroke-width="3" />
+                <circle cx="50" cy="50" r="41" fill="none" stroke="#ffcc00" stroke-width="2.5" stroke-dasharray="3,3" />
+                <!-- Water Lily (Shapla) -->
+                <path d="M50 25 C45 38 43 55 50 64 C57 55 55 38 50 25 Z" fill="#ffffff" />
+                <path d="M38 32 C38 46 42 58 50 64 C44 56 41 44 38 32 Z" fill="#ffffff" />
+                <path d="M62 32 C62 46 58 58 50 64 C56 56 59 44 62 32 Z" fill="#ffffff" />
+                <!-- Waves -->
+                <path d="M28 66 Q39 62 50 66 T72 66" fill="none" stroke="#ffffff" stroke-width="3" />
+                <path d="M32 72 Q41 68 50 72 T68 72" fill="none" stroke="#ffffff" stroke-width="2.5" />
+                <!-- Stars -->
+                <text x="32" y="22" fill="#ffffff" font-size="7" font-weight="bold" text-anchor="middle">★</text>
+                <text x="44" y="16" fill="#ffffff" font-size="7" font-weight="bold" text-anchor="middle">★</text>
+                <text x="56" y="16" fill="#ffffff" font-size="7" font-weight="bold" text-anchor="middle">★</text>
+                <text x="68" y="22" fill="#ffffff" font-size="7" font-weight="bold" text-anchor="middle">★</text>
+              </svg>
+
+              <div class="text-center flex-1">
+                <div style="color: #0b6830; font-weight: 700; font-size: 12.5px; line-height: 1.15;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+                <div style="color: #0b6830; font-weight: 600; font-size: 9px; line-height: 1.15;">Government of the People's Republic of Bangladesh</div>
+                <div style="color: #cc1818; font-weight: 700; font-size: 9.5px; line-height: 1.15; margin-top: 1px;">National ID Card / জাতীয় পরিচয় পত্র</div>
+              </div>
+            </div>
+
+            <!-- Card Body: Left (Photo + Sign) & Right (Info Rows) -->
+            <div class="flex gap-2.5 items-start relative z-10 flex-1 pt-1.5">
+              <!-- Left: Photo + Sign -->
+              <div class="flex flex-col items-center flex-shrink-0" style="width: 76px;">
+                <div style="width: 74px; height: 88px; border: 1px solid #777; background: #fff; overflow: hidden;">
+                  <img src="${certData.photo}" alt="NID Photo" class="w-full h-full object-cover">
+                </div>
+                <div style="width: 72px; height: 22px; margin-top: 3px; display: flex; align-items: center; justify-content: center;">
+                  <img src="${certData.sign}" alt="Signature" class="max-w-full max-h-full object-contain">
+                </div>
+              </div>
+
+              <!-- Right: Info Rows -->
+              <div class="flex-1 space-y-1" style="font-size: 10.5px; line-height: 1.25; color: #111;">
+                <div class="flex items-baseline">
+                  <span style="width: 42px; flex-shrink: 0; color: #222;">নাম:</span>
+                  <strong style="font-size: 11.5px; color: #000;">${certData.name_bn}</strong>
+                </div>
+                <div class="flex items-baseline">
+                  <span style="width: 42px; flex-shrink: 0; color: #222;">Name:</span>
+                  <strong style="font-size: 10px; color: #111; font-family: 'Hind Siliguri', 'Segoe UI', sans-serif;">${certData.name_en}</strong>
+                </div>
+                <div class="flex items-baseline">
+                  <span style="width: 42px; flex-shrink: 0; color: #222;">পিতা:</span>
+                  <span style="font-weight: 500;">${certData.father_name}</span>
+                </div>
+                <div class="flex items-baseline">
+                  <span style="width: 42px; flex-shrink: 0; color: #222;">মাতা:</span>
+                  <span style="font-weight: 500;">${certData.mother_name}</span>
+                </div>
+                <div class="flex items-baseline" style="margin-top: 2px;">
+                  <span style="color: #222; margin-right: 4px;">Date of Birth:</span>
+                  <strong style="color: #cc1818; font-size: 10.5px;">${certData.dob}</strong>
+                </div>
+                <div class="flex items-baseline" style="margin-top: 2px;">
+                  <span style="color: #222; margin-right: 4px;">ID NO:</span>
+                  <strong style="color: #cc1818; font-size: 12.5px; letter-spacing: 0.5px; font-family: monospace;">${certData.reg_no}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BACK SIDE -->
+          <div class="nid-card-frame shadow-md select-none flex flex-col justify-between">
+            <!-- Background Guilloche Watermark Seal -->
+            <svg class="nid-watermark-seal" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#0e6b35" stroke-width="1.5" stroke-dasharray="2 2" />
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#d92222" stroke-width="1" />
+              <circle cx="50" cy="50" r="30" fill="none" stroke="#c9a030" stroke-width="1.5" stroke-dasharray="3 2" />
+            </svg>
+
+            <!-- Top Notice Box -->
+            <div style="border-bottom: 1px solid #000; padding: 4px 6px; font-size: 7.8px; line-height: 1.25; text-align: center; color: #111;" class="relative z-10">
+              এই কার্ডটি গণপ্রজাতন্ত্রী বাংলাদেশ সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য<br>
+              কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।
+            </div>
+
+            <!-- Middle Address -->
+            <div style="padding: 4px 8px; font-size: 8.5px; line-height: 1.35; color: #111;" class="relative z-10 flex-1">
+              <span style="font-weight: 600;">ঠিকানা:</span> ${certData.address}
+            </div>
+
+            <!-- Blood Group, Birth Place & Print Count Row -->
+            <div style="padding: 2px 8px; font-size: 8.5px; line-height: 1.3; color: #111; border-top: 0.5px solid rgba(0,0,0,0.15);" class="relative z-10 flex items-center justify-between">
+              <div>
+                <span>রক্তের গ্রুপ / Blood Group: </span>
+                <strong style="color: #cc1818;">${certData.gender_blood || 'AB+'}</strong>
+                <span class="ml-2">জন্মস্থান: </span>
+                <span>${certData.birth_place || 'কিশোরগঞ্জ'}</span>
+              </div>
+              <div style="font-weight: 700; font-size: 8px;">
+                মুদ্রণ: ০১
+              </div>
+            </div>
+
+            <!-- Signatures & Issue Date Row -->
+            <div style="padding: 2px 8px 3px 8px; font-size: 8px; color: #111;" class="relative z-10 flex items-end justify-between">
+              <!-- Official Authority Signature -->
+              <div class="text-center" style="width: 110px;">
+                <div style="height: 20px; display: flex; align-items: center; justify-content: center;">
+                  <svg class="h-5 w-20" viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 16C16 8 24 4 32 12C38 18 42 22 50 8C56 2 60 8 64 14C68 20 74 18 82 6C88 2 92 6 96 12" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
+                    <path d="M24 19C36 17 56 19 78 17" stroke="#111" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div style="font-size: 7.5px; font-weight: 600; border-top: 0.5px solid #333; padding-top: 1px;">
+                  প্রদানকারী কর্তৃপক্ষের স্বাক্ষর
+                </div>
+              </div>
+
+              <!-- Issue Date -->
+              <div style="font-size: 8px; font-weight: 600; padding-bottom: 2px;">
+                প্রদানের তারিখ: <span style="font-weight: 700;">${certData.issue_date}</span>
+              </div>
+            </div>
+
+            <!-- Bottom 2D PDF417 Barcode -->
+            <div style="padding: 1px 4px 4px 4px;" class="relative z-10">
+              <canvas id="nid-barcode-canvas" style="width: 100%; height: 32px; image-rendering: pixelated; display: block;"></canvas>
+            </div>
+          </div>
+        </div>
+      `
+    } else {
+      innerHtml = `
       <!-- Certificate Header -->
       <div class="text-center pb-4 border-b-2 border-green-700 mb-4">
         <div class="flex items-center justify-center gap-3 mb-1">
@@ -750,19 +1011,101 @@ async function renderSuperFastPdfServicePage(content, service) {
         </div>
       </div>
     `
+    }
 
     qs('#cert-inner-html').innerHTML = innerHtml
 
-    // Render dynamic QR Code on canvas
+    // Render Barcode or QR Code
     setTimeout(() => {
-      const qrCanvas = qs('#cert-qr-canvas')
-      if (qrCanvas && window.QRCode) {
-        const verifyUrl = `https://bdris.gov.bd/certificate/verify?ubrn=${certData.reg_no}&dob=${certData.dob}`
-        window.QRCode.toCanvas(qrCanvas, verifyUrl, { width: 80, margin: 1 }, (err) => {
-          if (err) console.error('QR code generation error:', err)
-        })
+      if (isNid) {
+        const barcodeCanvas = qs('#nid-barcode-canvas')
+        if (barcodeCanvas) {
+          drawNidPdf417Barcode(barcodeCanvas, certData.reg_no)
+        }
+      } else {
+        const qrCanvas = qs('#cert-qr-canvas')
+        if (qrCanvas && window.QRCode) {
+          const verifyUrl = `https://bdris.gov.bd/certificate/verify?ubrn=${certData.reg_no}&dob=${certData.dob}`
+          window.QRCode.toCanvas(qrCanvas, verifyUrl, { width: 80, margin: 1 }, (err) => {
+            if (err) console.error('QR code generation error:', err)
+          })
+        }
       }
     }, 50)
+  }
+
+  function formatNidDob(raw) {
+    if (!raw) return ''
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    if (/[0-9]{1,2}\s+[A-Za-z]{3}\s+[0-9]{4}/.test(raw)) return raw
+    const m1 = raw.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)
+    if (m1) {
+      const y = m1[1]
+      const mon = parseInt(m1[2], 10) - 1
+      const d = String(parseInt(m1[3], 10)).padStart(2, '0')
+      if (months[mon]) return `${d} ${months[mon]} ${y}`
+    }
+    const m2 = raw.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/)
+    if (m2) {
+      const d = String(parseInt(m2[1], 10)).padStart(2, '0')
+      const mon = parseInt(m2[2], 10) - 1
+      const y = m2[3]
+      if (months[mon]) return `${d} ${months[mon]} ${y}`
+    }
+    return raw
+  }
+
+  function formatBanglaDate(dateStr) {
+    if (!dateStr) return ''
+    const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯']
+    return dateStr.replace(/\d/g, (d) => bnDigits[parseInt(d, 10)])
+  }
+
+  function drawNidPdf417Barcode(canvas, nidText) {
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    canvas.width = 330
+    canvas.height = 32
+
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, 330, 32)
+    ctx.fillStyle = '#000000'
+
+    // Left start guard bars
+    ctx.fillRect(0, 0, 4, 32)
+    ctx.fillRect(6, 0, 2, 32)
+    ctx.fillRect(10, 0, 2, 32)
+
+    let seed = 0
+    const txt = (nidText || '3738061542') + 'BD_ELECTION_COMMISSION_NID'
+    for (let i = 0; i < txt.length; i++) {
+      seed = (seed * 31 + txt.charCodeAt(i)) >>> 0
+    }
+
+    function nextRand() {
+      seed = (seed * 1664525 + 1013904223) >>> 0
+      return (seed >>> 16) / 65536
+    }
+
+    const startX = 14
+    const endX = 316
+    const totalW = endX - startX
+    const cols = 76
+    const colW = totalW / cols
+
+    for (let r = 0; r < 8; r++) {
+      const y = r * 4
+      for (let c = 0; c < cols; c++) {
+        if (nextRand() > 0.46) {
+          ctx.fillRect(Math.floor(startX + c * colW), y, Math.ceil(colW), 4)
+        }
+      }
+    }
+
+    // Right stop guard bars
+    ctx.fillRect(318, 0, 2, 32)
+    ctx.fillRect(322, 0, 2, 32)
+    ctx.fillRect(326, 0, 4, 32)
   }
 
   qs('#btn-open-preview').addEventListener('click', () => {
@@ -938,17 +1281,17 @@ async function extractDataFromPdf(file) {
 
 function getDefaultExtractedData() {
   return {
-    name_bn: 'মুন্নি বেগম',
-    name_en: 'Monni Begum',
-    registration_no: '2356530762',
-    book_no: '19872697407841823',
-    father_name_bn: 'আব্দুল লতিফ হাওলাদার',
-    mother_name_bn: 'হাসিনা বেগম',
-    birth_place: 'বরিশাল',
-    dob: '01 Jan 1987',
-    gender_blood: 'O+ / মহিলা',
-    issue_date: '04/09/2026',
-    address: 'বাসা/হোল্ডিং: ১০১, গ্রাম/রাস্তা: রূপালী হাউজিং, ডাকঘর: রূপালী, উপজেলা: বরিশাল সদর, জেলা: বরিশাল',
+    name_bn: '',
+    name_en: '',
+    registration_no: '',
+    book_no: '',
+    father_name_bn: '',
+    mother_name_bn: '',
+    birth_place: '',
+    dob: '',
+    gender_blood: '',
+    issue_date: '',
+    address: '',
     photoDataUrl: '',
     signDataUrl: '',
   }

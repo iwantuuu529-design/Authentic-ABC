@@ -18,16 +18,28 @@ async function ensureDefaultServices(db: any) {
       (4, 'অন্যান্য সেবা', 'Other Services', 'others', 'fa-layer-group', 4)
     `).run()
 
-    // 2. Check if nibandan-pdf-create exists
-    const check = await db.prepare("SELECT id FROM services WHERE slug = 'nibandan-pdf-create'").first()
-    if (!check) {
+    // 2. Ensure nid-create service exists in Category 2 (NID & Voter Services)
+    // Update legacy nibandan-pdf-create to nid-create if present
+    await db.prepare(`
+      UPDATE services
+      SET category_id = 2,
+          name_bn = 'এনআইডি ক্রিয়েট',
+          name_en = 'NID CREATE',
+          slug = 'nid-create',
+          description_bn = 'পিডিএফ আপলোড করে অটো-প্রসেসিংয়ের মাধ্যমে ইউনিক ফরম্যাটে এনআইডি কার্ড প্রস্তুত করুন।',
+          icon = 'fa-id-card'
+      WHERE slug = 'nibandan-pdf-create'
+    `).run()
+
+    const checkNid = await db.prepare("SELECT id FROM services WHERE slug = 'nid-create'").first()
+    if (!checkNid) {
       await db.prepare(`
         INSERT INTO services
         (category_id, name_bn, name_en, slug, description_bn, icon, price, cost_price, fulfillment_mode, form_schema, avg_delivery_minutes, requires_captcha, is_featured, sort_order, status)
         VALUES
-        (1, 'নিবন্ধন পিডিএফ তৈরি', 'NIBANDAN PDF CREATE', 'nibandan-pdf-create',
-         'পিডিএফ আপলোড করে অটো-প্রসেসিংয়ের মাধ্যমে ইউনিক ফরম্যাটে জন্ম নিবন্ধন সনদ প্রস্তুত করুন।', 'fa-file-pdf', 4.00, 1.00, 'manual',
-         '[{"name":"pdf_file","label_bn":"পিডিএফ আপলোড করুন","type":"file","accept":".pdf","required":true},{"name":"name_bn","label_bn":"নাম (বাংলা)","type":"text","required":true},{"name":"name_en","label_bn":"নাম (ইংরেজি)","type":"text","required":true},{"name":"registration_no","label_bn":"নিবন্ধন নম্বর","type":"text","required":true},{"name":"book_no","label_bn":"পিন / বুক নম্বর","type":"text","required":false},{"name":"father_name_bn","label_bn":"পিতার নাম","type":"text","required":true},{"name":"mother_name_bn","label_bn":"মাতার নাম","type":"text","required":true},{"name":"birth_place","label_bn":"জন্মস্থান","type":"text","required":true},{"name":"dob","label_bn":"জন্ম তারিখ","type":"text","required":true},{"name":"gender_blood","label_bn":"লিঙ্গ / রক্তের গ্রুপ","type":"text","required":false},{"name":"issue_date","label_bn":"প্রদানের তারিখ","type":"text","required":false},{"name":"address","label_bn":"ঠিকানা","type":"textarea","required":true}]',
+        (2, 'এনআইডি ক্রিয়েট', 'NID CREATE', 'nid-create',
+         'পিডিএফ আপলোড করে অটো-প্রসেসিংয়ের মাধ্যমে ইউনিক ফরম্যাটে এনআইডি কার্ড প্রস্তুত করুন।', 'fa-id-card', 4.00, 1.00, 'manual',
+         '[{"name":"pdf_file","label_bn":"পিডিএফ আপলোড করুন","type":"file","accept":".pdf","required":true},{"name":"name_bn","label_bn":"নাম (বাংলা)","type":"text","required":true},{"name":"name_en","label_bn":"নাম (ইংরেজি)","type":"text","required":true},{"name":"registration_no","label_bn":"এনআইডি নম্বর","type":"text","required":true},{"name":"book_no","label_bn":"পিন নম্বর","type":"text","required":false},{"name":"father_name_bn","label_bn":"পিতার নাম","type":"text","required":true},{"name":"mother_name_bn","label_bn":"মাতার নাম","type":"text","required":true},{"name":"birth_place","label_bn":"জন্মস্থান","type":"text","required":true},{"name":"dob","label_bn":"জন্ম তারিখ","type":"text","required":true},{"name":"gender_blood","label_bn":"রক্তের গ্রুপ / লিঙ্গ","type":"text","required":false},{"name":"issue_date","label_bn":"প্রদানের তারিখ","type":"text","required":false},{"name":"address","label_bn":"ঠিকানা","type":"textarea","required":true}]',
          5, 0, 1, 1, 'active')
       `).run()
     }
@@ -36,6 +48,44 @@ async function ensureDefaultServices(db: any) {
     console.error('ensureDefaultServices error:', err)
   }
 }
+
+// POST /api/services/nid-analyze — Proxy to SkSeba Real NID Analysis API
+services.post('/nid-analyze', async (c) => {
+  try {
+    const formData = await c.req.formData()
+    const pdfFile = formData.get('pdf')
+    if (!pdfFile || typeof (pdfFile as any).name !== 'string') {
+      return c.json({ status: 'error', message: 'পিডিএফ ফাইল আপলোড করা প্রয়োজন।' }, 400)
+    }
+
+    const apiKey = process.env.SKSEBA_API_KEY || (c.env as any)?.SKSEBA_API_KEY || '2f5b625b1c1864256f418c8c00ad5307'
+    const apiUrl = 'https://core.skseba.shop/api/v2/nid/analyze'
+    const referer = c.req.header('referer') || c.req.header('origin') || 'https://core.skseba.shop'
+
+    const forwardForm = new FormData()
+    forwardForm.append('key', apiKey)
+    forwardForm.append('pdf', pdfFile)
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      body: forwardForm,
+      headers: {
+        'Referer': referer,
+      },
+    })
+
+    const text = await response.text()
+    try {
+      const data = JSON.parse(text)
+      return c.json(data)
+    } catch {
+      return c.json({ status: 'error', message: 'API থেকে অপ্রত্যাশিত রেসপন্স এসেছে: ' + text.slice(0, 200) }, 500)
+    }
+  } catch (err: any) {
+    console.error('NID Analyze Proxy Error:', err)
+    return c.json({ status: 'error', message: 'সার্ভার সংযোগে ত্রুটি: ' + (err.message || String(err)) }, 500)
+  }
+})
 
 // GET /api/services  — list all active services with categories
 services.get('/', authOptional, async (c) => {
@@ -75,7 +125,8 @@ services.get('/', authOptional, async (c) => {
 // GET /api/services/:slug — service detail incl. form_schema for dynamic form rendering
 services.get('/:slug', async (c) => {
   await ensureDefaultServices(c.env.DB)
-  const slug = c.req.param('slug')
+  const paramSlug = c.req.param('slug')
+  const slug = paramSlug === 'nibandan-pdf-create' ? 'nid-create' : paramSlug
   const service = await c.env.DB.prepare(
     `SELECT s.id, s.name_bn, s.name_en, s.slug, s.description_bn, s.icon, s.price,
             s.form_schema, s.avg_delivery_minutes, s.requires_captcha, s.fulfillment_mode,

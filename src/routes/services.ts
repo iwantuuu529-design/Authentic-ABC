@@ -58,13 +58,15 @@ services.post('/nid-analyze', async (c) => {
       return c.json({ status: 'error', message: 'পিডিএফ ফাইল আপলোড করা প্রয়োজন।' }, 400)
     }
 
-    const apiKey = process.env.SKSEBA_API_KEY || (c.env as any)?.SKSEBA_API_KEY || '2f5b625b1c1864256f418c8c00ad5307'
+    const rawKey = String(process.env.SKSEBA_API_KEY || (c.env as any)?.SKSEBA_API_KEY || '2f5b625b1c1864256f418c8c00ad5307')
+    const apiKey = (rawKey.match(/[a-f0-9]{32}/i)?.[0]) || '2f5b625b1c1864256f418c8c00ad5307'
     const apiUrl = 'https://core.skseba.shop/api/v2/nid/analyze'
     const referer = c.req.header('referer') || c.req.header('origin') || 'https://core.skseba.shop'
 
     const forwardForm = new FormData()
     forwardForm.append('key', apiKey)
-    forwardForm.append('pdf', pdfFile)
+    const fileName = (pdfFile as any).name || 'nid_slip.pdf'
+    forwardForm.append('pdf', pdfFile, fileName)
 
     const response = await fetch(apiUrl, {
       method: 'POST',

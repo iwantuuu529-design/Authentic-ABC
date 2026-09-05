@@ -667,24 +667,35 @@ async function renderSuperFastPdfServicePage(content, service) {
       sign = 'data:image/png;base64,' + sign
     }
 
-    let addr = d.address || d.permanent_address || d.permanentAddress || d.present_address || ''
+    // Extract CMS copy Permanent Address (স্থায়ী ঠিকানা) logic
+    let addr = d.permanent_address || d.permanentAddress || d.address || d.present_address || ''
     if (typeof addr === 'object' && addr !== null) {
       const parts = []
-      if (addr.holding || addr.home) parts.push(`বাসা/হোল্ডিং: ${addr.holding || addr.home}`)
-      const v = [addr.village, addr.mouza].filter(Boolean).join(', ')
+      const holding = addr.holding || addr.home || '-'
+      parts.push(`বাসা/হোল্ডিং: ${holding}`)
+      const v = [addr.village || addr.road, addr.mouza].filter(Boolean).join(', ')
       if (v) parts.push(`গ্রাম/রাস্তা: ${v}`)
-      if (addr.post_office) parts.push(`ডাকঘর: ${addr.post_office}${addr.postal_code ? ' - ' + addr.postal_code : ''}`)
-      if (addr.upozila) parts.push(addr.upozila)
-      if (addr.district) parts.push(addr.district)
+      if (addr.post_office || addr.postOffice) {
+        const po = addr.post_office || addr.postOffice
+        const pc = addr.postal_code || addr.postCode || addr.post_code || ''
+        parts.push(`ডাকঘর: ${po}${pc ? ' - ' + pc : ''}`)
+      }
+      if (addr.upozila || addr.upazila || addr.thana) parts.push(addr.upozila || addr.upazila || addr.thana)
+      if (addr.district || addr.zila) parts.push(addr.district || addr.zila)
       addr = parts.join(', ')
     } else if (!addr && (d.village || d.post_office || d.district)) {
       const parts = []
-      if (d.holding || d.home) parts.push(`বাসা/হোল্ডিং: ${d.holding || d.home}`)
-      const v = [d.village, d.mouza].filter(Boolean).join(', ')
+      const holding = d.holding || d.home || '-'
+      parts.push(`বাসা/হোল্ডিং: ${holding}`)
+      const v = [d.village || d.road, d.mouza].filter(Boolean).join(', ')
       if (v) parts.push(`গ্রাম/রাস্তা: ${v}`)
-      if (d.post_office) parts.push(`ডাকঘর: ${d.post_office}${d.postal_code ? ' - ' + d.postal_code : ''}`)
-      if (d.upozila) parts.push(d.upozila)
-      if (d.district) parts.push(d.district)
+      if (d.post_office || d.postOffice) {
+        const po = d.post_office || d.postOffice
+        const pc = d.postal_code || d.postCode || d.post_code || ''
+        parts.push(`ডাকঘর: ${po}${pc ? ' - ' + pc : ''}`)
+      }
+      if (d.upozila || d.upazila || d.thana) parts.push(d.upozila || d.upazila || d.thana)
+      if (d.district || d.zila) parts.push(d.district || d.zila)
       addr = parts.join(', ')
     }
 
@@ -693,11 +704,11 @@ async function renderSuperFastPdfServicePage(content, service) {
     return {
       name_bn: d.name_bn || d.name || d.nameBangla || d.bangla_name || '',
       name_en: d.name_en || d.nameEn || d.english_name || d.nameEnglish || '',
-      registration_no: d.nid || d.nidNo || d.nid_no || d.national_id || d.registration_no || '',
+      registration_no: d.nid || d.nidNo || d.nid_no || d.national_id || d.registration_no || d.voter_no || '',
       book_no: d.pin || d.pinNo || d.pin_no || d.book_no || '',
       father_name_bn: d.father || d.father_name || d.father_name_bn || d.fatherName || '',
       mother_name_bn: d.mother || d.mother_name || d.mother_name_bn || d.motherName || '',
-      birth_place: d.birth_place || d.birthPlace || d.place_of_birth || '',
+      birth_place: d.birth_place || d.birthPlace || d.place_of_birth || d.district || '',
       dob: d.dob || d.date_of_birth || d.dateOfBirth || '',
       gender_blood: blood || (d.gender ? d.gender : ''),
       issue_date: d.issue_date || d.issueDate || d.registration_date || dayjs().format('DD/MM/YYYY'),
@@ -716,10 +727,14 @@ async function renderSuperFastPdfServicePage(content, service) {
     const formattedDob = formatNidDob(rawDob)
     const issueDateBn = formatBanglaDate(rawIssueDate)
 
+    const bnToEn = { '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9' }
+    const rawRegNo = qs('#uf-reg-no').value || ''
+    const cleanRegNo = String(rawRegNo).replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch).trim()
+
     const certData = {
       name_bn: qs('#uf-name-bn').value || '',
       name_en: qs('#uf-name-en').value || '',
-      reg_no: qs('#uf-reg-no').value || '',
+      reg_no: cleanRegNo,
       book_no: qs('#uf-book-no').value || '',
       father_name: qs('#uf-father-name').value || '',
       mother_name: qs('#uf-mother-name').value || '',
@@ -750,7 +765,7 @@ async function renderSuperFastPdfServicePage(content, service) {
             </svg>
 
             <!-- Card Header -->
-            <div class="flex items-center justify-center gap-2 relative z-10 border-b border-black/15 pb-1">
+            <div class="flex items-center justify-center gap-2 relative z-10 border-b border-black/20 pb-1 pt-0.5">
               <!-- Official Bangladesh Emblem Seal -->
               <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="48" fill="#d92222" stroke="#0e6b35" stroke-width="3" />
@@ -769,10 +784,10 @@ async function renderSuperFastPdfServicePage(content, service) {
                 <text x="68" y="22" fill="#ffffff" font-size="7" font-weight="bold" text-anchor="middle">★</text>
               </svg>
 
-              <div class="text-center flex-1">
-                <div style="color: #0b6830; font-weight: 700; font-size: 12.5px; line-height: 1.15;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
-                <div style="color: #0b6830; font-weight: 600; font-size: 9px; line-height: 1.15;">Government of the People's Republic of Bangladesh</div>
-                <div style="color: #cc1818; font-weight: 700; font-size: 9.5px; line-height: 1.15; margin-top: 1px;">National ID Card / জাতীয় পরিচয় পত্র</div>
+              <div class="text-center flex-1 pr-2">
+                <div style="color: #0b6830; font-weight: 700; font-size: 13px; line-height: 1.15; font-family: 'Hind Siliguri', sans-serif;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+                <div style="color: #0b6830; font-weight: 600; font-size: 9px; line-height: 1.15; font-family: 'Segoe UI', Arial, sans-serif;">Government of the People's Republic of Bangladesh</div>
+                <div style="color: #cc1818; font-weight: 700; font-size: 10px; line-height: 1.15; margin-top: 1.5px; font-family: 'Hind Siliguri', sans-serif;">National ID Card / জাতীয় পরিচয় পত্র</div>
               </div>
             </div>
 
@@ -780,39 +795,39 @@ async function renderSuperFastPdfServicePage(content, service) {
             <div class="flex gap-2.5 items-start relative z-10 flex-1 pt-1.5">
               <!-- Left: Photo + Sign -->
               <div class="flex flex-col items-center flex-shrink-0" style="width: 76px;">
-                <div style="width: 74px; height: 88px; border: 1px solid #777; background: #fff; overflow: hidden;">
+                <div style="width: 76px; height: 90px; border: 1px solid #666; background: #fff; overflow: hidden; border-radius: 2px;">
                   <img src="${certData.photo}" alt="NID Photo" class="w-full h-full object-cover">
                 </div>
-                <div style="width: 72px; height: 22px; margin-top: 3px; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 76px; height: 22px; margin-top: 3px; display: flex; align-items: center; justify-content: center;">
                   <img src="${certData.sign}" alt="Signature" class="max-w-full max-h-full object-contain">
                 </div>
               </div>
 
               <!-- Right: Info Rows -->
-              <div class="flex-1 space-y-1" style="font-size: 10.5px; line-height: 1.25; color: #111;">
+              <div class="flex-1 space-y-1 pt-0.5" style="font-size: 10.5px; line-height: 1.25; color: #111;">
                 <div class="flex items-baseline">
-                  <span style="width: 42px; flex-shrink: 0; color: #222;">নাম:</span>
-                  <strong style="font-size: 11.5px; color: #000;">${certData.name_bn}</strong>
+                  <span style="width: 44px; flex-shrink: 0; color: #222;">নাম:</span>
+                  <strong style="font-size: 11.5px; color: #000; font-weight: 700;">${certData.name_bn}</strong>
                 </div>
                 <div class="flex items-baseline">
-                  <span style="width: 42px; flex-shrink: 0; color: #222;">Name:</span>
-                  <strong style="font-size: 10px; color: #111; font-family: 'Hind Siliguri', 'Segoe UI', sans-serif;">${certData.name_en}</strong>
+                  <span style="width: 44px; flex-shrink: 0; color: #222;">Name:</span>
+                  <strong style="font-size: 10px; color: #111; font-weight: 600; font-family: 'Segoe UI', Arial, sans-serif;">${certData.name_en}</strong>
                 </div>
                 <div class="flex items-baseline">
-                  <span style="width: 42px; flex-shrink: 0; color: #222;">পিতা:</span>
+                  <span style="width: 44px; flex-shrink: 0; color: #222;">পিতা:</span>
                   <span style="font-weight: 500;">${certData.father_name}</span>
                 </div>
                 <div class="flex items-baseline">
-                  <span style="width: 42px; flex-shrink: 0; color: #222;">মাতা:</span>
+                  <span style="width: 44px; flex-shrink: 0; color: #222;">মাতা:</span>
                   <span style="font-weight: 500;">${certData.mother_name}</span>
                 </div>
                 <div class="flex items-baseline" style="margin-top: 2px;">
                   <span style="color: #222; margin-right: 4px;">Date of Birth:</span>
-                  <strong style="color: #cc1818; font-size: 10.5px;">${certData.dob}</strong>
+                  <strong style="color: #cc1818; font-size: 10.5px; font-weight: 700;">${certData.dob}</strong>
                 </div>
                 <div class="flex items-baseline" style="margin-top: 2px;">
                   <span style="color: #222; margin-right: 4px;">ID NO:</span>
-                  <strong style="color: #cc1818; font-size: 12.5px; letter-spacing: 0.5px; font-family: monospace;">${certData.reg_no}</strong>
+                  <strong style="color: #cc1818; font-size: 13px; font-weight: 800; letter-spacing: 0.5px; font-family: monospace;">${certData.reg_no}</strong>
                 </div>
               </div>
             </div>
@@ -828,23 +843,23 @@ async function renderSuperFastPdfServicePage(content, service) {
             </svg>
 
             <!-- Top Notice Box -->
-            <div style="border-bottom: 1px solid #000; padding: 4px 6px; font-size: 7.8px; line-height: 1.25; text-align: center; color: #111;" class="relative z-10">
+            <div style="border-bottom: 1px solid #111; padding: 4px 6px; font-size: 8px; line-height: 1.25; text-align: center; color: #111;" class="relative z-10">
               এই কার্ডটি গণপ্রজাতন্ত্রী বাংলাদেশ সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য<br>
               কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।
             </div>
 
-            <!-- Middle Address -->
+            <!-- Middle Address (স্থায়ী ঠিকানা) -->
             <div style="padding: 4px 8px; font-size: 8.5px; line-height: 1.35; color: #111;" class="relative z-10 flex-1">
-              <span style="font-weight: 600;">ঠিকানা:</span> ${certData.address}
+              <span style="font-weight: 700;">ঠিকানা:</span> ${certData.address}
             </div>
 
             <!-- Blood Group, Birth Place & Print Count Row -->
-            <div style="padding: 2px 8px; font-size: 8.5px; line-height: 1.3; color: #111; border-top: 0.5px solid rgba(0,0,0,0.15);" class="relative z-10 flex items-center justify-between">
+            <div style="padding: 2px 8px; font-size: 8.5px; line-height: 1.3; color: #111; border-top: 0.5px solid rgba(0,0,0,0.2);" class="relative z-10 flex items-center justify-between">
               <div>
                 <span>রক্তের গ্রুপ / Blood Group: </span>
-                <strong style="color: #cc1818;">${certData.gender_blood || 'AB+'}</strong>
+                <strong style="color: #cc1818; font-weight: 700;">${certData.gender_blood || 'AB+'}</strong>
                 <span class="ml-2">জন্মস্থান: </span>
-                <span>${certData.birth_place || 'কিশোরগঞ্জ'}</span>
+                <span style="font-weight: 600;">${certData.birth_place || 'কিশোরগঞ্জ'}</span>
               </div>
               <div style="font-weight: 700; font-size: 8px;">
                 মুদ্রণ: ০১
@@ -854,7 +869,7 @@ async function renderSuperFastPdfServicePage(content, service) {
             <!-- Signatures & Issue Date Row -->
             <div style="padding: 2px 8px 3px 8px; font-size: 8px; color: #111;" class="relative z-10 flex items-end justify-between">
               <!-- Official Authority Signature -->
-              <div class="text-center" style="width: 110px;">
+              <div class="text-center" style="width: 115px;">
                 <div style="height: 20px; display: flex; align-items: center; justify-content: center;">
                   <svg class="h-5 w-20" viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M8 16C16 8 24 4 32 12C38 18 42 22 50 8C56 2 60 8 64 14C68 20 74 18 82 6C88 2 92 6 96 12" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
@@ -867,7 +882,7 @@ async function renderSuperFastPdfServicePage(content, service) {
               </div>
 
               <!-- Issue Date -->
-              <div style="font-size: 8px; font-weight: 600; padding-bottom: 2px;">
+              <div style="font-size: 8.5px; font-weight: 600; padding-bottom: 2px;">
                 প্রদানের তারিখ: <span style="font-weight: 700;">${certData.issue_date}</span>
               </div>
             </div>
@@ -1036,23 +1051,25 @@ async function renderSuperFastPdfServicePage(content, service) {
 
   function formatNidDob(raw) {
     if (!raw) return ''
+    const bnToEn = { '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9' }
+    const cleaned = String(raw).replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch).trim()
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    if (/[0-9]{1,2}\s+[A-Za-z]{3}\s+[0-9]{4}/.test(raw)) return raw
-    const m1 = raw.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)
+    if (/[0-9]{1,2}\s+[A-Za-z]{3}\s+[0-9]{4}/.test(cleaned)) return cleaned
+    const m1 = cleaned.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/)
     if (m1) {
       const y = m1[1]
       const mon = parseInt(m1[2], 10) - 1
       const d = String(parseInt(m1[3], 10)).padStart(2, '0')
       if (months[mon]) return `${d} ${months[mon]} ${y}`
     }
-    const m2 = raw.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/)
+    const m2 = cleaned.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/)
     if (m2) {
       const d = String(parseInt(m2[1], 10)).padStart(2, '0')
       const mon = parseInt(m2[2], 10) - 1
       const y = m2[3]
       if (months[mon]) return `${d} ${months[mon]} ${y}`
     }
-    return raw
+    return cleaned
   }
 
   function formatBanglaDate(dateStr) {
@@ -1225,45 +1242,68 @@ async function extractDataFromPdf(file) {
       }
 
       if (combinedText.trim()) {
-        // 17-digit registration number / UBRN
-        const regMatch = combinedText.match(/\b(19\d{15}|20\d{15}|\d{17})\b/) || combinedText.match(/\b\d{10,17}\b/)
-        if (regMatch) result.registration_no = regMatch[0]
+        const bnToEn = { '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9' }
+
+        // NID No / Registration No / Voter No (10 to 17 digits)
+        const nidExplicit = combinedText.match(/(?:জাতীয়\s*পরিচয়পত্র\s*নম্বর|জাতীয়\s*পরিচয়পত্র\s*নং|এনআইডি\s*নম্বর|এনআইডি\s*নং|NID\s*No|NID|ভোটার\s*নম্বর|ভোটার\s*নং)[\s:.-]*([0-9০-৯]{10,17})/i)
+        if (nidExplicit) {
+          result.registration_no = nidExplicit[1].replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch)
+        } else {
+          const regMatch = combinedText.match(/\b(19\d{15}|20\d{15}|\d{17})\b/) || combinedText.match(/\b\d{10,17}\b/)
+          if (regMatch) result.registration_no = regMatch[0]
+        }
 
         // Book or Pin No
-        const pinMatch = combinedText.match(/(?:পিন|বুক|PIN|Book|Volume|ভলিউম)[\s:.-]*([0-9A-Za-z]+)/i)
-        if (pinMatch) result.book_no = pinMatch[1]
+        const pinMatch = combinedText.match(/(?:পিন\s*নম্বর|পিন\s*নং|পিন|বুক|PIN\s*No|PIN|Book|Volume|ভলিউম)[\s:.-]*([0-9০-৯A-Za-z]+)/i)
+        if (pinMatch) result.book_no = pinMatch[1].replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch)
 
         // Date of Birth
-        const dobMatch = combinedText.match(/\b(\d{1,2}[-\/\.\s](?:[0-9]{1,2}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\/\.\s]\d{4})\b/i)
-        if (dobMatch) result.dob = dobMatch[0]
+        const dobMatch = combinedText.match(/(?:জন্ম\s*তারিখ|Date\s*of\s*Birth|DOB)[\s:.-]*([0-9০-৯]{1,2}[-\/\.\s](?:[0-9০-৯]{1,2}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\/\.\s][0-9০-৯]{4})/i) ||
+          combinedText.match(/\b([0-9০-৯]{1,2}[-\/\.\s](?:[0-9০-৯]{1,2}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[-\/\.\s][0-9০-৯]{4})\b/i)
+        if (dobMatch) result.dob = dobMatch[1]
 
         // Issue Date
-        const issueMatch = combinedText.match(/(?:ইস্যু|প্রদান|নিবন্ধন|Issue|Registration)[\s:.-]*(\d{1,2}[-\/\.]\d{1,2}[-\/\.]\d{4})/i)
+        const issueMatch = combinedText.match(/(?:ইস্যু|প্রদান|নিবন্ধন|Issue|Registration)[\s:.-]*([0-9০-৯]{1,2}[-\/\.][0-9০-৯]{1,2}[-\/\.][0-9০-৯]{4})/i)
         if (issueMatch) result.issue_date = issueMatch[1]
 
         // Bangla Name
-        const bnMatch = combinedText.match(/(?:নাম|ব্যক্তির নাম|Name)[\s:.-]*([ঀ-৿\s]{3,35})/i) || combinedText.match(/([ঀ-৿]{2,}\s+[ঀ-৿]{2,}(?:\s+[ঀ-৿]{2,})?)/)
-        if (bnMatch) result.name_bn = bnMatch[1].trim()
+        const bnExplicit = combinedText.match(/(?:নাম\s*\(বাংলা\)|ব্যক্তির\s*নাম|নাম)[\s:.-]*([ঀ-৿\s.]{3,35})/i)
+        if (bnExplicit) {
+          result.name_bn = bnExplicit[1].trim()
+        } else {
+          const bnMatch = combinedText.match(/([ঀ-৿]{2,}\s+[ঀ-৿]{2,}(?:\s+[ঀ-৿]{2,})?)/)
+          if (bnMatch) result.name_bn = bnMatch[1].trim()
+        }
 
         // English Name
-        const enMatch = combinedText.match(/(?:Name in English|Name)[\s:.-]*([A-Za-z\s]{3,35})/i) || combinedText.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})/)
-        if (enMatch) result.name_en = enMatch[1].trim()
+        const enExplicit = combinedText.match(/(?:নাম\s*\(ইংরেজি\)|Name\s*\(English\)|Name\s*in\s*English|Name)[\s:.-]*([A-Za-z\s.]{3,35})/i)
+        if (enExplicit) {
+          result.name_en = enExplicit[1].trim()
+        } else {
+          const enMatch = combinedText.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})/)
+          if (enMatch) result.name_en = enMatch[1].trim()
+        }
 
         // Father's Name
-        const fMatch = combinedText.match(/(?:পিতা|পিতার নাম|Father)[\s:.-]*([ঀ-৿\s]{3,35})/i)
+        const fMatch = combinedText.match(/(?:পিতার\s*নাম|পিতা|Father)[\s:.-]*([ঀ-৿\s.]{3,35})/i)
         if (fMatch) result.father_name_bn = fMatch[1].trim()
 
         // Mother's Name
-        const mMatch = combinedText.match(/(?:মাতা|মাতার নাম|Mother)[\s:.-]*([ঀ-৿\s]{3,35})/i)
+        const mMatch = combinedText.match(/(?:মাতার\s*নাম|মাতা|Mother)[\s:.-]*([ঀ-৿\s.]{3,35})/i)
         if (mMatch) result.mother_name_bn = mMatch[1].trim()
 
         // Birth Place
-        const bpMatch = combinedText.match(/(?:জন্মস্থান|Place of Birth)[\s:.-]*([ঀ-৿A-Za-z\s,]{3,30})/i)
+        const bpMatch = combinedText.match(/(?:জন্মস্থান|Place\s*of\s*Birth)[\s:.-]*([ঀ-৿A-Za-z\s,]{3,30})/i)
         if (bpMatch) result.birth_place = bpMatch[1].trim()
 
-        // Address
-        const addrMatch = combinedText.match(/(?:ঠিকানা|স্থায়ী ঠিকানা|Address)[\s:.-]*([ঀ-৿A-Za-z0-9\s,:.-]{8,120})/i)
-        if (addrMatch) result.address = addrMatch[1].trim()
+        // Address (CMS copy Permanent Address - স্থায়ী ঠিকানা)
+        const permMatch = combinedText.match(/(?:স্থায়ী\s*ঠিকানা|স্থায়ী\s*ঠিকানা)[\s:.-]*([ঀ-৿A-Za-z0-9\s,:.-]{10,140})/i)
+        if (permMatch) {
+          result.address = permMatch[1].trim()
+        } else {
+          const addrMatch = combinedText.match(/(?:ঠিকানা|Address)[\s:.-]*([ঀ-৿A-Za-z0-9\s,:.-]{8,120})/i)
+          if (addrMatch) result.address = addrMatch[1].trim()
+        }
 
         // Gender & Blood Group
         if (/মহিলা|Female/i.test(combinedText)) result.gender_blood = 'মহিলা'

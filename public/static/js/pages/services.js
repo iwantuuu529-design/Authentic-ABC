@@ -678,8 +678,9 @@ async function renderSuperFastPdfServicePage(content, service) {
     let addr = d.permanent_address || d.permanentAddress || d.address || d.present_address || ''
     if (typeof addr === 'object' && addr !== null) {
       const parts = []
-      const holding = addr.holding || addr.home || addr.holding_no || '-'
-      parts.push(`বাসা/হোল্ডিং: ${holding}`)
+      const holding = addr.holding || addr.home || addr.holding_no || ''
+      const holdingStr = (!holding || holding === '-' || holding === 'None' || holding === 'null') ? '' : holding
+      parts.push(`বাসা/হোল্ডিং: ${holdingStr}`)
       const addl = addr.additional_village || addr.additional_village_road || ''
       const mouza = addr.mouza || addr.moholla || addr.village || addr.road || ''
       const v = [addl, mouza].filter(Boolean).join(', ')
@@ -694,8 +695,9 @@ async function renderSuperFastPdfServicePage(content, service) {
       addr = parts.join(', ')
     } else if (!addr && (d.village || d.post_office || d.district)) {
       const parts = []
-      const holding = d.holding || d.home || d.holding_no || '-'
-      parts.push(`বাসা/হোল্ডিং: ${holding}`)
+      const holding = d.holding || d.home || d.holding_no || ''
+      const holdingStr = (!holding || holding === '-' || holding === 'None' || holding === 'null') ? '' : holding
+      parts.push(`বাসা/হোল্ডিং: ${holdingStr}`)
       const addl = d.additional_village || d.additional_village_road || ''
       const mouza = d.mouza || d.moholla || d.village || d.road || ''
       const v = [addl, mouza].filter(Boolean).join(', ')
@@ -744,6 +746,13 @@ async function renderSuperFastPdfServicePage(content, service) {
     const rawRegNo = qs('#uf-reg-no').value || ''
     const cleanRegNo = String(rawRegNo).replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch).trim()
 
+    let addressRaw = qs('#uf-address').value || ''
+    let cleanAddress = addressRaw
+      .replace(/বাসা\/হোল্ডিং:\s*[-–]/g, 'বাসা/হোল্ডিং: ')
+      .replace(/ডাকঘর:\s*([^,-]+)-(\d{4})/g, 'ডাকঘর: $1 - $2')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+
     const certData = {
       name_bn: qs('#uf-name-bn').value || '',
       name_en: qs('#uf-name-en').value || '',
@@ -755,7 +764,7 @@ async function renderSuperFastPdfServicePage(content, service) {
       dob: formattedDob || rawDob,
       gender_blood: qs('#uf-gender-blood').value || '',
       issue_date: issueDateBn || rawIssueDate,
-      address: qs('#uf-address').value || '',
+      address: cleanAddress,
       photo: photoBase64 || defaultPhoto,
       sign: signBase64 || defaultSign,
     }
@@ -882,11 +891,11 @@ async function renderSuperFastPdfServicePage(content, service) {
             <!-- Signatures & Issue Date Row -->
             <div style="padding: 2px 8px 3px 8px; font-size: 8px; color: #111;" class="relative z-10 flex items-end justify-between">
               <!-- Official Authority Signature -->
-              <div class="text-center" style="width: 115px;">
-                <div style="height: 20px; display: flex; align-items: center; justify-content: center;">
-                  <svg class="h-5 w-20" viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 16C16 8 24 4 32 12C38 18 42 22 50 8C56 2 60 8 64 14C68 20 74 18 82 6C88 2 92 6 96 12" stroke="#111" stroke-width="1.8" stroke-linecap="round"/>
-                    <path d="M24 19C36 17 56 19 78 17" stroke="#111" stroke-width="1.4" stroke-linecap="round"/>
+              <div class="text-center" style="width: 120px;">
+                <div style="height: 22px; display: flex; align-items: center; justify-content: center;">
+                  <svg class="h-6 w-24" viewBox="0 0 120 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14 21 C16 15, 18 5, 24 3 C28 2, 30 7, 28 13 C26 19, 20 22, 16 23 C24 23, 34 14, 42 9 C48 5, 52 11, 50 16 C48 21, 40 24, 46 23 C54 21, 62 13, 70 8 C76 4, 82 10, 78 17 C84 14, 94 11, 106 7" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M20 18 Q50 20 80 17 T114 14" stroke="#111" stroke-width="1.5" stroke-linecap="round"/>
                   </svg>
                 </div>
                 <div style="font-size: 7.5px; font-weight: 600; border-top: 0.5px solid #333; padding-top: 1px;">
@@ -1260,6 +1269,179 @@ async function renderSuperFastPdfServicePage(content, service) {
 // ------------------------------------------------------------
 // Client-Side PDF Parsing Engine with PDF.js & Regex
 // ------------------------------------------------------------
+async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
+  let photoDataUrl = ''
+  let signDataUrl = ''
+
+  // Step 1: Direct Binary JPEG Stream Scanner (Extracts raw embedded JPEG images instantly)
+  try {
+    const bytes = new Uint8Array(arrayBuffer)
+    const len = bytes.length
+    const candidates = []
+
+    for (let i = 0; i < len - 4; i++) {
+      if (bytes[i] === 0xFF && bytes[i + 1] === 0xD8 && bytes[i + 2] === 0xFF) {
+        const start = i
+        let end = -1
+        for (let j = i + 3; j < len - 1; j++) {
+          if (bytes[j] === 0xFF && bytes[j + 1] === 0xD9) {
+            end = j + 2
+            break
+          }
+        }
+        if (end !== -1 && (end - start) > 400) {
+          const slice = bytes.slice(start, end)
+          try {
+            const blob = new Blob([slice], { type: 'image/jpeg' })
+            const dataUrl = await new Promise((res) => {
+              const r = new FileReader()
+              r.onload = () => res(r.result)
+              r.onerror = () => res('')
+              r.readAsDataURL(blob)
+            })
+            if (dataUrl) {
+              const dims = await new Promise((res) => {
+                const img = new Image()
+                img.onload = () => res({ width: img.naturalWidth, height: img.naturalHeight, dataUrl, size: slice.length })
+                img.onerror = () => res(null)
+                img.src = dataUrl
+              })
+              if (dims && dims.width > 20 && dims.height > 20) {
+                candidates.push(dims)
+              }
+            }
+          } catch (e) {}
+          i = end
+        }
+      }
+    }
+
+    if (candidates.length > 0) {
+      const signatures = candidates.filter((c) => (c.width / c.height >= 1.25) || (c.height <= 85 && c.width > c.height))
+      const portraits = candidates.filter((c) => (c.width / c.height < 1.25) && c.width >= 40 && c.height >= 40)
+
+      if (portraits.length > 0) {
+        portraits.sort((a, b) => (b.width * b.height) - (a.width * a.height))
+        photoDataUrl = portraits[0].dataUrl
+      }
+      if (signatures.length > 0) {
+        signatures.sort((a, b) => (b.width / b.height) - (a.width / a.height))
+        signDataUrl = signatures[0].dataUrl
+      }
+
+      if (photoDataUrl && signDataUrl) {
+        return { photoDataUrl, signDataUrl }
+      }
+    }
+  } catch (rawErr) {
+    console.warn('Binary JPEG extraction notice:', rawErr)
+  }
+
+  // Step 2: PDF.js Operator List & Decoded Objects (Handles PNG, FlateDecode, and masked images)
+  try {
+    if (pdf && pdf.numPages > 0) {
+      const page = await pdf.getPage(1)
+      const viewport = page.getViewport({ scale: 1.5 })
+      const canvas = document.createElement('canvas')
+      canvas.width = viewport.width
+      canvas.height = viewport.height
+      const ctx = canvas.getContext('2d')
+
+      // Rendering ensures all image resources are decoded into page.objs
+      await page.render({ canvasContext: ctx, viewport }).promise
+
+      const ops = await page.getOperatorList()
+      const decodedImages = []
+
+      for (let i = 0; i < ops.fnArray.length; i++) {
+        const fn = ops.fnArray[i]
+        if (fn === window.pdfjsLib.OPS.paintImageXObject || fn === window.pdfjsLib.OPS.paintJpegXObject) {
+          const imgName = ops.argsArray[i][0]
+          const imgObj = await new Promise((res) => {
+            try {
+              if (page.objs && page.objs.has && page.objs.has(imgName)) {
+                page.objs.get(imgName, res)
+              } else if (page.commonObjs && page.commonObjs.has && page.commonObjs.has(imgName)) {
+                page.commonObjs.get(imgName, res)
+              } else {
+                res(null)
+              }
+            } catch (e) {
+              res(null)
+            }
+          })
+
+          if (imgObj && imgObj.width > 20 && imgObj.height > 20 && imgObj.data) {
+            const tempCanvas = document.createElement('canvas')
+            tempCanvas.width = imgObj.width
+            tempCanvas.height = imgObj.height
+            const tCtx = tempCanvas.getContext('2d')
+            const imgData = tCtx.createImageData(imgObj.width, imgObj.height)
+
+            if (imgObj.kind === 1) { // Grayscale
+              let s = 0, d = 0
+              for (let j = 0; j < imgObj.width * imgObj.height; j++) {
+                const v = imgObj.data[s++]
+                imgData.data[d++] = v
+                imgData.data[d++] = v
+                imgData.data[d++] = v
+                imgData.data[d++] = 255
+              }
+            } else { // RGB or RGBA
+              let s = 0, d = 0
+              for (let j = 0; j < imgObj.width * imgObj.height; j++) {
+                imgData.data[d++] = imgObj.data[s++]
+                imgData.data[d++] = imgObj.data[s++]
+                imgData.data[d++] = imgObj.data[s++]
+                imgData.data[d++] = (imgObj.kind === 3 && imgObj.data[s] !== undefined) ? imgObj.data[s++] : 255
+              }
+            }
+            tCtx.putImageData(imgData, 0, 0)
+            const dUrl = tempCanvas.toDataURL('image/jpeg', 0.95)
+            decodedImages.push({ width: imgObj.width, height: imgObj.height, dataUrl: dUrl })
+          }
+        }
+      }
+
+      if (!photoDataUrl || !signDataUrl) {
+        const sigs = decodedImages.filter((c) => (c.width / c.height >= 1.25) || (c.height <= 85 && c.width > c.height))
+        const ports = decodedImages.filter((c) => (c.width / c.height < 1.25) && c.width >= 40 && c.height >= 40)
+        if (!photoDataUrl && ports.length > 0) {
+          ports.sort((a, b) => (b.width * b.height) - (a.width * a.height))
+          photoDataUrl = ports[0].dataUrl
+        }
+        if (!signDataUrl && sigs.length > 0) {
+          sigs.sort((a, b) => (b.width / b.height) - (a.width / a.height))
+          signDataUrl = sigs[0].dataUrl
+        }
+      }
+
+      // Step 3: High-precision CMS copy canvas crop fallback
+      // In CMS copy PDFs, the photo is located at top-right (x: 72% to 95%, y: 6% to 26%)
+      if (!photoDataUrl && canvas.width > 200 && canvas.height > 200) {
+        try {
+          const cropW = Math.round(canvas.width * 0.22)
+          const cropH = Math.round(canvas.height * 0.18)
+          const cropX = Math.round(canvas.width * 0.74)
+          const cropY = Math.round(canvas.height * 0.08)
+          const cropC = document.createElement('canvas')
+          cropC.width = cropW
+          cropC.height = cropH
+          const cCtx = cropC.getContext('2d')
+          cCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH)
+          photoDataUrl = cropC.toDataURL('image/jpeg', 0.95)
+        } catch (cropErr) {
+          console.warn('Canvas crop fallback notice:', cropErr)
+        }
+      }
+    }
+  } catch (objErr) {
+    console.warn('PDF.js image decoding notice:', objErr)
+  }
+
+  return { photoDataUrl, signDataUrl }
+}
+
 async function extractDataFromPdf(file) {
   const result = getDefaultExtractedData()
 
@@ -1279,54 +1461,13 @@ async function extractDataFromPdf(file) {
         combinedText += ' ' + textItems.join(' ')
       }
 
-      // Try image extraction for citizen photo & signature from PDF objects
-      try {
-        for (let p = 1; p <= Math.min(pdf.numPages, 2); p++) {
-          const page = await pdf.getPage(p)
-          const ops = await page.getOperatorList()
-          for (let i = 0; i < ops.fnArray.length; i++) {
-            const fn = ops.fnArray[i]
-            if (fn === window.pdfjsLib.OPS.paintImageXObject || fn === window.pdfjsLib.OPS.paintJpegXObject) {
-              const imgName = ops.argsArray[i][0]
-              page.objs.get(imgName, (img) => {
-                if (img && img.data && img.width > 20 && img.height > 20) {
-                  const canvas = document.createElement('canvas')
-                  canvas.width = img.width
-                  canvas.height = img.height
-                  const ctx = canvas.getContext('2d')
-                  const imgData = ctx.createImageData(img.width, img.height)
-                  if (img.kind === 1) {
-                    let s = 0, d = 0
-                    for (let j = 0; j < img.width * img.height; j++) {
-                      const v = img.data[s++]
-                      imgData.data[d++] = v
-                      imgData.data[d++] = v
-                      imgData.data[d++] = v
-                      imgData.data[d++] = 255
-                    }
-                  } else if (img.kind === 2 || img.kind === 3) {
-                    let s = 0, d = 0
-                    for (let j = 0; j < img.width * img.height; j++) {
-                      imgData.data[d++] = img.data[s++]
-                      imgData.data[d++] = img.data[s++]
-                      imgData.data[d++] = img.data[s++]
-                      imgData.data[d++] = (img.kind === 3 && img.data[s] !== undefined) ? img.data[s++] : 255
-                    }
-                  }
-                  ctx.putImageData(imgData, 0, 0)
-                  const url = canvas.toDataURL('image/jpeg', 0.92)
-                  if (img.width > img.height * 1.35 && !result.signDataUrl) {
-                    result.signDataUrl = url
-                  } else if (img.height >= img.width * 0.85 && !result.photoDataUrl && img.width > 45) {
-                    result.photoDataUrl = url
-                  }
-                }
-              })
-            }
-          }
-        }
-      } catch (imgErr) {
-        console.warn('PDF image extraction notice:', imgErr)
+      // Extract citizen photo and signature using multi-engine extraction
+      const extractedImages = await extractCitizenImagesFromPdf(arrayBuffer, pdf)
+      if (extractedImages.photoDataUrl) {
+        result.photoDataUrl = extractedImages.photoDataUrl
+      }
+      if (extractedImages.signDataUrl) {
+        result.signDataUrl = extractedImages.signDataUrl
       }
 
       if (combinedText.trim()) {
@@ -1338,7 +1479,6 @@ async function extractDataFromPdf(file) {
         if (nidMatch) {
           result.registration_no = nidMatch[1].replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch)
         } else {
-          // If there's an explicit 10 digit number, it's Bangladesh Smart NID
           const smartMatch = text.match(/\b([0-9]{10})\b/)
           if (smartMatch) result.registration_no = smartMatch[1]
         }
@@ -1348,7 +1488,6 @@ async function extractDataFromPdf(file) {
         if (pinMatch) {
           result.book_no = pinMatch[1].replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch)
         } else {
-          // 17-digit number starting with 19 or 20
           const seventeen = text.match(/\b(19\d{15}|20\d{15})\b/)
           if (seventeen) result.book_no = seventeen[1]
         }
@@ -1428,8 +1567,9 @@ async function extractDataFromPdf(file) {
 
         if (poMatch || mouzaMatch || upoMatch || distMatch) {
           const parts = []
-          const holding = holdingMatch ? holdingMatch[1].trim() : '-'
-          parts.push(`বাসা/হোল্ডিং: ${holding}`)
+          const holding = holdingMatch ? holdingMatch[1].trim() : ''
+          const holdingStr = (!holding || holding === '-' || holding === 'None' || holding === 'null') ? '' : holding
+          parts.push(`বাসা/হোল্ডিং: ${holdingStr}`)
           const vList = [addlVillageMatch?.[1]?.trim(), mouzaMatch?.[1]?.trim()].filter(Boolean)
           if (vList.length > 0) parts.push(`গ্রাম/রাস্তা: ${vList.join(', ')}`)
           if (poMatch) {
@@ -1450,7 +1590,25 @@ async function extractDataFromPdf(file) {
           }
         }
 
-        result.issue_date = dayjs().format('DD/MM/YYYY')
+        // 11. Issue Date extraction (Search for explicit print/issue date or any non-DOB date)
+        const issueMatch = text.match(/(?:প্রদানের\s*তারিখ|ইস্যুর\s*তারিখ|ইস্যু\s*তারিখ|Print\s*Date|Generation\s*Date|Issue\s*Date)[\s:.-]*([0-9০-৯]{1,2}[-\/.][0-9০-৯]{1,2}[-\/.][0-9০-৯]{4})/i)
+        if (issueMatch) {
+          result.issue_date = issueMatch[1].replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch).replace(/[-.]/g, '/')
+        } else {
+          const allDates = text.match(/\b([0-9০-৯]{1,2}[-\/.][0-9০-৯]{1,2}[-\/.][0-9০-৯]{4})\b/g) || []
+          for (const dStr of allDates) {
+            const norm = dStr.replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch).replace(/[-.]/g, '/')
+            const dobNorm = (result.dob || '').replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch).replace(/[-.]/g, '/')
+            if (!dobNorm.includes(norm)) {
+              result.issue_date = norm
+              break
+            }
+          }
+        }
+
+        if (!result.issue_date) {
+          result.issue_date = dayjs().format('DD/MM/YYYY')
+        }
       }
     }
   } catch (err) {

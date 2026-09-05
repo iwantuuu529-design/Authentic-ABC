@@ -552,27 +552,58 @@ a[data-link], button, .page-btn {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm;
+    margin: 8mm 10mm;
+  }
+  html, body {
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
   }
   body * {
     visibility: hidden;
   }
-  #certificate-print-wrap, #certificate-print-wrap * {
+  #certificate-modal,
+  #certificate-modal * {
     visibility: visible;
   }
+  #certificate-modal {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+    display: block !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  #certificate-modal > div {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
   #certificate-print-wrap {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 25px 0 !important;
-    background: #ffffff !important;
-    z-index: 99999;
     display: flex !important;
     flex-direction: row !important;
     justify-content: center !important;
     align-items: flex-start !important;
+    padding: 10px 0 !important;
+    margin: 0 auto !important;
+    background: transparent !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
   .nid-card-print-container {
     display: flex !important;
@@ -583,6 +614,8 @@ a[data-link], button, .page-btn {
     margin: 0 auto !important;
     background: transparent !important;
     padding: 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
   .nid-card-frame {
     width: 340px !important;
@@ -590,6 +623,8 @@ a[data-link], button, .page-btn {
     border: 1.5px solid #000000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
   .no-print {
     display: none !important;

@@ -300,6 +300,33 @@ async function renderSuperFastPdfServicePage(content, service) {
         <button type="button" id="btn-load-sample-nid" class="px-5 py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
           <i class="fa-solid fa-id-card text-emerald-400 text-sm"></i> ১০০০% অরিজিনাল ক্লোন কার্ড দেখুন (MD. AMRAN KABIR RIPON)
         </button>
+        <button type="button" id="btn-view-sample-pic" class="px-5 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
+          <i class="fa-solid fa-image text-amber-400 text-sm"></i> স্যাম্পল পিকচার দেখুন (Sample Pic)
+        </button>
+      </div>
+
+      <!-- Sample Pic Lightbox Modal -->
+      <div id="sample-pic-modal" class="hidden fixed inset-0 z-[120] flex items-center justify-center modal-backdrop-blur p-4">
+        <div class="bg-ink-900 border border-white/15 rounded-2xl max-w-4xl w-full p-5 shadow-2xl overflow-hidden animate-fade-up">
+          <div class="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-id-card text-sky-400"></i>
+              <h3 class="text-base font-bold text-white">বাংলাদেশ জাতীয় পরিচয়পত্র (NID Card) - স্যাম্পল প্রিভিউ ছবি</h3>
+            </div>
+            <button type="button" id="btn-close-sample-pic" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 flex items-center justify-center">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div class="rounded-xl overflow-hidden border border-white/10 bg-black/40 flex items-center justify-center max-h-[70vh]">
+            <img src="/static/img/sample_nid_card_preview.jpg" alt="Sample NID Card Preview" class="w-full h-auto object-contain">
+          </div>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-xs text-slate-400">অরিজিনাল ফ্রন্ট ও ব্যাক সাইড লেআউট ভিউ</span>
+            <button type="button" id="btn-use-sample-from-modal" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold transition-all">
+              এই কার্ডটি তৈরি করুন
+            </button>
+          </div>
+        </div>
       </div>
       ` : ''}
 
@@ -578,6 +605,31 @@ async function renderSuperFastPdfServicePage(content, service) {
   const sampleNidBtn = qs('#btn-load-sample-nid')
   if (sampleNidBtn) {
     sampleNidBtn.addEventListener('click', () => {
+      loadSampleNidCardData()
+      renderLiveCertificate()
+      previewModal.classList.remove('hidden')
+    })
+  }
+
+  // Sample Pic Modal handlers
+  const samplePicBtn = qs('#btn-view-sample-pic')
+  const samplePicModal = qs('#sample-pic-modal')
+  const closeSamplePicBtn = qs('#btn-close-sample-pic')
+  const useSampleFromModalBtn = qs('#btn-use-sample-from-modal')
+
+  if (samplePicBtn && samplePicModal) {
+    samplePicBtn.addEventListener('click', () => {
+      samplePicModal.classList.remove('hidden')
+    })
+  }
+  if (closeSamplePicBtn && samplePicModal) {
+    closeSamplePicBtn.addEventListener('click', () => {
+      samplePicModal.classList.add('hidden')
+    })
+  }
+  if (useSampleFromModalBtn && samplePicModal) {
+    useSampleFromModalBtn.addEventListener('click', () => {
+      samplePicModal.classList.add('hidden')
       loadSampleNidCardData()
       renderLiveCertificate()
       previewModal.classList.remove('hidden')

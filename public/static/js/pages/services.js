@@ -214,7 +214,7 @@ async function renderServiceOrderPage(params) {
 // ============================================================
 async function renderSuperFastPdfServicePage(content, service) {
   const user = getStoredUser()
-  const isNid = service.slug === 'nid-create' || service.slug === 'nid-make'
+  const isNid = service.slug === 'nid-create' || service.slug === 'nid-make' || service.slug === 'nid-smart-card-pdf' || service.slug === 'nid-sign-copy' || service.slug === 'nid-server-copy' || service.category_slug === 'nid' || (service.slug && service.slug.startsWith('nid-'))
   const isNibandan = service.slug === 'nibandan-pdf-create'
   const serviceCharge = service.price || 4.00
   const chargeNote = isNid
@@ -223,13 +223,16 @@ async function renderSuperFastPdfServicePage(content, service) {
     ? `নোট: নিবন্ধন পিডিএফ তৈরি সেবার জন্য আপনার ${toBnDigits(serviceCharge)} টাকা চার্জ হবে!`
     : `নোট: এই সেবার জন্য আপনার ${toBnDigits(serviceCharge)} টাকা চার্জ হবে!`
 
-  let uploadedPdfFile = null
-  let photoBase64 = ''
-  let signBase64 = ''
+  const sampleNidPhoto = '/static/img/sample_nid_photo.jpg'
+  const sampleNidSign = '/static/img/sample_nid_sign.svg'
 
-  // Fallback / default images (placeholder SVG avatars cleanly base64 encoded)
-  const defaultPhoto = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="120" viewBox="0 0 100 120"><rect width="100" height="120" fill="#f1f5f9"/><circle cx="50" cy="45" r="22" fill="#94a3b8"/><path d="M15 110 C 20 80, 80 80, 85 110 Z" fill="#94a3b8"/></svg>')
-  const defaultSign = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="60" viewBox="0 0 160 60"><rect width="160" height="60" fill="#ffffff" rx="4"/><path d="M 20 40 Q 40 10, 60 35 T 100 20 T 140 45" fill="none" stroke="#111111" stroke-width="2.5" stroke-linecap="round"/></svg>')
+  let uploadedPdfFile = null
+  let photoBase64 = isNid ? sampleNidPhoto : ''
+  let signBase64 = isNid ? sampleNidSign : ''
+
+  // Fallback / default images (real photo and ink signature)
+  const defaultPhoto = sampleNidPhoto
+  const defaultSign = sampleNidSign
 
   content.innerHTML = `
     <!-- Top Header -->
@@ -290,6 +293,15 @@ async function renderSuperFastPdfServicePage(content, service) {
           </button>
         </div>
       </div>
+
+      ${isNid ? `
+      <!-- Quick Demo Clone Action -->
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+        <button type="button" id="btn-load-sample-nid" class="px-5 py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
+          <i class="fa-solid fa-id-card text-emerald-400 text-sm"></i> ১০০০% অরিজিনাল ক্লোন কার্ড দেখুন (MD. AMRAN KABIR RIPON)
+        </button>
+      </div>
+      ` : ''}
 
       <!-- Processing Modal (matches video spinner overlay) -->
       <div id="pdf-processing-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center modal-backdrop-blur">
@@ -543,6 +555,40 @@ async function renderSuperFastPdfServicePage(content, service) {
     }
   })
 
+  function loadSampleNidCardData() {
+    if (!isNid) return
+    qs('#uf-name-bn').value = 'মোঃ এমরান কবির রিপন'
+    qs('#uf-name-en').value = 'MD. AMRAN KABIR RIPON'
+    qs('#uf-reg-no').value = '3738061542'
+    qs('#uf-book-no').value = '19754814243000004'
+    qs('#uf-father-name').value = 'মোঃ লিলু মিয়া'
+    qs('#uf-mother-name').value = 'রহিমা খাতুন'
+    qs('#uf-birth-place').value = 'কিশোরগঞ্জ'
+    qs('#uf-dob').value = '08 Aug 1975'
+    qs('#uf-gender-blood').value = 'AB+'
+    qs('#uf-issue-date').value = '৩১/০৮/২০২৬'
+    qs('#uf-address').value = 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: সাধের জঙ্গল, বাদে শ্রীরামপুর, ডাকঘর: জঙ্গলবাড়ি - ২৩০০, করিমগঞ্জ, কিশোরগঞ্জ'
+    photoBase64 = sampleNidPhoto
+    signBase64 = sampleNidSign
+    photoPreview.src = photoBase64
+    signPreview.src = signBase64
+    formSection.classList.remove('hidden')
+  }
+
+  const sampleNidBtn = qs('#btn-load-sample-nid')
+  if (sampleNidBtn) {
+    sampleNidBtn.addEventListener('click', () => {
+      loadSampleNidCardData()
+      renderLiveCertificate()
+      previewModal.classList.remove('hidden')
+    })
+  }
+
+  // Pre-fill sample clone on initial load for NID service
+  if (isNid) {
+    loadSampleNidCardData()
+  }
+
   // ------------------------------------------------------------
   // Real API NID Extraction & Step Transition
   // ------------------------------------------------------------
@@ -754,17 +800,17 @@ async function renderSuperFastPdfServicePage(content, service) {
       .trim()
 
     const certData = {
-      name_bn: qs('#uf-name-bn').value || '',
-      name_en: qs('#uf-name-en').value || '',
-      reg_no: cleanRegNo,
-      book_no: qs('#uf-book-no').value || '',
-      father_name: qs('#uf-father-name').value || '',
-      mother_name: qs('#uf-mother-name').value || '',
-      birth_place: qs('#uf-birth-place').value || '',
-      dob: formattedDob || rawDob,
-      gender_blood: qs('#uf-gender-blood').value || '',
-      issue_date: issueDateBn || rawIssueDate,
-      address: cleanAddress,
+      name_bn: qs('#uf-name-bn').value || (isNid ? 'মোঃ এমরান কবির রিপন' : ''),
+      name_en: qs('#uf-name-en').value || (isNid ? 'MD. AMRAN KABIR RIPON' : ''),
+      reg_no: cleanRegNo || (isNid ? '3738061542' : ''),
+      book_no: qs('#uf-book-no').value || (isNid ? '19754814243000004' : ''),
+      father_name: qs('#uf-father-name').value || (isNid ? 'মোঃ লিলু মিয়া' : ''),
+      mother_name: qs('#uf-mother-name').value || (isNid ? 'রহিমা খাতুন' : ''),
+      birth_place: qs('#uf-birth-place').value || (isNid ? 'কিশোরগঞ্জ' : ''),
+      dob: formattedDob || rawDob || (isNid ? '08 Aug 1975' : ''),
+      gender_blood: qs('#uf-gender-blood').value || (isNid ? 'AB+' : ''),
+      issue_date: issueDateBn || rawIssueDate || (isNid ? '৩১/০৮/২০২৬' : ''),
+      address: cleanAddress || (isNid ? 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: সাধের জঙ্গল, বাদে শ্রীরামপুর, ডাকঘর: জঙ্গলবাড়ি - ২৩০০, করিমগঞ্জ, কিশোরগঞ্জ' : ''),
       photo: photoBase64 || defaultPhoto,
       sign: signBase64 || defaultSign,
     }
@@ -1058,23 +1104,7 @@ async function renderSuperFastPdfServicePage(content, service) {
         const barcodeCanvas = qs('#nid-barcode-canvas')
         if (barcodeCanvas) {
           const barcodeXml = generateNidBarcodeXml(certData)
-          if (window.bwipjs) {
-            try {
-              window.bwipjs.toCanvas(barcodeCanvas, {
-                bcid: 'pdf417',
-                text: barcodeXml,
-                scale: 1,
-                height: 10,
-                columns: 5,
-                includetext: false,
-              })
-            } catch (err) {
-              console.warn('bwipjs rendering error:', err)
-              drawNidPdf417Barcode(barcodeCanvas, barcodeXml)
-            }
-          } else {
-            drawNidPdf417Barcode(barcodeCanvas, barcodeXml)
-          }
+          renderNidPdf417(barcodeCanvas, barcodeXml)
         }
       } else {
         const qrCanvas = qs('#cert-qr-canvas')
@@ -1085,7 +1115,7 @@ async function renderSuperFastPdfServicePage(content, service) {
           })
         }
       }
-    }, 50)
+    }, 40)
   }
 
   function generateNidBarcodeXml(certData) {
@@ -1125,51 +1155,40 @@ async function renderSuperFastPdfServicePage(content, service) {
     return dateStr.replace(/\d/g, (d) => bnDigits[parseInt(d, 10)])
   }
 
-  function drawNidPdf417Barcode(canvas, nidText) {
+  function renderNidPdf417(canvas, barcodeXml, attempt = 0) {
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    canvas.width = 330
-    canvas.height = 32
-
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, 330, 32)
-    ctx.fillStyle = '#000000'
-
-    // Left start guard bars
-    ctx.fillRect(0, 0, 4, 32)
-    ctx.fillRect(6, 0, 2, 32)
-    ctx.fillRect(10, 0, 2, 32)
-
-    let seed = 0
-    const txt = (nidText || '3738061542') + 'BD_ELECTION_COMMISSION_NID'
-    for (let i = 0; i < txt.length; i++) {
-      seed = (seed * 31 + txt.charCodeAt(i)) >>> 0
-    }
-
-    function nextRand() {
-      seed = (seed * 1664525 + 1013904223) >>> 0
-      return (seed >>> 16) / 65536
-    }
-
-    const startX = 14
-    const endX = 316
-    const totalW = endX - startX
-    const cols = 76
-    const colW = totalW / cols
-
-    for (let r = 0; r < 8; r++) {
-      const y = r * 4
-      for (let c = 0; c < cols; c++) {
-        if (nextRand() > 0.46) {
-          ctx.fillRect(Math.floor(startX + c * colW), y, Math.ceil(colW), 4)
+    if (window.bwipjs && typeof window.bwipjs.toCanvas === 'function') {
+      try {
+        window.bwipjs.toCanvas(canvas, {
+          bcid: 'pdf417',
+          text: barcodeXml,
+          scale: 2,
+          height: 12,
+          columns: 12,
+          eclevel: 5,
+          includetext: false,
+        })
+        return
+      } catch (err1) {
+        try {
+          window.bwipjs.toCanvas(canvas, {
+            bcid: 'pdf417',
+            text: barcodeXml,
+            scale: 2,
+            height: 12,
+            columns: 10,
+            eclevel: 5,
+            includetext: false,
+          })
+          return
+        } catch (err2) {
+          console.error('bwip-js PDF417 render failed:', err2)
         }
       }
     }
-
-    // Right stop guard bars
-    ctx.fillRect(318, 0, 2, 32)
-    ctx.fillRect(322, 0, 2, 32)
-    ctx.fillRect(326, 0, 4, 32)
+    if (attempt < 15) {
+      setTimeout(() => renderNidPdf417(canvas, barcodeXml, attempt + 1), 60)
+    }
   }
 
   qs('#btn-open-preview').addEventListener('click', () => {

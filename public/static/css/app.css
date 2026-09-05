@@ -525,26 +525,33 @@ a[data-link], button, .page-btn {
 }
 
 .nid-card-frame {
-  width: 340px;
-  height: 215px;
-  border: 1.5px solid #000000;
-  background-color: #ffffff;
-  background-image: radial-gradient(circle at center, rgba(230, 215, 160, 0.18) 0%, rgba(245, 240, 220, 0.08) 70%, #ffffff 100%);
+  width: 332px;
+  height: 208px;
+  border: 1px solid #1a1a1a;
+  border-radius: 6px;
+  background-color: #faf8f2;
+  background-image: 
+    radial-gradient(circle, rgba(16, 185, 129, 0.08) 1px, transparent 1px), 
+    radial-gradient(circle, rgba(239, 68, 68, 0.06) 1px, transparent 1px), 
+    linear-gradient(135deg, rgba(254, 252, 232, 0.5) 0%, rgba(240, 253, 244, 0.6) 50%, rgba(254, 242, 242, 0.4) 100%);
+  background-size: 14px 14px, 14px 14px, 100% 100%;
+  background-position: 0 0, 7px 7px, 0 0;
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
   color: #000000;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
 }
 
 .nid-watermark-seal {
   position: absolute;
-  top: 52%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 140px;
-  height: 140px;
-  opacity: 0.12;
+  width: 145px;
+  height: 145px;
+  opacity: 0.13;
   pointer-events: none;
   user-select: none;
 }
@@ -618,9 +625,10 @@ a[data-link], button, .page-btn {
     break-inside: avoid !important;
   }
   .nid-card-frame {
-    width: 340px !important;
-    height: 215px !important;
-    border: 1.5px solid #000000 !important;
+    width: 332px !important;
+    height: 208px !important;
+    border: 1px solid #000000 !important;
+    border-radius: 6px !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     page-break-inside: avoid !important;

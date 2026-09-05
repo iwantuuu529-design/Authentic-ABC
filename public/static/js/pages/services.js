@@ -823,20 +823,20 @@ async function renderSuperFastPdfServicePage(content, service) {
         <div class="nid-card-print-container flex flex-col md:flex-row items-center justify-center gap-5 my-2">
           
           <!-- FRONT SIDE -->
-          <div class="nid-card-frame shadow-md select-none p-2.5 flex flex-col justify-between">
+          <div class="nid-card-frame shadow-md select-none p-2 flex flex-col justify-between">
             <!-- Background Guilloche Watermark Seal -->
             <svg class="nid-watermark-seal" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="46" fill="none" stroke="#0e6b35" stroke-width="1.5" stroke-dasharray="2 2" />
-              <circle cx="50" cy="50" r="38" fill="none" stroke="#d92222" stroke-width="1" />
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" stroke-width="1.5" stroke-dasharray="2 2" />
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#c8102e" stroke-width="1" />
               <circle cx="50" cy="50" r="30" fill="none" stroke="#c9a030" stroke-width="1.5" stroke-dasharray="3 2" />
-              <circle cx="50" cy="50" r="22" fill="#d92222" opacity="0.12" />
+              <circle cx="50" cy="50" r="22" fill="#c8102e" opacity="0.12" />
             </svg>
 
             <!-- Card Header -->
             <div class="flex items-center justify-center gap-2 relative z-10 border-b border-black/20 pb-1 pt-0.5">
               <!-- Official Bangladesh Emblem Seal -->
               <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="48" fill="#d92222" stroke="#0e6b35" stroke-width="3" />
+                <circle cx="50" cy="50" r="48" fill="#c8102e" stroke="#006a4e" stroke-width="3" />
                 <circle cx="50" cy="50" r="41" fill="none" stroke="#ffcc00" stroke-width="2.5" stroke-dasharray="3,3" />
                 <!-- Water Lily (Shapla) -->
                 <path d="M50 25 C45 38 43 55 50 64 C57 55 55 38 50 25 Z" fill="#ffffff" />
@@ -852,112 +852,113 @@ async function renderSuperFastPdfServicePage(content, service) {
                 <text x="68" y="22" fill="#ffffff" font-size="7" font-weight="bold" text-anchor="middle">★</text>
               </svg>
 
-              <div class="text-center flex-1 pr-2">
-                <div style="color: #0b6830; font-weight: 700; font-size: 13px; line-height: 1.15; font-family: 'Hind Siliguri', sans-serif;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
-                <div style="color: #0b6830; font-weight: 600; font-size: 9px; line-height: 1.15; font-family: 'Segoe UI', Arial, sans-serif;">Government of the People's Republic of Bangladesh</div>
-                <div style="color: #cc1818; font-weight: 700; font-size: 10px; line-height: 1.15; margin-top: 1.5px; font-family: 'Hind Siliguri', sans-serif;">National ID Card / জাতীয় পরিচয় পত্র</div>
+              <div class="text-center flex-1 pr-1">
+                <div style="color: #006a4e; font-weight: 700; font-size: 12.5px; line-height: 1.15; font-family: 'Hind Siliguri', sans-serif;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+                <div style="color: #006a4e; font-weight: 600; font-size: 8px; line-height: 1.15; font-family: 'Segoe UI', Arial, sans-serif; letter-spacing: 0.1px;">Government of the People's Republic of Bangladesh</div>
+                <div style="color: #c8102e; font-weight: 700; font-size: 9.5px; line-height: 1.15; margin-top: 1px; font-family: 'Hind Siliguri', sans-serif;">National ID Card / জাতীয় পরিচয় পত্র</div>
               </div>
             </div>
 
             <!-- Card Body: Left (Photo + Sign) & Right (Info Rows) -->
-            <div class="flex gap-2.5 items-start relative z-10 flex-1 pt-1.5">
+            <div class="flex gap-2 items-start relative z-10 flex-1 pt-1">
               <!-- Left: Photo + Sign -->
-              <div class="flex flex-col items-center flex-shrink-0" style="width: 76px;">
-                <div style="width: 76px; height: 90px; border: 1px solid #666; background: #fff; overflow: hidden; border-radius: 2px;">
+              <div class="flex flex-col items-center flex-shrink-0" style="width: 72px;">
+                <div style="width: 72px; height: 86px; border: 1px solid #444; background: #fff; overflow: hidden; border-radius: 2px;">
                   <img src="${certData.photo}" alt="NID Photo" class="w-full h-full object-cover">
                 </div>
-                <div style="width: 76px; height: 22px; margin-top: 3px; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 72px; height: 20px; margin-top: 2px; display: flex; align-items: center; justify-content: center;">
                   <img src="${certData.sign}" alt="Signature" class="max-w-full max-h-full object-contain">
                 </div>
               </div>
 
               <!-- Right: Info Rows -->
-              <div class="flex-1 space-y-1 pt-0.5" style="font-size: 10.5px; line-height: 1.25; color: #111;">
-                <div class="flex items-baseline">
-                  <span style="width: 44px; flex-shrink: 0; color: #222;">নাম:</span>
-                  <strong style="font-size: 11.5px; color: #000; font-weight: 700;">${certData.name_bn}</strong>
+              <div class="flex-1 space-y-0.5 pt-0.5" style="font-size: 10px; line-height: 1.25; color: #111;">
+                <div class="flex items-baseline" style="margin-bottom: 2px;">
+                  <span style="width: 42px; flex-shrink: 0; color: #111; font-weight: 500;">নাম:</span>
+                  <strong style="font-size: 11px; color: #000; font-weight: 700; font-family: 'Hind Siliguri', sans-serif;">${certData.name_bn}</strong>
                 </div>
-                <div class="flex items-baseline">
-                  <span style="width: 44px; flex-shrink: 0; color: #222;">Name:</span>
-                  <strong style="font-size: 10px; color: #111; font-weight: 600; font-family: 'Segoe UI', Arial, sans-serif;">${certData.name_en}</strong>
+                <div class="flex items-baseline" style="margin-bottom: 2px;">
+                  <span style="width: 42px; flex-shrink: 0; color: #111; font-weight: 500;">Name:</span>
+                  <strong style="font-size: 9.5px; color: #000; font-weight: 600; font-family: 'Segoe UI', Arial, sans-serif;">${certData.name_en}</strong>
                 </div>
-                <div class="flex items-baseline">
-                  <span style="width: 44px; flex-shrink: 0; color: #222;">পিতা:</span>
-                  <span style="font-weight: 500;">${certData.father_name}</span>
+                <div class="flex items-baseline" style="margin-bottom: 2px;">
+                  <span style="width: 42px; flex-shrink: 0; color: #111; font-weight: 500;">পিতা:</span>
+                  <span style="font-size: 9.5px; font-weight: 600; color: #111;">${certData.father_name}</span>
                 </div>
-                <div class="flex items-baseline">
-                  <span style="width: 44px; flex-shrink: 0; color: #222;">মাতা:</span>
-                  <span style="font-weight: 500;">${certData.mother_name}</span>
+                <div class="flex items-baseline" style="margin-bottom: 2px;">
+                  <span style="width: 42px; flex-shrink: 0; color: #111; font-weight: 500;">মাতা:</span>
+                  <span style="font-size: 9.5px; font-weight: 600; color: #111;">${certData.mother_name}</span>
+                </div>
+                <div class="flex items-baseline" style="margin-top: 3px; margin-bottom: 2px;">
+                  <span style="color: #111; margin-right: 4px; font-size: 9px; font-weight: 500;">Date of Birth:</span>
+                  <strong style="color: #c8102e; font-size: 10px; font-weight: 700; font-family: 'Segoe UI', Arial, sans-serif;">${certData.dob}</strong>
                 </div>
                 <div class="flex items-baseline" style="margin-top: 2px;">
-                  <span style="color: #222; margin-right: 4px;">Date of Birth:</span>
-                  <strong style="color: #cc1818; font-size: 10.5px; font-weight: 700;">${certData.dob}</strong>
-                </div>
-                <div class="flex items-baseline" style="margin-top: 2px;">
-                  <span style="color: #222; margin-right: 4px;">ID NO:</span>
-                  <strong style="color: #cc1818; font-size: 13px; font-weight: 800; letter-spacing: 0.5px; font-family: monospace;">${certData.reg_no}</strong>
+                  <span style="color: #111; margin-right: 4px; font-size: 9.5px; font-weight: 500;">ID NO:</span>
+                  <strong style="color: #c8102e; font-size: 12.5px; font-weight: 800; letter-spacing: 0.5px; font-family: 'Courier New', monospace;">${certData.reg_no}</strong>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- BACK SIDE -->
-          <div class="nid-card-frame shadow-md select-none flex flex-col justify-between">
+          <div class="nid-card-frame shadow-md select-none flex flex-col justify-between" style="padding: 2px 0;">
             <!-- Background Guilloche Watermark Seal -->
             <svg class="nid-watermark-seal" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="46" fill="none" stroke="#0e6b35" stroke-width="1.5" stroke-dasharray="2 2" />
-              <circle cx="50" cy="50" r="38" fill="none" stroke="#d92222" stroke-width="1" />
+              <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" stroke-width="1.5" stroke-dasharray="2 2" />
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#c8102e" stroke-width="1" />
               <circle cx="50" cy="50" r="30" fill="none" stroke="#c9a030" stroke-width="1.5" stroke-dasharray="3 2" />
+              <circle cx="50" cy="50" r="22" fill="#c8102e" opacity="0.12" />
             </svg>
 
             <!-- Top Notice Box -->
-            <div style="border-bottom: 1px solid #111; padding: 4px 6px; font-size: 8px; line-height: 1.25; text-align: center; color: #111;" class="relative z-10">
-              এই কার্ডটি গণপ্রজাতন্ত্রী বাংলাদেশ সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য<br>
-              কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।
+            <div style="border-bottom: 0.75px solid #333; padding: 3px 6px; font-size: 7.5px; line-height: 1.25; text-align: center; color: #111;" class="relative z-10">
+              এই কার্ডটি গণপ্রজাতন্ত্রী বাংলাদেশ সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য কোথাও<br>
+              পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।
             </div>
 
             <!-- Middle Address (স্থায়ী ঠিকানা) -->
-            <div style="padding: 4px 8px; font-size: 8.5px; line-height: 1.35; color: #111;" class="relative z-10 flex-1">
+            <div style="padding: 3px 8px; font-size: 8px; line-height: 1.35; color: #111;" class="relative z-10 flex-1">
               <span style="font-weight: 700;">ঠিকানা:</span> ${certData.address}
             </div>
 
             <!-- Blood Group, Birth Place & Print Count Row -->
-            <div style="padding: 2px 8px; font-size: 8.5px; line-height: 1.3; color: #111; border-top: 0.5px solid rgba(0,0,0,0.2);" class="relative z-10 flex items-center justify-between">
+            <div style="padding: 2px 8px; font-size: 8px; line-height: 1.25; color: #111; border-top: 0.5px solid rgba(0,0,0,0.25);" class="relative z-10 flex items-center justify-between">
               <div>
                 <span>রক্তের গ্রুপ / Blood Group: </span>
-                <strong style="color: #cc1818; font-weight: 700;">${certData.gender_blood || 'AB+'}</strong>
-                <span class="ml-2">জন্মস্থান: </span>
+                <strong style="color: #c8102e; font-weight: 700;">${certData.gender_blood || 'AB+'}</strong>
+                <span style="margin-left: 8px;">জন্মস্থান: </span>
                 <span style="font-weight: 600;">${certData.birth_place || 'কিশোরগঞ্জ'}</span>
               </div>
-              <div style="font-weight: 700; font-size: 8px;">
+              <div style="font-weight: 700; font-size: 7.5px;">
                 মুদ্রণ: ০১
               </div>
             </div>
 
             <!-- Signatures & Issue Date Row -->
-            <div style="padding: 2px 8px 3px 8px; font-size: 8px; color: #111;" class="relative z-10 flex items-end justify-between">
+            <div style="padding: 2px 8px 3px 8px; font-size: 7.5px; color: #111;" class="relative z-10 flex items-end justify-between">
               <!-- Official Authority Signature -->
-              <div class="text-center" style="width: 120px;">
-                <div style="height: 22px; display: flex; align-items: center; justify-content: center;">
-                  <svg class="h-6 w-24" viewBox="0 0 120 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <div class="text-center" style="width: 110px;">
+                <div style="height: 20px; display: flex; align-items: center; justify-content: center;">
+                  <svg class="h-5 w-24" viewBox="0 0 120 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M14 21 C16 15, 18 5, 24 3 C28 2, 30 7, 28 13 C26 19, 20 22, 16 23 C24 23, 34 14, 42 9 C48 5, 52 11, 50 16 C48 21, 40 24, 46 23 C54 21, 62 13, 70 8 C76 4, 82 10, 78 17 C84 14, 94 11, 106 7" stroke="#111" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M20 18 Q50 20 80 17 T114 14" stroke="#111" stroke-width="1.5" stroke-linecap="round"/>
                   </svg>
                 </div>
-                <div style="font-size: 7.5px; font-weight: 600; border-top: 0.5px solid #333; padding-top: 1px;">
+                <div style="font-size: 7px; font-weight: 600; border-top: 0.5px solid #222; padding-top: 1px;">
                   প্রদানকারী কর্তৃপক্ষের স্বাক্ষর
                 </div>
               </div>
 
               <!-- Issue Date -->
-              <div style="font-size: 8.5px; font-weight: 600; padding-bottom: 2px;">
+              <div style="font-size: 8px; font-weight: 600; padding-bottom: 2px;">
                 প্রদানের তারিখ: <span style="font-weight: 700;">${certData.issue_date}</span>
               </div>
             </div>
 
             <!-- Bottom 2D PDF417 Barcode -->
-            <div style="padding: 1px 4px 4px 4px;" class="relative z-10">
-              <canvas id="nid-barcode-canvas" style="width: 100%; height: 32px; image-rendering: pixelated; display: block;"></canvas>
+            <div style="padding: 1px 4px 3px 4px;" class="relative z-10">
+              <canvas id="nid-barcode-canvas" style="width: 100%; height: 34px; image-rendering: pixelated; display: block;"></canvas>
             </div>
           </div>
         </div>
@@ -1208,6 +1209,13 @@ async function renderSuperFastPdfServicePage(content, service) {
 
   qs('#btn-cert-close').addEventListener('click', () => {
     previewModal.classList.add('hidden')
+  })
+
+  // Real-time live preview update
+  orderForm.addEventListener('input', () => {
+    if (!previewModal.classList.contains('hidden')) {
+      renderLiveCertificate()
+    }
   })
 
   // ------------------------------------------------------------

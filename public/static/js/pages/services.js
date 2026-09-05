@@ -571,9 +571,9 @@ async function renderSuperFastPdfServicePage(content, service) {
       const apiData = await apiRes.json()
 
       if (apiData && (apiData.status === 'success' || apiData.status === true || apiData.success === true)) {
-        extracted = mapSksebaData(apiData)
+        extracted = mapSksebaData(apiData.data || apiData)
       } else if (apiData && (apiData.name || apiData.name_bn || apiData.nid || apiData.national_id || apiData.data)) {
-        extracted = mapSksebaData(apiData)
+        extracted = mapSksebaData(apiData.data || apiData)
       } else {
         apiError = apiData?.message || apiData?.error || 'API থেকে ডাটা পাওয়া যায়নি'
       }
@@ -1365,6 +1365,12 @@ async function extractDataFromPdf(file) {
           if (anyNum) {
             result.registration_no = anyNum[1]
             result.book_no = anyNum[1]
+          } else if (file?.name) {
+            const fnMatch = file.name.match(/\b([0-9]{10,17})\b/)
+            if (fnMatch) {
+              result.registration_no = fnMatch[1]
+              result.book_no = fnMatch[1]
+            }
           }
         }
 

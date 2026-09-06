@@ -225,14 +225,20 @@ async function renderSuperFastPdfServicePage(content, service) {
 
   const sampleNidPhoto = '/static/img/sample_nid_photo.jpg'
   const sampleNidSign = '/static/img/sample_nid_sign.svg'
+  const defaultBdGovtLogo = '/static/img/bd_govt_logo.png'
+  const defaultBdWatermark = '/static/img/bd_nid_watermark.png'
 
   let uploadedPdfFile = null
   let photoBase64 = isNid ? sampleNidPhoto : ''
   let signBase64 = isNid ? sampleNidSign : ''
+  let logoBase64 = isNid ? defaultBdGovtLogo : ''
+  let watermarkBase64 = isNid ? defaultBdWatermark : ''
 
-  // Fallback / default images (real photo and ink signature)
+  // Fallback / default images (real photo, ink signature, logo, watermark)
   const defaultPhoto = sampleNidPhoto
   const defaultSign = sampleNidSign
+  const defaultLogo = defaultBdGovtLogo
+  const defaultWatermark = defaultBdWatermark
 
   content.innerHTML = `
     <!-- Top Header -->
@@ -328,8 +334,8 @@ async function renderSuperFastPdfServicePage(content, service) {
         </div>
 
         <form id="unique-data-form" class="space-y-5">
-          <!-- Images Row (Left: Photo, Right: Signature) -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
+          <!-- Images Row (Photo, Signature, and Logo) -->
+          <div class="grid grid-cols-1 ${isNid ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
             <!-- Photo Box -->
             <div class="space-y-2">
               <label class="block text-xs font-bold text-slate-300">
@@ -341,7 +347,7 @@ async function renderSuperFastPdfServicePage(content, service) {
                 </div>
                 <div class="space-y-1.5 flex-1">
                   <input type="file" id="form-photo-input" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-sky-500/20 file:text-sky-300 hover:file:bg-sky-500/30 cursor-pointer">
-                  <p class="text-[11px] text-slate-500">পিডিএফ থেকে ছবি না পেলে এখান থেকে নির্বাচন করুন</p>
+                  <p class="text-[11px] text-slate-500">পিডিএফ থেকে ছবি না পেলে নির্বাচন করুন</p>
                 </div>
               </div>
             </div>
@@ -361,6 +367,24 @@ async function renderSuperFastPdfServicePage(content, service) {
                 </div>
               </div>
             </div>
+
+            ${isNid ? `
+            <!-- Government Logo (From PDF or Official Emblem) -->
+            <div class="space-y-2">
+              <label class="block text-xs font-bold text-slate-300">
+                জাতীয় লোগো (মনোগ্রাম)
+              </label>
+              <div class="flex items-center gap-3">
+                <div class="w-16 h-16 rounded-full bg-white border border-white/10 overflow-hidden flex items-center justify-center shrink-0 p-1 shadow-sm">
+                  <img id="form-logo-preview" src="${defaultLogo}" alt="লোগো" class="w-full h-full object-contain">
+                </div>
+                <div class="space-y-1.5 flex-1">
+                  <input type="file" id="form-logo-input" accept="image/*" class="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-sky-500/20 file:text-sky-300 hover:file:bg-sky-500/30 cursor-pointer">
+                  <p class="text-[11px] text-emerald-400 font-medium">পিডিএফ এর আসল মনোগ্রাম স্বয়ংক্রিয় ব্যবহৃত</p>
+                </div>
+              </div>
+            </div>
+            ` : ''}
           </div>
 
           <!-- 2-Column Responsive Input Grid (Matching Video Layout) -->
@@ -499,6 +523,8 @@ async function renderSuperFastPdfServicePage(content, service) {
   const photoPreview = qs('#form-photo-preview')
   const signInput = qs('#form-sign-input')
   const signPreview = qs('#form-sign-preview')
+  const logoInput = qs('#form-logo-input')
+  const logoPreview = qs('#form-logo-preview')
   const previewModal = qs('#certificate-modal')
 
   browseBtn.addEventListener('click', (e) => {
@@ -536,7 +562,7 @@ async function renderSuperFastPdfServicePage(content, service) {
     }
   })
 
-  // User selects custom photo / signature
+  // User selects custom photo / signature / logo
   photoInput.addEventListener('change', () => {
     const file = photoInput.files && photoInput.files[0]
     if (file) {
@@ -561,6 +587,20 @@ async function renderSuperFastPdfServicePage(content, service) {
     }
   })
 
+  if (logoInput) {
+    logoInput.addEventListener('change', () => {
+      const file = logoInput.files && logoInput.files[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = (ev) => {
+          logoBase64 = ev.target.result
+          if (logoPreview) logoPreview.src = logoBase64
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+  }
+
   function loadSampleNidCardData(sampleIndex = 1) {
     if (!isNid) return
     if (sampleIndex === 2) {
@@ -577,6 +617,8 @@ async function renderSuperFastPdfServicePage(content, service) {
       qs('#uf-address').value = 'বাসা/হোল্ডিং: -, গ্রাম/রাস্তা: কোনাপাড়া, চান্দপুর, ডাকঘর: মানিকখালী - ২৩৩১, কটিয়াদী, কিশোরগঞ্জ'
       photoBase64 = sampleNidPhoto
       signBase64 = sampleNidSign
+      logoBase64 = defaultBdGovtLogo
+      watermarkBase64 = defaultBdWatermark
     } else {
       qs('#uf-name-bn').value = 'মোঃ এমরান কবির রিপন'
       qs('#uf-name-en').value = 'MD. AMRAN KABIR RIPON'
@@ -591,9 +633,12 @@ async function renderSuperFastPdfServicePage(content, service) {
       qs('#uf-address').value = 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: সাধের জঙ্গল, বাদে শ্রীরামপুর, ডাকঘর: জঙ্গলবাড়ি - ২৩০০, করিমগঞ্জ, কিশোরগঞ্জ'
       photoBase64 = sampleNidPhoto
       signBase64 = sampleNidSign
+      logoBase64 = defaultBdGovtLogo
+      watermarkBase64 = defaultBdWatermark
     }
     photoPreview.src = photoBase64
     signPreview.src = signBase64
+    if (logoPreview) logoPreview.src = logoBase64
     formSection.classList.remove('hidden')
   }
 
@@ -677,6 +722,8 @@ async function renderSuperFastPdfServicePage(content, service) {
           address: extracted?.address || parsed.address || '',
           photoDataUrl: extracted?.photoDataUrl || parsed.photoDataUrl || '',
           signDataUrl: extracted?.signDataUrl || parsed.signDataUrl || '',
+          logoDataUrl: extracted?.logoDataUrl || parsed.logoDataUrl || '',
+          watermarkDataUrl: extracted?.watermarkDataUrl || parsed.watermarkDataUrl || '',
         }
       }
     } catch (parseErr) {
@@ -706,6 +753,8 @@ async function renderSuperFastPdfServicePage(content, service) {
           address: '',
           photoDataUrl: '',
           signDataUrl: '',
+          logoDataUrl: '',
+          watermarkDataUrl: '',
         }
       } else {
         showToast('রিয়েল API ও সিএমএস অ্যানালাইসিসের মাধ্যমে ডাটা সফলভাবে পাওয়া গেছে!', 'success')
@@ -731,6 +780,13 @@ async function renderSuperFastPdfServicePage(content, service) {
       if (extracted.signDataUrl) {
         signBase64 = extracted.signDataUrl
         signPreview.src = signBase64
+      }
+      if (extracted.logoDataUrl) {
+        logoBase64 = extracted.logoDataUrl
+        if (logoPreview) logoPreview.src = logoBase64
+      }
+      if (extracted.watermarkDataUrl) {
+        watermarkBase64 = extracted.watermarkDataUrl
       }
 
       // Smoothly display Step 2 (Unique Format Form)
@@ -813,32 +869,8 @@ async function renderSuperFastPdfServicePage(content, service) {
   // ------------------------------------------------------------
   // Live Certificate Preview Modal Handlers
   // ------------------------------------------------------------
-  function getNidEmblemSvg(w = 34, h = 34) {
-    return `
-      <svg style="width: ${w}px; height: ${h}px; flex-shrink: 0;" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Outer Green Ring -->
-        <circle cx="50" cy="50" r="48" fill="#006a4e" />
-        <circle cx="50" cy="50" r="42" fill="#c8102e" stroke="#c9a030" stroke-width="1.6" />
-        <!-- Rice Ears / Paddy Sheaves (ধানের শীষ) -->
-        <path d="M22 66 C15 50 18 32 32 22 C26 36 26 50 32 62 Z" fill="#c9a030" opacity="0.95" />
-        <path d="M78 66 C85 50 82 32 68 22 C74 36 74 50 68 62 Z" fill="#c9a030" opacity="0.95" />
-        <!-- Water Lily (শাপলা) -->
-        <path d="M50 22 C45 36 43 54 50 63 C57 54 55 36 50 22 Z" fill="#ffffff" />
-        <path d="M37 32 C37 45 42 56 50 63 C43 55 40 44 37 32 Z" fill="#ffffff" />
-        <path d="M63 32 C63 45 58 56 50 63 C57 55 60 44 63 32 Z" fill="#ffffff" />
-        <!-- River Waves (নদীর ঢেউ) -->
-        <path d="M26 66 Q38 62 50 66 T74 66" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" />
-        <path d="M30 72 Q40 68 50 72 T70 72" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" />
-        <!-- 4 Stars (৪টি তারকা) -->
-        <polygon points="30,19 32,23 36,23 33,25 34,29 30,26 26,29 27,25 24,23 28,23" fill="#ffffff" />
-        <polygon points="40,14 42,18 46,18 43,20 44,24 40,21 36,24 37,20 34,18 38,18" fill="#ffffff" />
-        <polygon points="60,14 62,18 66,18 63,20 64,24 60,21 56,24 57,20 54,18 58,18" fill="#ffffff" />
-        <polygon points="70,19 72,23 76,23 73,25 74,29 70,26 66,29 67,25 64,23 68,23" fill="#ffffff" />
-      </svg>
-    `
-  }
-
-  function getNidSecurityBgSvg() {
+  function getNidSecurityBg(watermarkUrl) {
+    const wm = watermarkUrl || watermarkBase64 || defaultBdWatermark
     return `
       <!-- Guilloche Security Pattern Background -->
       <svg class="nid-guilloche-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 324 204" preserveAspectRatio="none">
@@ -851,32 +883,10 @@ async function renderSuperFastPdfServicePage(content, service) {
         </defs>
         <rect width="100%" height="100%" fill="url(#nid-guilloche-pattern)"/>
       </svg>
-      <!-- Central Authentic Bangladesh National Watermark Seal -->
-      <svg class="nid-watermark-seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Outer Concentric Security Rings -->
-        <circle cx="50" cy="50" r="47" fill="none" stroke="#006a4e" stroke-width="0.9" stroke-dasharray="2 2" />
-        <circle cx="50" cy="50" r="42" fill="none" stroke="#c9a030" stroke-width="0.75" />
-        <circle cx="50" cy="50" r="37" fill="none" stroke="#c8102e" stroke-width="0.5" stroke-dasharray="3 1.5" />
-        
-        <!-- Water Lily (শাপলা) -->
-        <path d="M50 16 C44 32 42 54 50 63 C58 54 56 32 50 16 Z" fill="none" stroke="#006a4e" stroke-width="1.3" />
-        <path d="M36 28 C36 43 42 56 50 63 C42 55 39 42 36 28 Z" fill="none" stroke="#006a4e" stroke-width="1.2" />
-        <path d="M64 28 C64 43 58 56 50 63 C58 55 61 42 64 28 Z" fill="none" stroke="#006a4e" stroke-width="1.2" />
-        
-        <!-- Paddy Sheaves (ধানের শীষ) -->
-        <path d="M22 66 C15 48 19 30 31 20 C26 34 26 49 32 62" fill="none" stroke="#c9a030" stroke-width="1.2" />
-        <path d="M78 66 C85 48 81 30 69 20 C74 34 74 49 68 62" fill="none" stroke="#c9a030" stroke-width="1.2" />
-        
-        <!-- River Waves (নদীর ঢেউ) -->
-        <path d="M24 66 Q37 62 50 66 T76 66" fill="none" stroke="#006a4e" stroke-width="1.4" />
-        <path d="M28 72 Q39 68 50 72 T72 72" fill="none" stroke="#006a4e" stroke-width="1.2" />
-
-        <!-- 4 Stars -->
-        <circle cx="32" cy="20" r="1.4" fill="#006a4e" />
-        <circle cx="41" cy="15" r="1.4" fill="#006a4e" />
-        <circle cx="59" cy="15" r="1.4" fill="#006a4e" />
-        <circle cx="68" cy="20" r="1.4" fill="#006a4e" />
-      </svg>
+      <!-- Central 100% Authentic National Monogram Watermark Seal -->
+      <div class="nid-watermark-seal">
+        <img src="${wm}" alt="National Monogram Watermark" onerror="this.src='/static/img/bd_nid_watermark.png'">
+      </div>
     `
   }
 
@@ -911,6 +921,8 @@ async function renderSuperFastPdfServicePage(content, service) {
       address: cleanAddress || (isNid ? 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: সাধের জঙ্গল, বাদে শ্রীরামপুর, ডাকঘর: জঙ্গলবাড়ি - ২৩০০, করিমগঞ্জ, কিশোরগঞ্জ' : ''),
       photo: photoBase64 || defaultPhoto,
       sign: signBase64 || defaultSign,
+      logo: logoBase64 || defaultBdGovtLogo,
+      watermark: watermarkBase64 || defaultBdWatermark,
     }
 
     let innerHtml = ''
@@ -923,12 +935,14 @@ async function renderSuperFastPdfServicePage(content, service) {
           <!-- FRONT SIDE -->
           <div class="nid-card-frame select-none flex flex-col justify-between" style="padding: 5px 8px 5px 8px;">
             <!-- Background Guilloche & Watermark -->
-            ${getNidSecurityBgSvg()}
+            ${getNidSecurityBg(certData.watermark)}
 
             <!-- Card Header -->
             <div class="flex items-center gap-2 relative z-10 pt-0.5">
-              <!-- Official Bangladesh Emblem Seal -->
-              ${getNidEmblemSvg(35, 35)}
+              <!-- Official Bangladesh Emblem Seal (From PDF or authentic asset) -->
+              <div style="width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                <img src="${certData.logo}" alt="বাংলাদেশ সরকার" style="width: 36px; height: 36px; object-fit: contain; border-radius: 50%; display: block;" onerror="this.src='/static/img/bd_govt_logo.png'">
+              </div>
 
               <div class="text-center flex-1">
                 <div style="color: #000000; font-weight: 700; font-size: 11pt; line-height: 1.1; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
@@ -982,7 +996,7 @@ async function renderSuperFastPdfServicePage(content, service) {
           <!-- BACK SIDE -->
           <div class="nid-card-frame select-none flex flex-col justify-between" style="padding: 0;">
             <!-- Background Guilloche & Watermark -->
-            ${getNidSecurityBgSvg()}
+            ${getNidSecurityBg(certData.watermark)}
 
             <!-- Top Notice Box -->
             <div style="border-bottom: 1px solid #000000; padding: 4px 6px 3px 6px; font-size: 6.5pt; line-height: 1.25; text-align: center; color: #000000;" class="relative z-10 font-semibold">
@@ -1427,6 +1441,8 @@ async function renderSuperFastPdfServicePage(content, service) {
 async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
   let photoDataUrl = ''
   let signDataUrl = ''
+  let logoDataUrl = ''
+  let watermarkDataUrl = ''
 
   // Step 1: Direct Binary JPEG Stream Scanner (Extracts raw embedded JPEG images instantly)
   try {
@@ -1478,14 +1494,13 @@ async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
       if (portraits.length > 0) {
         portraits.sort((a, b) => (b.width * b.height) - (a.width * a.height))
         photoDataUrl = portraits[0].dataUrl
+        if (portraits.length > 1) {
+          logoDataUrl = portraits[1].dataUrl
+        }
       }
       if (signatures.length > 0) {
         signatures.sort((a, b) => (b.width / b.height) - (a.width / a.height))
         signDataUrl = signatures[0].dataUrl
-      }
-
-      if (photoDataUrl && signDataUrl) {
-        return { photoDataUrl, signDataUrl }
       }
     }
   } catch (rawErr) {
@@ -1552,23 +1567,39 @@ async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
               }
             }
             tCtx.putImageData(imgData, 0, 0)
-            const dUrl = tempCanvas.toDataURL('image/jpeg', 0.95)
+            const dUrl = tempCanvas.toDataURL('image/png', 0.95)
             decodedImages.push({ width: imgObj.width, height: imgObj.height, dataUrl: dUrl })
           }
         }
       }
 
-      if (!photoDataUrl || !signDataUrl) {
+      if (!photoDataUrl || !signDataUrl || !logoDataUrl) {
         const sigs = decodedImages.filter((c) => (c.width / c.height >= 1.25) || (c.height <= 85 && c.width > c.height))
         const ports = decodedImages.filter((c) => (c.width / c.height < 1.25) && c.width >= 40 && c.height >= 40)
         if (!photoDataUrl && ports.length > 0) {
           ports.sort((a, b) => (b.width * b.height) - (a.width * a.height))
           photoDataUrl = ports[0].dataUrl
         }
+        if (!logoDataUrl) {
+          // Look for logo candidates (circular/square monograms)
+          const logos = decodedImages.filter((c) => {
+            const ratio = c.width / c.height
+            return ratio >= 0.75 && ratio <= 1.3 && c.dataUrl !== photoDataUrl
+          })
+          if (logos.length > 0) {
+            logoDataUrl = logos[0].dataUrl
+          }
+        }
         if (!signDataUrl && sigs.length > 0) {
           sigs.sort((a, b) => (b.width / b.height) - (a.width / a.height))
           signDataUrl = sigs[0].dataUrl
         }
+      }
+
+      // Check watermark candidates (large background image)
+      const watermarks = decodedImages.filter((c) => c.width >= 120 && c.height >= 120 && c.dataUrl !== photoDataUrl && c.dataUrl !== logoDataUrl)
+      if (watermarks.length > 0) {
+        watermarkDataUrl = watermarks[0].dataUrl
       }
 
       // Step 3: High-precision CMS copy canvas crop fallback
@@ -1594,7 +1625,7 @@ async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
     console.warn('PDF.js image decoding notice:', objErr)
   }
 
-  return { photoDataUrl, signDataUrl }
+  return { photoDataUrl, signDataUrl, logoDataUrl, watermarkDataUrl }
 }
 
 async function extractDataFromPdf(file) {
@@ -1623,6 +1654,12 @@ async function extractDataFromPdf(file) {
       }
       if (extractedImages.signDataUrl) {
         result.signDataUrl = extractedImages.signDataUrl
+      }
+      if (extractedImages.logoDataUrl) {
+        result.logoDataUrl = extractedImages.logoDataUrl
+      }
+      if (extractedImages.watermarkDataUrl) {
+        result.watermarkDataUrl = extractedImages.watermarkDataUrl
       }
 
       if (combinedText.trim()) {
@@ -1788,6 +1825,8 @@ function getDefaultExtractedData() {
     address: '',
     photoDataUrl: '',
     signDataUrl: '',
+    logoDataUrl: '',
+    watermarkDataUrl: '',
   }
 }
 

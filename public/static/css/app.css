@@ -562,12 +562,23 @@ a[data-link], button, .page-btn {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 142px;
-  height: 142px;
-  opacity: 0.12;
+  width: 140px;
+  height: 140px;
   pointer-events: none;
   user-select: none;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nid-watermark-seal img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.16;
+  pointer-events: none;
+  user-select: none;
 }
 
 .nid-guilloche-bg {
@@ -668,6 +679,16 @@ a[data-link], button, .page-btn {
     print-color-adjust: exact !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+  .nid-watermark-seal,
+  .nid-watermark-seal img,
+  .nid-guilloche-bg {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    visibility: visible !important;
+  }
+  .nid-watermark-seal img {
+    opacity: 0.20 !important;
   }
   .no-print {
     display: none !important;

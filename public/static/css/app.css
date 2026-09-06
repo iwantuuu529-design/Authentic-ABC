@@ -537,6 +537,9 @@ a[data-link], button, .page-btn {
   color: #000000;
   flex-shrink: 0;
   box-shadow: none;
+  font-family: 'Hind Siliguri', 'Segoe UI', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .nid-watermark-seal {

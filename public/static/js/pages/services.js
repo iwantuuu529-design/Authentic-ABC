@@ -298,7 +298,7 @@ async function renderSuperFastPdfServicePage(content, service) {
       <!-- Quick Demo Clone Action -->
       <div class="mt-4 flex items-center justify-center">
         <button type="button" id="btn-load-sample-nid" class="px-5 py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
-          <i class="fa-solid fa-id-card text-emerald-400 text-sm"></i> ১০০০% অরিজিনাল ক্লোন কার্ড দেখুন (MD. AMRAN KABIR RIPON)
+          <i class="fa-solid fa-id-card text-sky-400 text-sm"></i> রেফারেন্স কার্ড ভিউ দেখুন (MD. AMRAN KABIR RIPON)
         </button>
       </div>
       ` : ''}
@@ -782,6 +782,51 @@ async function renderSuperFastPdfServicePage(content, service) {
   // ------------------------------------------------------------
   // Live Certificate Preview Modal Handlers
   // ------------------------------------------------------------
+  function getNidEmblemSvg(w = 34, h = 34) {
+    return `
+      <svg style="width: ${w}px; height: ${h}px; flex-shrink: 0;" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer Green Ring -->
+        <circle cx="50" cy="50" r="48" fill="#006a4e" />
+        <circle cx="50" cy="50" r="42" fill="#c8102e" stroke="#c9a030" stroke-width="1.6" />
+        <!-- Rice Ears / Paddy Sheaves (ধানের শীষ) -->
+        <path d="M22 66 C15 50 18 32 32 22 C26 36 26 50 32 62 Z" fill="#c9a030" opacity="0.95" />
+        <path d="M78 66 C85 50 82 32 68 22 C74 36 74 50 68 62 Z" fill="#c9a030" opacity="0.95" />
+        <!-- Water Lily (শাপলা) -->
+        <path d="M50 22 C45 36 43 54 50 63 C57 54 55 36 50 22 Z" fill="#ffffff" />
+        <path d="M37 32 C37 45 42 56 50 63 C43 55 40 44 37 32 Z" fill="#ffffff" />
+        <path d="M63 32 C63 45 58 56 50 63 C57 55 60 44 63 32 Z" fill="#ffffff" />
+        <!-- River Waves (নদীর ঢেউ) -->
+        <path d="M26 66 Q38 62 50 66 T74 66" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" />
+        <path d="M30 72 Q40 68 50 72 T70 72" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" />
+        <!-- 4 Stars (৪টি তারকা) -->
+        <polygon points="30,19 32,23 36,23 33,25 34,29 30,26 26,29 27,25 24,23 28,23" fill="#ffffff" />
+        <polygon points="40,14 42,18 46,18 43,20 44,24 40,21 36,24 37,20 34,18 38,18" fill="#ffffff" />
+        <polygon points="60,14 62,18 66,18 63,20 64,24 60,21 56,24 57,20 54,18 58,18" fill="#ffffff" />
+        <polygon points="70,19 72,23 76,23 73,25 74,29 70,26 66,29 67,25 64,23 68,23" fill="#ffffff" />
+      </svg>
+    `
+  }
+
+  function getNidWatermarkSvg() {
+    return `
+      <svg class="nid-watermark-seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Center Water Lily Outline -->
+        <path d="M50 18 C44 34 42 54 50 64 C58 54 56 34 50 18 Z" fill="none" stroke="#006a4e" stroke-width="1.2" />
+        <path d="M35 30 C35 44 41 57 50 64 C42 56 39 43 35 30 Z" fill="none" stroke="#006a4e" stroke-width="1.2" />
+        <path d="M65 30 C65 44 59 57 50 64 C58 56 61 43 65 30 Z" fill="none" stroke="#006a4e" stroke-width="1.2" />
+        <!-- Paddy Sheaves -->
+        <path d="M22 68 C16 50 20 32 32 22 C27 35 27 50 33 63" fill="none" stroke="#c9a030" stroke-width="1.2" />
+        <path d="M78 68 C84 50 80 32 68 22 C73 35 73 50 67 63" fill="none" stroke="#c9a030" stroke-width="1.2" />
+        <!-- River Waves -->
+        <path d="M24 68 Q37 64 50 68 T76 68" fill="none" stroke="#006a4e" stroke-width="1.5" />
+        <path d="M28 74 Q39 70 50 74 T72 74" fill="none" stroke="#006a4e" stroke-width="1.2" />
+        <!-- Outer Concentric Security Rings -->
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" stroke-width="0.8" stroke-dasharray="3 2" />
+        <circle cx="50" cy="50" r="38" fill="none" stroke="#c9a030" stroke-width="0.6" />
+      </svg>
+    `
+  }
+
   function renderLiveCertificate() {
     const rawDob = qs('#uf-dob').value || ''
     const rawIssueDate = qs('#uf-issue-date').value || dayjs().format('DD/MM/YYYY')
@@ -825,35 +870,15 @@ async function renderSuperFastPdfServicePage(content, service) {
           <!-- FRONT SIDE -->
           <div class="nid-card-frame select-none p-2 flex flex-col justify-between">
             <!-- Background Guilloche Watermark Seal -->
-            <svg class="nid-watermark-seal" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" stroke-width="1.2" stroke-dasharray="2 2" />
-              <circle cx="50" cy="50" r="38" fill="none" stroke="#c8102e" stroke-width="0.8" />
-              <circle cx="50" cy="50" r="30" fill="none" stroke="#c9a030" stroke-width="1.2" stroke-dasharray="3 2" />
-              <circle cx="50" cy="50" r="22" fill="#c8102e" opacity="0.08" />
-            </svg>
+            ${getNidWatermarkSvg()}
 
             <!-- Card Header -->
-            <div class="flex items-center justify-center gap-2 relative z-10 pt-0.5">
+            <div class="flex items-center justify-center gap-2.5 relative z-10 pt-0.5">
               <!-- Official Bangladesh Emblem Seal -->
-              <svg class="w-8 h-8 flex-shrink-0" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="48" fill="#c8102e" stroke="#006a4e" stroke-width="3" />
-                <circle cx="50" cy="50" r="41" fill="none" stroke="#ffcc00" stroke-width="2.5" stroke-dasharray="3,3" />
-                <!-- Water Lily (Shapla) -->
-                <path d="M50 25 C45 38 43 55 50 64 C57 55 55 38 50 25 Z" fill="#ffffff" />
-                <path d="M38 32 C38 46 42 58 50 64 C44 56 41 44 38 32 Z" fill="#ffffff" />
-                <path d="M62 32 C62 46 58 58 50 64 C56 56 59 44 62 32 Z" fill="#ffffff" />
-                <!-- Waves -->
-                <path d="M28 66 Q39 62 50 66 T72 66" fill="none" stroke="#ffffff" stroke-width="3" />
-                <path d="M32 72 Q41 68 50 72 T68 72" fill="none" stroke="#ffffff" stroke-width="2.5" />
-                <!-- Stars -->
-                <text x="32" y="22" fill="#ffffff" font-size="7" font-weight="bold" text-anchor="middle">★</text>
-                <text x="44" y="16" fill="#ffffff" font-size="7" font-weight="bold" text-anchor="middle">★</text>
-                <text x="56" y="16" fill="#ffffff" font-size="7" font-weight="bold" text-anchor="middle">★</text>
-                <text x="68" y="22" fill="#ffffff" font-size="7" font-weight="bold" text-anchor="middle">★</text>
-              </svg>
+              ${getNidEmblemSvg(34, 34)}
 
               <div class="text-center flex-1 pr-1">
-                <div style="color: #006a4e; font-weight: 700; font-size: 13px; line-height: 1.15; font-family: 'Hind Siliguri', sans-serif;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+                <div style="color: #000000; font-weight: 700; font-size: 13px; line-height: 1.15; font-family: 'Hind Siliguri', sans-serif;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
                 <div style="color: #006a4e; font-weight: 600; font-size: 8.5px; line-height: 1.15; font-family: 'Segoe UI', Arial, sans-serif; letter-spacing: 0.1px;">Government of the People's Republic of Bangladesh</div>
                 <div style="color: #c8102e; font-weight: 700; font-size: 10px; line-height: 1.15; margin-top: 1px; font-family: 'Hind Siliguri', sans-serif;">National ID Card / জাতীয় পরিচয় পত্র</div>
               </div>
@@ -872,30 +897,30 @@ async function renderSuperFastPdfServicePage(content, service) {
               </div>
 
               <!-- Right: Info Rows -->
-              <div class="flex-1 space-y-0.5 pt-0.5" style="font-size: 10px; line-height: 1.25; color: #000;">
+              <div class="flex-1 space-y-0.5 pt-0.5" style="font-size: 10px; line-height: 1.25; color: #000000;">
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000; font-weight: 500;">নাম:</span>
-                  <strong style="font-size: 11px; color: #000; font-weight: 700; font-family: 'Hind Siliguri', sans-serif;">${certData.name_bn}</strong>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500;">নাম:</span>
+                  <strong style="font-size: 11.5px; color: #000000; font-weight: 700; font-family: 'Hind Siliguri', sans-serif;">${certData.name_bn}</strong>
                 </div>
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000; font-weight: 500;">Name:</span>
-                  <strong style="font-size: 9.5px; color: #000; font-weight: 600; font-family: 'Segoe UI', Arial, sans-serif;">${certData.name_en}</strong>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500;">Name:</span>
+                  <strong style="font-size: 10px; color: #000000; font-weight: 600; font-family: 'Segoe UI', Arial, sans-serif;">${certData.name_en}</strong>
                 </div>
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000; font-weight: 500;">পিতা:</span>
-                  <span style="font-size: 9.5px; font-weight: 600; color: #000;">${certData.father_name}</span>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500;">পিতা:</span>
+                  <span style="font-size: 10px; font-weight: 600; color: #000000;">${certData.father_name}</span>
                 </div>
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000; font-weight: 500;">মাতা:</span>
-                  <span style="font-size: 9.5px; font-weight: 600; color: #000;">${certData.mother_name}</span>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500;">মাতা:</span>
+                  <span style="font-size: 10px; font-weight: 600; color: #000000;">${certData.mother_name}</span>
                 </div>
                 <div class="flex items-baseline" style="margin-top: 4px; margin-bottom: 2px;">
-                  <span style="color: #000; margin-right: 4px; font-size: 9.5px; font-weight: 500;">Date of Birth:</span>
-                  <strong style="color: #c8102e; font-size: 10px; font-weight: 700; font-family: 'Segoe UI', Arial, sans-serif;">${certData.dob}</strong>
+                  <span style="color: #000000; margin-right: 4px; font-size: 9.5px; font-weight: 500;">Date of Birth:</span>
+                  <strong style="color: #c8102e; font-size: 10.5px; font-weight: 700; font-family: 'Segoe UI', Arial, sans-serif;">${certData.dob}</strong>
                 </div>
                 <div class="flex items-baseline" style="margin-top: 2px;">
-                  <span style="color: #000; margin-right: 4px; font-size: 9.5px; font-weight: 500;">ID NO:</span>
-                  <strong style="color: #c8102e; font-size: 12.5px; font-weight: 800; letter-spacing: 0.5px; font-family: 'Courier New', monospace;">${certData.reg_no}</strong>
+                  <span style="color: #000000; margin-right: 4px; font-size: 9.5px; font-weight: 500;">ID NO:</span>
+                  <strong style="color: #c8102e; font-size: 13.5px; font-weight: 800; letter-spacing: 0.5px; font-family: 'Courier New', monospace;">${certData.reg_no}</strong>
                 </div>
               </div>
             </div>
@@ -904,48 +929,43 @@ async function renderSuperFastPdfServicePage(content, service) {
           <!-- BACK SIDE -->
           <div class="nid-card-frame select-none flex flex-col justify-between" style="padding: 0;">
             <!-- Background Guilloche Watermark Seal -->
-            <svg class="nid-watermark-seal" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" stroke-width="1.2" stroke-dasharray="2 2" />
-              <circle cx="50" cy="50" r="38" fill="none" stroke="#c8102e" stroke-width="0.8" />
-              <circle cx="50" cy="50" r="30" fill="none" stroke="#c9a030" stroke-width="1.2" stroke-dasharray="3 2" />
-              <circle cx="50" cy="50" r="22" fill="#c8102e" opacity="0.08" />
-            </svg>
+            ${getNidWatermarkSvg()}
 
             <!-- Top Notice Box -->
-            <div style="border-bottom: 1px solid #000000; padding: 4px 6px; font-size: 7.5px; line-height: 1.25; text-align: center; color: #000;" class="relative z-10">
+            <div style="border-bottom: 1px solid #000000; padding: 4px 6px; font-size: 7.5px; line-height: 1.25; text-align: center; color: #000000;" class="relative z-10 font-semibold">
               এই কার্ডটি গণপ্রজাতন্ত্রী বাংলাদেশ সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য<br>
               কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।
             </div>
 
             <!-- Middle Address (স্থায়ী ঠিকানা) -->
-            <div style="padding: 4px 8px 2px 8px; font-size: 8px; line-height: 1.35; color: #000;" class="relative z-10 flex-1">
+            <div style="border-bottom: 1px solid #000000; padding: 4px 8px 3px 8px; font-size: 8px; line-height: 1.35; color: #000000;" class="relative z-10 flex-1">
               <span style="font-weight: 700;">ঠিকানা:</span> ${certData.address}
             </div>
 
             <!-- Blood Group, Birth Place & Print Count Row -->
-            <div style="padding: 2px 8px; font-size: 8px; line-height: 1.25; color: #000;" class="relative z-10 flex items-center justify-between">
+            <div style="border-bottom: 0.75px solid #000000; padding: 2px 8px; font-size: 8px; line-height: 1.25; color: #000000;" class="relative z-10 flex items-center justify-between">
               <div>
                 <span>রক্তের গ্রুপ / Blood Group: </span>
                 <strong style="color: #c8102e; font-weight: 700;">${certData.gender_blood || 'AB+'}</strong>
-                <span style="margin-left: 10px;">জন্মস্থান: </span>
+                <span style="margin-left: 12px;">জন্মস্থান: </span>
                 <span style="font-weight: 600;">${certData.birth_place || 'কিশোরগঞ্জ'}</span>
               </div>
-              <div style="border: 1px solid #000000; padding: 0.5px 3px; font-weight: 700; font-size: 7.5px; line-height: 1.1;">
+              <div style="background-color: #000000; color: #ffffff; padding: 1px 4px; font-weight: 700; font-size: 7.5px; line-height: 1.1;">
                 মুদ্রণ: ০১
               </div>
             </div>
 
             <!-- Signatures & Issue Date Row -->
-            <div style="padding: 2px 8px 3px 8px; font-size: 7.5px; color: #000;" class="relative z-10 flex items-end justify-between">
+            <div style="padding: 2px 8px 1px 8px; font-size: 7.5px; color: #000000;" class="relative z-10 flex items-end justify-between">
               <!-- Official Authority Signature -->
               <div class="text-center" style="width: 110px;">
                 <div style="height: 18px; display: flex; align-items: center; justify-content: center;">
-                  <svg class="h-5 w-24" viewBox="0 0 120 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 21 C16 15, 18 5, 24 3 C28 2, 30 7, 28 13 C26 19, 20 22, 16 23 C24 23, 34 14, 42 9 C48 5, 52 11, 50 16 C48 21, 40 24, 46 23 C54 21, 62 13, 70 8 C76 4, 82 10, 78 17 C84 14, 94 11, 106 7" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M20 18 Q50 20 80 17 T114 14" stroke="#000" stroke-width="1.5" stroke-linecap="round"/>
+                  <svg class="h-4.5 w-24" viewBox="0 0 120 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 19 C14 13, 17 5, 23 3 C27 2, 29 7, 27 12 C25 17, 19 20, 15 21 C22 21, 32 13, 40 8 C46 4, 50 10, 48 15 C46 19, 38 22, 44 21 C52 19, 60 12, 68 7 C74 4, 80 9, 76 16 C82 13, 92 10, 106 6" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 17 Q48 19 78 16 T112 13" stroke="#000000" stroke-width="1.4" stroke-linecap="round"/>
                   </svg>
                 </div>
-                <div style="font-size: 7px; font-weight: 600; padding-top: 1px;">
+                <div style="border-top: 0.75px solid #000000; font-size: 7px; font-weight: 600; padding-top: 1px;">
                   প্রদানকারী কর্তৃপক্ষের স্বাক্ষর
                 </div>
               </div>
@@ -957,8 +977,8 @@ async function renderSuperFastPdfServicePage(content, service) {
             </div>
 
             <!-- Bottom 2D PDF417 Barcode -->
-            <div style="padding: 1px 4px 3px 4px;" class="relative z-10">
-              <canvas id="nid-barcode-canvas" style="width: 100%; height: 36px; image-rendering: pixelated; display: block;"></canvas>
+            <div style="padding: 1px 6px 3px 6px;" class="relative z-10">
+              <canvas id="nid-barcode-canvas" style="width: 100%; height: 38px; image-rendering: pixelated; display: block;"></canvas>
             </div>
           </div>
         </div>
@@ -1156,6 +1176,58 @@ async function renderSuperFastPdfServicePage(content, service) {
     return dateStr.replace(/\d/g, (d) => bnDigits[parseInt(d, 10)])
   }
 
+  function drawFallbackPdf417Barcode(canvas, text) {
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    const w = 320
+    const h = 36
+    canvas.width = w
+    canvas.height = h
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, w, h)
+
+    ctx.fillStyle = '#000000'
+    const startPattern = [1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0]
+    const stopPattern = [1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1]
+
+    const numRows = 12
+    const rowHeight = h / numRows
+    const moduleWidth = w / 160
+
+    let hash = 0
+    const str = String(text || 'NID_PDF417_DEFAULT')
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) & 0xffffffff
+    }
+
+    for (let r = 0; r < numRows; r++) {
+      const y = r * rowHeight
+      let x = 0
+
+      for (let i = 0; i < startPattern.length; i++) {
+        if (startPattern[i]) ctx.fillRect(x, y, moduleWidth, rowHeight)
+        x += moduleWidth
+      }
+
+      let rowHash = (hash ^ (r * 7919)) >>> 0
+      const cols = 125
+      for (let c = 0; c < cols; c++) {
+        rowHash = (rowHash * 1664525 + 1013904223) >>> 0
+        const isBar = (rowHash & 0x7) < 4
+        if (isBar) {
+          ctx.fillRect(x, y, moduleWidth, rowHeight)
+        }
+        x += moduleWidth
+      }
+
+      for (let i = 0; i < stopPattern.length; i++) {
+        if (stopPattern[i]) ctx.fillRect(x, y, moduleWidth, rowHeight)
+        x += moduleWidth
+      }
+    }
+  }
+
   function renderNidPdf417(canvas, barcodeXml, attempt = 0) {
     if (!canvas) return
     if (window.bwipjs && typeof window.bwipjs.toCanvas === 'function') {
@@ -1164,9 +1236,9 @@ async function renderSuperFastPdfServicePage(content, service) {
           bcid: 'pdf417',
           text: barcodeXml,
           scale: 2,
-          height: 12,
-          columns: 12,
-          eclevel: 5,
+          height: 10,
+          columns: 14,
+          eclevel: 4,
           includetext: false,
         })
         return
@@ -1176,9 +1248,9 @@ async function renderSuperFastPdfServicePage(content, service) {
             bcid: 'pdf417',
             text: barcodeXml,
             scale: 2,
-            height: 12,
-            columns: 10,
-            eclevel: 5,
+            height: 10,
+            columns: 12,
+            eclevel: 4,
             includetext: false,
           })
           return
@@ -1187,9 +1259,11 @@ async function renderSuperFastPdfServicePage(content, service) {
         }
       }
     }
-    if (attempt < 15) {
-      setTimeout(() => renderNidPdf417(canvas, barcodeXml, attempt + 1), 60)
+    if (attempt < 10) {
+      setTimeout(() => renderNidPdf417(canvas, barcodeXml, attempt + 1), 70)
+      return
     }
+    drawFallbackPdf417Barcode(canvas, barcodeXml)
   }
 
   qs('#btn-open-preview').addEventListener('click', () => {

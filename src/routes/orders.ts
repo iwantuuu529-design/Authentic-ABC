@@ -247,8 +247,55 @@ orders.post('/', authRequired, async (c) => {
 
   await c.env.DB.prepare('UPDATE services SET total_orders = total_orders + 1 WHERE id = ?').bind(service.id).run()
 
+  // Link any pending order payment transaction to this orderId
+  try {
+    await c.env.DB.prepare("UPDATE transactions SET reference_id = ? WHERE user_id = ? AND reference_type = 'order' AND reference_id IS NULL")
+      .bind(orderId, user.id)
+      .run()
+  } catch {}
+
   // ---- Fulfillment ----
-  if (service.fulfillment_mode === 'api' || service.fulfillment_mode === 'hybrid') {
+  if (service.fulfillment_mode === 'auto' || service.slug === 'nid-create') {
+    // Instant Auto Fulfillment
+    const nidResultData = {
+      type: 'nid_card',
+      service_slug: service.slug,
+      name_bn: formValues.name_bn || '',
+      name_en: formValues.name_en || '',
+      registration_no: formValues.registration_no || '',
+      book_no: formValues.book_no || '',
+      father_name_bn: formValues.father_name_bn || '',
+      mother_name_bn: formValues.mother_name_bn || '',
+      birth_place: formValues.birth_place || '',
+      dob: formValues.dob || '',
+      gender_blood: formValues.gender_blood || '',
+      issue_date: formValues.issue_date || '',
+      address: formValues.address || '',
+      photo_file: fileKeys['photo_file'] || formValues['photo_file'] || null,
+      sign_file: fileKeys['sign_file'] || formValues['sign_file'] || null,
+      completed_at: new Date().toISOString()
+    }
+
+    await c.env.DB.prepare(
+      `UPDATE orders SET status = 'completed', result_data = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?`
+    )
+      .bind(JSON.stringify(nidResultData), orderId)
+      .run()
+
+    await c.env.DB.prepare('UPDATE services SET success_orders = success_orders + 1 WHERE id = ?')
+      .bind(service.id)
+      .run()
+
+    await logOrderEvent(c.env.DB, orderId, 'system', null, 'auto_completed', 'স্বয়ংক্রিয়ভাবে এনআইডি কার্ড তৈরি সম্পন্ন হয়েছে')
+    await pushNotification(
+      c.env.DB,
+      user.id,
+      'এনআইডি তৈরি সম্পন্ন ✅',
+      `আপনার "${service.name_bn}" অর্ডারটি (${orderNo}) স্বয়ংক্রিয়ভাবে সম্পন্ন হয়েছে। ওয়ালেট থেকে ৳${service.price} ফি কর্তন করা হয়েছে।`,
+      'success',
+      `/dashboard/orders/${orderId}`
+    )
+  } else if (service.fulfillment_mode === 'api' || service.fulfillment_mode === 'hybrid') {
     if (service.api_provider_id) {
       const provider = await c.env.DB.prepare('SELECT * FROM api_providers WHERE id = ? AND status = \'active\'')
         .bind(service.api_provider_id)

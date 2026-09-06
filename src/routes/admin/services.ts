@@ -57,8 +57,8 @@ adminServices.post('/', async (c) => {
   if (!nameBn || !nameEn || !slug || isNaN(price) || price < 0) {
     return c.json({ success: false, message: 'সার্ভিসের নাম, স্লাগ ও মূল্য সঠিকভাবে দিন।' }, 400)
   }
-  if (!['manual', 'api', 'hybrid'].includes(fulfillmentMode)) {
-    return c.json({ success: false, message: 'সঠিক ফুলফিলমেন্ট মোড দিন (manual/api/hybrid)।' }, 400)
+  if (!['manual', 'api', 'hybrid', 'auto'].includes(fulfillmentMode)) {
+    return c.json({ success: false, message: 'সঠিক ফুলফিলমেন্ট মোড দিন (manual/api/hybrid/auto)।' }, 400)
   }
   if ((fulfillmentMode === 'api' || fulfillmentMode === 'hybrid') && !body.api_provider_id) {
     return c.json({ success: false, message: 'API/Hybrid মোডের জন্য একটি API Provider নির্বাচন করুন।' }, 400)
@@ -160,6 +160,36 @@ adminServices.put('/:id', async (c) => {
   await logAdminAction(c.env.DB, admin.id, 'service_updated', 'service', parseInt(id))
 
   return c.json({ success: true, message: 'সার্ভিস আপডেট হয়েছে।' })
+})
+
+// PATCH /api/admin/services/:id/rate — quick rate/price update by admin
+adminServices.patch('/:id/rate', async (c) => {
+  const admin = c.get('user')!
+  const id = c.req.param('id')
+  const body = await c.req.json().catch(() => ({}))
+
+  const price = parseFloat(body.price)
+  if (isNaN(price) || price < 0) {
+    return c.json({ success: false, message: 'সঠিক মূল্য প্রদান করুন।' }, 400)
+  }
+
+  const existing = await c.env.DB.prepare('SELECT id, name_bn, price FROM services WHERE id = ?').bind(id).first<any>()
+  if (!existing) return c.json({ success: false, message: 'সার্ভিস পাওয়া যায়নি।' }, 404)
+
+  const costPrice = body.cost_price !== undefined ? parseFloat(body.cost_price) : null
+
+  if (costPrice !== null && !isNaN(costPrice) && costPrice >= 0) {
+    await c.env.DB.prepare('UPDATE services SET price = ?, cost_price = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .bind(price, costPrice, id)
+      .run()
+  } else {
+    await c.env.DB.prepare('UPDATE services SET price = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .bind(price, id)
+      .run()
+  }
+
+  await logAdminAction(c.env.DB, admin.id, 'service_rate_updated', 'service', parseInt(id), `রেট পরিবর্তন: ৳${existing.price} -> ৳${price}`)
+  return c.json({ success: true, message: `"${existing.name_bn}" এর নতুন রেট ৳${price} সফলভাবে সেভ করা হয়েছে।` })
 })
 
 // DELETE /api/admin/services/:id

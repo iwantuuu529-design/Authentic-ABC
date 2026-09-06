@@ -265,22 +265,22 @@ async function renderSuperFastPdfServicePage(content, service) {
 
     <!-- Main Card -->
     <div class="glass rounded-2xl p-6 sm:p-8 border border-white/10 shadow-2xl relative overflow-hidden">
-      <!-- Super Fast Badge -->
+      <!-- Super Fast Auto Badge -->
       <div class="flex justify-center mb-6">
-        <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold shadow-sm shadow-emerald-500/10">
-          <i class="fa-solid fa-bolt text-emerald-400"></i> সুপার ফাস্ট সার্ভিস
+        <span class="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black shadow-md shadow-emerald-500/20 uppercase tracking-wide">
+          <i class="fa-solid fa-bolt text-amber-300 text-sm animate-pulse"></i> অটো সার্ভিস (AUTO SERVICE) • তাত্ক্ষণিক ডেলিভারি
         </span>
       </div>
 
       <!-- Step 1: Drag-and-drop / Browse PDF Box -->
-      <div id="super-pdf-dropzone" class="border-2 border-dashed border-sky-500/40 hover:border-sky-400 bg-sky-500/[0.02] hover:bg-sky-500/[0.06] rounded-2xl p-8 sm:p-12 text-center transition-all cursor-pointer relative group">
+      <div id="super-pdf-dropzone" class="border-2 border-dashed border-sky-500/40 hover:border-sky-400 bg-sky-500/[0.03] hover:bg-sky-500/[0.08] rounded-2xl p-8 sm:p-12 text-center transition-all cursor-pointer relative group">
         <div class="w-16 h-16 rounded-full bg-sky-500/15 group-hover:bg-sky-500/25 flex items-center justify-center mx-auto mb-4 text-sky-400 group-hover:text-sky-300 group-hover:scale-110 transition-all shadow-lg shadow-sky-500/15">
           <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
         </div>
-        <p class="text-base sm:text-lg font-bold text-white mb-1">পিডিএফ আপলোড করুন</p>
-        <p class="text-xs text-slate-400 mb-2">অথবা</p>
-        <button type="button" id="btn-browse-pdf" class="inline-block text-xs sm:text-sm font-bold text-sky-400 hover:text-sky-300 underline cursor-pointer">
-          পিডিএফ ফাইল নির্বাচন করতে ক্লিক করুন
+        <p class="text-base sm:text-lg font-bold text-white mb-1">CMS কপি বা এনআইডি পিডিএফ আপলোড করুন</p>
+        <p class="text-xs text-slate-300 mb-3">CMS কপি, অনলাইন কপি বা স্লিপ পিডিএফ নির্বাচন করলেই সকল তথ্য অটোমেটিকভাবে নিচে পূরণ হবে</p>
+        <button type="button" id="btn-browse-pdf" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs sm:text-sm font-bold border border-sky-500/30 transition-all">
+          <i class="fa-solid fa-file-arrow-up"></i> CMS কপি বা ফাইল নির্বাচন করুন
         </button>
         <input type="file" id="super-pdf-file-input" accept=".pdf,application/pdf" class="hidden">
 
@@ -296,9 +296,12 @@ async function renderSuperFastPdfServicePage(content, service) {
 
       ${isNid ? `
       <!-- Quick Demo Clone Action -->
-      <div class="mt-4 flex items-center justify-center">
-        <button type="button" id="btn-load-sample-nid" class="px-5 py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
-          <i class="fa-solid fa-id-card text-sky-400 text-sm"></i> রেফারেন্স কার্ড ভিউ দেখুন (MD. AMRAN KABIR RIPON)
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-2.5">
+        <button type="button" id="btn-load-sample-nid-1" class="px-4 py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
+          <i class="fa-solid fa-id-card text-sky-400 text-sm"></i> নমুনা ১: মোঃ এমরান কবির রিপন (মূল PDF কপি)
+        </button>
+        <button type="button" id="btn-load-sample-nid-2" class="px-4 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
+          <i class="fa-solid fa-id-card text-emerald-400 text-sm"></i> নমুনা ২: মোঃ রুকন মিয়া (নতুন বিবরণী কপি)
         </button>
       </div>
       ` : ''}
@@ -425,13 +428,16 @@ async function renderSuperFastPdfServicePage(content, service) {
 
           <!-- Video Exact Alert Note -->
           <div class="rounded-xl p-3.5 bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-2.5 text-emerald-300 text-xs">
-            <i class="fa-solid fa-circle-info text-emerald-400 mt-0.5 text-sm shrink-0"></i>
-            <span class="font-medium">${escapeHtml(chargeNote)}</span>
+            <i class="fa-solid fa-bolt text-emerald-400 mt-0.5 text-sm shrink-0"></i>
+            <div>
+              <span class="font-bold block mb-0.5">স্বয়ংক্রিয় অটো সার্ভিস ফি:</span>
+              <span class="font-medium">${escapeHtml(chargeNote)}</span>
+            </div>
           </div>
 
           <!-- Submit Button -->
-          <button type="submit" id="btn-super-submit" class="btn-glow w-full bg-gradient-to-r from-sky-500 via-brand-500 to-emerald-500 hover:from-sky-600 hover:to-emerald-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2 text-base transition-all">
-            <i class="fa-solid fa-paper-plane"></i> সাবমিট করুন
+          <button type="submit" id="btn-super-submit" class="btn-glow w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500 hover:from-emerald-600 hover:to-sky-600 text-white font-black py-4 rounded-xl shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2.5 text-base transition-all cursor-pointer">
+            <i class="fa-solid fa-bolt text-amber-300 text-lg"></i> ${isNid ? `Create NID (৳${toBnDigits(serviceCharge)} অটো কাটবে)` : `অর্ডার কনফার্ম করুন (৳${toBnDigits(serviceCharge)})`}
           </button>
 
           <!-- Extra Live Preview & Direct Print Actions -->
@@ -555,30 +561,55 @@ async function renderSuperFastPdfServicePage(content, service) {
     }
   })
 
-  function loadSampleNidCardData() {
+  function loadSampleNidCardData(sampleIndex = 1) {
     if (!isNid) return
-    qs('#uf-name-bn').value = 'মোঃ এমরান কবির রিপন'
-    qs('#uf-name-en').value = 'MD. AMRAN KABIR RIPON'
-    qs('#uf-reg-no').value = '3738061542'
-    qs('#uf-book-no').value = '19754814243000004'
-    qs('#uf-father-name').value = 'মোঃ লিলু মিয়া'
-    qs('#uf-mother-name').value = 'রহিমা খাতুন'
-    qs('#uf-birth-place').value = 'কিশোরগঞ্জ'
-    qs('#uf-dob').value = '08 Aug 1975'
-    qs('#uf-gender-blood').value = 'AB+'
-    qs('#uf-issue-date').value = '৩১/০৮/২০২৬'
-    qs('#uf-address').value = 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: সাধের জঙ্গল, বাদে শ্রীরামপুর, ডাকঘর: জঙ্গলবাড়ি - ২৩০০, করিমগঞ্জ, কিশোরগঞ্জ'
-    photoBase64 = sampleNidPhoto
-    signBase64 = sampleNidSign
+    if (sampleIndex === 2) {
+      qs('#uf-name-bn').value = 'মোঃ রুকন মিয়া'
+      qs('#uf-name-en').value = 'MD. ROKON MIA'
+      qs('#uf-reg-no').value = '5990863127'
+      qs('#uf-book-no').value = '19864814243000008'
+      qs('#uf-father-name').value = 'আমির মিয়া'
+      qs('#uf-mother-name').value = 'মোছাঃ মনোয়ারা'
+      qs('#uf-birth-place').value = 'কিশোরগঞ্জ'
+      qs('#uf-dob').value = '18 Mar 1986'
+      qs('#uf-gender-blood').value = 'B+'
+      qs('#uf-issue-date').value = '০৩/০৯/২০২৬'
+      qs('#uf-address').value = 'বাসা/হোল্ডিং: -, গ্রাম/রাস্তা: কোনাপাড়া, চান্দপুর, ডাকঘর: মানিকখালী - ২৩৩১, কটিয়াদী, কিশোরগঞ্জ'
+      photoBase64 = sampleNidPhoto
+      signBase64 = sampleNidSign
+    } else {
+      qs('#uf-name-bn').value = 'মোঃ এমরান কবির রিপন'
+      qs('#uf-name-en').value = 'MD. AMRAN KABIR RIPON'
+      qs('#uf-reg-no').value = '3738061542'
+      qs('#uf-book-no').value = '19754814243000004'
+      qs('#uf-father-name').value = 'মোঃ লিলু মিয়া'
+      qs('#uf-mother-name').value = 'রহিমা খাতুন'
+      qs('#uf-birth-place').value = 'কিশোরগঞ্জ'
+      qs('#uf-dob').value = '08 Aug 1975'
+      qs('#uf-gender-blood').value = 'AB+'
+      qs('#uf-issue-date').value = '৩১/০৮/২০২৬'
+      qs('#uf-address').value = 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: সাধের জঙ্গল, বাদে শ্রীরামপুর, ডাকঘর: জঙ্গলবাড়ি - ২৩০০, করিমগঞ্জ, কিশোরগঞ্জ'
+      photoBase64 = sampleNidPhoto
+      signBase64 = sampleNidSign
+    }
     photoPreview.src = photoBase64
     signPreview.src = signBase64
     formSection.classList.remove('hidden')
   }
 
-  const sampleNidBtn = qs('#btn-load-sample-nid')
-  if (sampleNidBtn) {
-    sampleNidBtn.addEventListener('click', () => {
-      loadSampleNidCardData()
+  const sampleNidBtn1 = qs('#btn-load-sample-nid-1')
+  if (sampleNidBtn1) {
+    sampleNidBtn1.addEventListener('click', () => {
+      loadSampleNidCardData(1)
+      renderLiveCertificate()
+      previewModal.classList.remove('hidden')
+    })
+  }
+
+  const sampleNidBtn2 = qs('#btn-load-sample-nid-2')
+  if (sampleNidBtn2) {
+    sampleNidBtn2.addEventListener('click', () => {
+      loadSampleNidCardData(2)
       renderLiveCertificate()
       previewModal.classList.remove('hidden')
     })
@@ -586,7 +617,7 @@ async function renderSuperFastPdfServicePage(content, service) {
 
   // Pre-fill sample clone on initial load for NID service
   if (isNid) {
-    loadSampleNidCardData()
+    loadSampleNidCardData(1)
   }
 
   // ------------------------------------------------------------
@@ -807,22 +838,44 @@ async function renderSuperFastPdfServicePage(content, service) {
     `
   }
 
-  function getNidWatermarkSvg() {
+  function getNidSecurityBgSvg() {
     return `
+      <!-- Guilloche Security Pattern Background -->
+      <svg class="nid-guilloche-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 324 204" preserveAspectRatio="none">
+        <defs>
+          <pattern id="nid-guilloche-pattern" width="18" height="18" patternUnits="userSpaceOnUse">
+            <path d="M 0 9 Q 4.5 0, 9 9 T 18 9" fill="none" stroke="#006a4e" stroke-width="0.32" opacity="0.08"/>
+            <path d="M 0 4.5 Q 4.5 13.5, 9 4.5 T 18 4.5" fill="none" stroke="#c9a030" stroke-width="0.3" opacity="0.07"/>
+            <circle cx="9" cy="9" r="7" fill="none" stroke="#006a4e" stroke-width="0.22" opacity="0.05" stroke-dasharray="1 1.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#nid-guilloche-pattern)"/>
+      </svg>
+      <!-- Central Authentic Bangladesh National Watermark Seal -->
       <svg class="nid-watermark-seal" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Center Water Lily Outline -->
-        <path d="M50 18 C44 34 42 54 50 64 C58 54 56 34 50 18 Z" fill="none" stroke="#006a4e" stroke-width="1.2" />
-        <path d="M35 30 C35 44 41 57 50 64 C42 56 39 43 35 30 Z" fill="none" stroke="#006a4e" stroke-width="1.2" />
-        <path d="M65 30 C65 44 59 57 50 64 C58 56 61 43 65 30 Z" fill="none" stroke="#006a4e" stroke-width="1.2" />
-        <!-- Paddy Sheaves -->
-        <path d="M22 68 C16 50 20 32 32 22 C27 35 27 50 33 63" fill="none" stroke="#c9a030" stroke-width="1.2" />
-        <path d="M78 68 C84 50 80 32 68 22 C73 35 73 50 67 63" fill="none" stroke="#c9a030" stroke-width="1.2" />
-        <!-- River Waves -->
-        <path d="M24 68 Q37 64 50 68 T76 68" fill="none" stroke="#006a4e" stroke-width="1.5" />
-        <path d="M28 74 Q39 70 50 74 T72 74" fill="none" stroke="#006a4e" stroke-width="1.2" />
         <!-- Outer Concentric Security Rings -->
-        <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" stroke-width="0.8" stroke-dasharray="3 2" />
-        <circle cx="50" cy="50" r="38" fill="none" stroke="#c9a030" stroke-width="0.6" />
+        <circle cx="50" cy="50" r="47" fill="none" stroke="#006a4e" stroke-width="0.9" stroke-dasharray="2 2" />
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#c9a030" stroke-width="0.75" />
+        <circle cx="50" cy="50" r="37" fill="none" stroke="#c8102e" stroke-width="0.5" stroke-dasharray="3 1.5" />
+        
+        <!-- Water Lily (শাপলা) -->
+        <path d="M50 16 C44 32 42 54 50 63 C58 54 56 32 50 16 Z" fill="none" stroke="#006a4e" stroke-width="1.3" />
+        <path d="M36 28 C36 43 42 56 50 63 C42 55 39 42 36 28 Z" fill="none" stroke="#006a4e" stroke-width="1.2" />
+        <path d="M64 28 C64 43 58 56 50 63 C58 55 61 42 64 28 Z" fill="none" stroke="#006a4e" stroke-width="1.2" />
+        
+        <!-- Paddy Sheaves (ধানের শীষ) -->
+        <path d="M22 66 C15 48 19 30 31 20 C26 34 26 49 32 62" fill="none" stroke="#c9a030" stroke-width="1.2" />
+        <path d="M78 66 C85 48 81 30 69 20 C74 34 74 49 68 62" fill="none" stroke="#c9a030" stroke-width="1.2" />
+        
+        <!-- River Waves (নদীর ঢেউ) -->
+        <path d="M24 66 Q37 62 50 66 T76 66" fill="none" stroke="#006a4e" stroke-width="1.4" />
+        <path d="M28 72 Q39 68 50 72 T72 72" fill="none" stroke="#006a4e" stroke-width="1.2" />
+
+        <!-- 4 Stars -->
+        <circle cx="32" cy="20" r="1.4" fill="#006a4e" />
+        <circle cx="41" cy="15" r="1.4" fill="#006a4e" />
+        <circle cx="59" cy="15" r="1.4" fill="#006a4e" />
+        <circle cx="68" cy="20" r="1.4" fill="#006a4e" />
       </svg>
     `
   }
@@ -864,63 +917,63 @@ async function renderSuperFastPdfServicePage(content, service) {
 
     if (isNid) {
       innerHtml = `
-        <!-- NID Card Preview (Front & Back Side-by-Side) -->
-        <div class="nid-card-print-container flex flex-col md:flex-row items-center justify-center gap-5 my-2">
+        <!-- NID Card Preview (Front & Back Side-by-Side Standard CR80: 85.6mm x 53.98mm) -->
+        <div class="nid-cards-wrapper">
           
           <!-- FRONT SIDE -->
-          <div class="nid-card-frame select-none p-2 flex flex-col justify-between">
-            <!-- Background Guilloche Watermark Seal -->
-            ${getNidWatermarkSvg()}
+          <div class="nid-card-frame select-none flex flex-col justify-between" style="padding: 5px 8px 5px 8px;">
+            <!-- Background Guilloche & Watermark -->
+            ${getNidSecurityBgSvg()}
 
             <!-- Card Header -->
-            <div class="flex items-center justify-center gap-2.5 relative z-10 pt-0.5">
+            <div class="flex items-center gap-2 relative z-10 pt-0.5">
               <!-- Official Bangladesh Emblem Seal -->
-              ${getNidEmblemSvg(34, 34)}
+              ${getNidEmblemSvg(35, 35)}
 
-              <div class="text-center flex-1 pr-1">
-                <div style="color: #000000; font-weight: 700; font-size: 13px; line-height: 1.15; font-family: 'Hind Siliguri', sans-serif;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
-                <div style="color: #006a4e; font-weight: 600; font-size: 8.5px; line-height: 1.15; font-family: 'Segoe UI', Arial, sans-serif; letter-spacing: 0.1px;">Government of the People's Republic of Bangladesh</div>
-                <div style="color: #c8102e; font-weight: 700; font-size: 10px; line-height: 1.15; margin-top: 1px; font-family: 'Hind Siliguri', sans-serif;">National ID Card / জাতীয় পরিচয় পত্র</div>
+              <div class="text-center flex-1">
+                <div style="color: #000000; font-weight: 700; font-size: 11pt; line-height: 1.1; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+                <div style="color: #006a4e; font-weight: 600; font-size: 8.5pt; line-height: 1.1; font-family: Arial, 'Segoe UI', sans-serif; letter-spacing: 0.1px;">Government of the People's Republic of Bangladesh</div>
+                <div style="color: #c8102e; font-weight: 700; font-size: 9.5pt; line-height: 1.15; margin-top: 1px; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif;">National ID Card / জাতীয় পরিচয় পত্র</div>
               </div>
             </div>
 
             <!-- Card Body: Left (Photo + Sign) & Right (Info Rows) -->
             <div class="flex gap-2.5 items-start relative z-10 flex-1 pt-1">
-              <!-- Left: Photo + Sign -->
-              <div class="flex flex-col items-center flex-shrink-0" style="width: 74px;">
-                <div style="width: 74px; height: 88px; border: 1px solid #000000; background: #fff; overflow: hidden; border-radius: 0px;">
+              <!-- Left: Photo + Citizen Signature -->
+              <div class="flex flex-col items-center flex-shrink-0" style="width: 70px;">
+                <div style="width: 70px; height: 84px; border: 1px solid #000000; background: #fff; overflow: hidden; border-radius: 0px;">
                   <img src="${certData.photo}" alt="NID Photo" class="w-full h-full object-cover">
                 </div>
-                <div style="width: 74px; height: 20px; margin-top: 2px; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 70px; height: 18px; margin-top: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                   <img src="${certData.sign}" alt="Signature" class="max-w-full max-h-full object-contain">
                 </div>
               </div>
 
               <!-- Right: Info Rows -->
-              <div class="flex-1 space-y-0.5 pt-0.5" style="font-size: 10px; line-height: 1.25; color: #000000;">
+              <div class="flex-1 space-y-0.5" style="font-size: 9.5pt; line-height: 1.22; color: #000000;">
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500;">নাম:</span>
-                  <strong style="font-size: 11.5px; color: #000000; font-weight: 700; font-family: 'Hind Siliguri', sans-serif;">${certData.name_bn}</strong>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 9pt;">নাম:</span>
+                  <strong style="font-size: 11pt; color: #000000; font-weight: 700; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif;">${certData.name_bn}</strong>
                 </div>
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500;">Name:</span>
-                  <strong style="font-size: 10px; color: #000000; font-weight: 600; font-family: 'Segoe UI', Arial, sans-serif;">${certData.name_en}</strong>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 9pt;">Name:</span>
+                  <strong style="font-size: 9.5pt; color: #000000; font-weight: 700; font-family: Arial, 'Segoe UI', sans-serif;">${certData.name_en}</strong>
                 </div>
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500;">পিতা:</span>
-                  <span style="font-size: 10px; font-weight: 600; color: #000000;">${certData.father_name}</span>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 9pt;">পিতা:</span>
+                  <span style="font-size: 9.5pt; font-weight: 600; color: #000000;">${certData.father_name}</span>
                 </div>
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500;">মাতা:</span>
-                  <span style="font-size: 10px; font-weight: 600; color: #000000;">${certData.mother_name}</span>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 9pt;">মাতা:</span>
+                  <span style="font-size: 9.5pt; font-weight: 600; color: #000000;">${certData.mother_name}</span>
                 </div>
-                <div class="flex items-baseline" style="margin-top: 4px; margin-bottom: 2px;">
-                  <span style="color: #000000; margin-right: 4px; font-size: 9.5px; font-weight: 500;">Date of Birth:</span>
-                  <strong style="color: #c8102e; font-size: 10.5px; font-weight: 700; font-family: 'Segoe UI', Arial, sans-serif;">${certData.dob}</strong>
+                <div class="flex items-baseline" style="margin-top: 3px; margin-bottom: 2px;">
+                  <span style="color: #000000; margin-right: 4px; font-size: 9pt; font-weight: 500;">Date of Birth:</span>
+                  <strong style="color: #c8102e; font-size: 10pt; font-weight: 700; font-family: Arial, 'Segoe UI', sans-serif;">${certData.dob}</strong>
                 </div>
                 <div class="flex items-baseline" style="margin-top: 2px;">
-                  <span style="color: #000000; margin-right: 4px; font-size: 9.5px; font-weight: 500;">ID NO:</span>
-                  <strong style="color: #c8102e; font-size: 13.5px; font-weight: 800; letter-spacing: 0.5px; font-family: 'Courier New', monospace;">${certData.reg_no}</strong>
+                  <span style="color: #000000; margin-right: 4px; font-size: 9.5pt; font-weight: 600;">ID NO:</span>
+                  <strong style="color: #c8102e; font-size: 12.5pt; font-weight: 800; letter-spacing: 0.5px; font-family: 'Courier New', monospace, sans-serif;">${certData.reg_no}</strong>
                 </div>
               </div>
             </div>
@@ -928,57 +981,57 @@ async function renderSuperFastPdfServicePage(content, service) {
 
           <!-- BACK SIDE -->
           <div class="nid-card-frame select-none flex flex-col justify-between" style="padding: 0;">
-            <!-- Background Guilloche Watermark Seal -->
-            ${getNidWatermarkSvg()}
+            <!-- Background Guilloche & Watermark -->
+            ${getNidSecurityBgSvg()}
 
             <!-- Top Notice Box -->
-            <div style="border-bottom: 1px solid #000000; padding: 4px 6px; font-size: 7.5px; line-height: 1.25; text-align: center; color: #000000;" class="relative z-10 font-semibold">
+            <div style="border-bottom: 1px solid #000000; padding: 4px 6px 3px 6px; font-size: 6.5pt; line-height: 1.25; text-align: center; color: #000000;" class="relative z-10 font-semibold">
               এই কার্ডটি গণপ্রজাতন্ত্রী বাংলাদেশ সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য<br>
               কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।
             </div>
 
             <!-- Middle Address (স্থায়ী ঠিকানা) -->
-            <div style="border-bottom: 1px solid #000000; padding: 4px 8px 3px 8px; font-size: 8px; line-height: 1.35; color: #000000;" class="relative z-10 flex-1">
+            <div style="border-bottom: 1px solid #000000; padding: 4px 8px 4px 8px; font-size: 8.5pt; line-height: 1.32; color: #000000;" class="relative z-10 flex-1">
               <span style="font-weight: 700;">ঠিকানা:</span> ${certData.address}
             </div>
 
             <!-- Blood Group, Birth Place & Print Count Row -->
-            <div style="border-bottom: 0.75px solid #000000; padding: 2px 8px; font-size: 8px; line-height: 1.25; color: #000000;" class="relative z-10 flex items-center justify-between">
+            <div style="border-bottom: 1px solid #000000; padding: 2px 8px; font-size: 8pt; line-height: 1.2; color: #000000;" class="relative z-10 flex items-center justify-between">
               <div>
                 <span>রক্তের গ্রুপ / Blood Group: </span>
                 <strong style="color: #c8102e; font-weight: 700;">${certData.gender_blood || 'AB+'}</strong>
-                <span style="margin-left: 12px;">জন্মস্থান: </span>
+                <span style="margin-left: 14px;">জন্মস্থান: </span>
                 <span style="font-weight: 600;">${certData.birth_place || 'কিশোরগঞ্জ'}</span>
               </div>
-              <div style="background-color: #000000; color: #ffffff; padding: 1px 4px; font-weight: 700; font-size: 7.5px; line-height: 1.1;">
+              <div style="background-color: #000000; color: #ffffff; padding: 1px 5px; font-weight: 700; font-size: 7.5pt; line-height: 1.1; border-radius: 0;">
                 মুদ্রণ: ০১
               </div>
             </div>
 
             <!-- Signatures & Issue Date Row -->
-            <div style="padding: 2px 8px 1px 8px; font-size: 7.5px; color: #000000;" class="relative z-10 flex items-end justify-between">
+            <div style="padding: 2px 8px 1px 8px; font-size: 7.5pt; color: #000000;" class="relative z-10 flex items-end justify-between">
               <!-- Official Authority Signature -->
-              <div class="text-center" style="width: 110px;">
+              <div class="text-center" style="width: 120px;">
                 <div style="height: 18px; display: flex; align-items: center; justify-content: center;">
-                  <svg class="h-4.5 w-24" viewBox="0 0 120 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg class="h-4.5 w-26" viewBox="0 0 120 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M10 19 C14 13, 17 5, 23 3 C27 2, 29 7, 27 12 C25 17, 19 20, 15 21 C22 21, 32 13, 40 8 C46 4, 50 10, 48 15 C46 19, 38 22, 44 21 C52 19, 60 12, 68 7 C74 4, 80 9, 76 16 C82 13, 92 10, 106 6" stroke="#000000" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M16 17 Q48 19 78 16 T112 13" stroke="#000000" stroke-width="1.4" stroke-linecap="round"/>
                   </svg>
                 </div>
-                <div style="border-top: 0.75px solid #000000; font-size: 7px; font-weight: 600; padding-top: 1px;">
+                <div style="border-top: 0.75px solid #000000; font-size: 7pt; font-weight: 600; padding-top: 1px;">
                   প্রদানকারী কর্তৃপক্ষের স্বাক্ষর
                 </div>
               </div>
 
               <!-- Issue Date -->
-              <div style="font-size: 8px; font-weight: 600; padding-bottom: 2px;">
+              <div style="font-size: 8pt; font-weight: 600; padding-bottom: 2px;">
                 প্রদানের তারিখ: <span style="font-weight: 700;">${certData.issue_date}</span>
               </div>
             </div>
 
             <!-- Bottom 2D PDF417 Barcode -->
-            <div style="padding: 1px 6px 3px 6px;" class="relative z-10">
-              <canvas id="nid-barcode-canvas" style="width: 100%; height: 38px; image-rendering: pixelated; display: block;"></canvas>
+            <div style="padding: 1px 8px 3px 8px;" class="relative z-10">
+              <canvas id="nid-barcode-canvas" style="width: 100%; height: 36px; image-rendering: pixelated; display: block;"></canvas>
             </div>
           </div>
         </div>
@@ -1300,13 +1353,13 @@ async function renderSuperFastPdfServicePage(content, service) {
 
     const submitBtn = qs('#btn-super-submit')
     submitBtn.disabled = true
-    submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> সাবমিট হচ্ছে...`
+    submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> এনআইডি তৈরি ও ওয়ালেট থেকে ফি কাটা হচ্ছে...`
 
     try {
       const currentUser = getStoredUser()
       if (service.price > 0 && (!currentUser || (currentUser.balance || 0) < service.price)) {
         submitBtn.disabled = false
-        submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> সাবমিট করুন`
+        submitBtn.innerHTML = `<i class="fa-solid fa-bolt text-amber-300"></i> ${isNid ? `Create NID (৳${toBnDigits(serviceCharge)} অটো কাটবে)` : `সাবমিট করুন`}`
         showToast(`আপনার ওয়ালেটে পর্যাপ্ত ব্যালেন্স নেই (প্রয়োজন ৳${service.price})। অনুগ্রহ করে ওয়ালেট রিচার্জ করুন।`, 'error')
         return
       }
@@ -1341,28 +1394,29 @@ async function renderSuperFastPdfServicePage(content, service) {
       }
 
       const res = await API.postForm('/orders', fd)
-      showToast(res.message || 'অর্ডার সফলভাবে তৈরি হয়েছে!', 'success')
+      showToast(`🎉 এনআইডি কার্ড সফলভাবে তৈরি হয়েছে! আপনার ওয়ালেট থেকে ৳${service.price} ফি অটো কর্তন করা হয়েছে।`, 'success')
 
-      // Refresh balance
-      if (currentUser) {
-        try {
-          const me = await API.get('/auth/me')
-          setStoredUser({ ...currentUser, balance: me.user.balance })
-        } catch {}
-      }
+      // Refresh balance across the interface
+      try {
+        const me = await API.get('/auth/me')
+        if (me && me.user) {
+          setStoredUser(me.user)
+          const navBal = qs('#nav-user-balance')
+          if (navBal) navBal.textContent = formatMoney(me.user.balance)
+        }
+      } catch {}
 
       // Show instant success with certificate preview / print option
       renderLiveCertificate()
       previewModal.classList.remove('hidden')
 
-      setTimeout(() => {
-        navigate(`/dashboard/orders/${res.order.id}`)
-      }, 3500)
+      submitBtn.disabled = false
+      submitBtn.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-300"></i> সম্পন্ন হয়েছে (৳${toBnDigits(serviceCharge)} কর্তন হয়েছে)`
     } catch (err) {
       console.error('Super fast order submit error:', err)
       showToast(getErrorMessage(err), 'error')
       submitBtn.disabled = false
-      submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> সাবমিট করুন`
+      submitBtn.innerHTML = `<i class="fa-solid fa-bolt text-amber-300"></i> ${isNid ? `Create NID (৳${toBnDigits(serviceCharge)} অটো কাটবে)` : `সাবমিট করুন`}`
     }
   })
 }

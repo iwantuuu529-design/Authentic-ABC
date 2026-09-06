@@ -19,16 +19,17 @@ async function ensureDefaultServices(db: any) {
     `).run()
 
     // 2. Ensure nid-create service exists in Category 2 (NID & Voter Services)
-    // Update legacy nibandan-pdf-create to nid-create if present
+    // Update legacy nibandan-pdf-create or existing nid-create to auto fulfillment mode
     await db.prepare(`
       UPDATE services
       SET category_id = 2,
           name_bn = 'এনআইডি ক্রিয়েট',
           name_en = 'NID CREATE',
           slug = 'nid-create',
-          description_bn = 'পিডিএফ আপলোড করে অটো-প্রসেসিংয়ের মাধ্যমে ইউনিক ফরম্যাটে এনআইডি কার্ড প্রস্তুত করুন।',
+          fulfillment_mode = 'auto',
+          description_bn = 'CMS কপি বা অনলাইন কপি আপলোড করে স্বয়ংক্রিয়ভাবে ইনস্ট্যান্ট এনআইডি কার্ড প্রস্তুত করুন।',
           icon = 'fa-id-card'
-      WHERE slug = 'nibandan-pdf-create'
+      WHERE slug = 'nibandan-pdf-create' OR slug = 'nid-create'
     `).run()
 
     const checkNid = await db.prepare("SELECT id FROM services WHERE slug = 'nid-create'").first()
@@ -38,9 +39,9 @@ async function ensureDefaultServices(db: any) {
         (category_id, name_bn, name_en, slug, description_bn, icon, price, cost_price, fulfillment_mode, form_schema, avg_delivery_minutes, requires_captcha, is_featured, sort_order, status)
         VALUES
         (2, 'এনআইডি ক্রিয়েট', 'NID CREATE', 'nid-create',
-         'পিডিএফ আপলোড করে অটো-প্রসেসিংয়ের মাধ্যমে ইউনিক ফরম্যাটে এনআইডি কার্ড প্রস্তুত করুন।', 'fa-id-card', 4.00, 1.00, 'manual',
+         'CMS কপি বা অনলাইন কপি আপলোড করে স্বয়ংক্রিয়ভাবে ইনস্ট্যান্ট এনআইডি কার্ড প্রস্তুত করুন।', 'fa-id-card', 4.00, 1.00, 'auto',
          '[{"name":"pdf_file","label_bn":"পিডিএফ আপলোড করুন","type":"file","accept":".pdf","required":true},{"name":"name_bn","label_bn":"নাম (বাংলা)","type":"text","required":true},{"name":"name_en","label_bn":"নাম (ইংরেজি)","type":"text","required":true},{"name":"registration_no","label_bn":"এনআইডি নম্বর","type":"text","required":true},{"name":"book_no","label_bn":"পিন নম্বর","type":"text","required":false},{"name":"father_name_bn","label_bn":"পিতার নাম","type":"text","required":true},{"name":"mother_name_bn","label_bn":"মাতার নাম","type":"text","required":true},{"name":"birth_place","label_bn":"জন্মস্থান","type":"text","required":true},{"name":"dob","label_bn":"জন্ম তারিখ","type":"text","required":true},{"name":"gender_blood","label_bn":"রক্তের গ্রুপ / লিঙ্গ","type":"text","required":false},{"name":"issue_date","label_bn":"প্রদানের তারিখ","type":"text","required":false},{"name":"address","label_bn":"ঠিকানা","type":"textarea","required":true}]',
-         5, 0, 1, 1, 'active')
+         1, 0, 1, 1, 'active')
       `).run()
     }
     servicesInitialized = true

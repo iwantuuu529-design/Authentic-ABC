@@ -512,32 +512,47 @@ a[data-link], button, .page-btn {
   user-select: none;
 }
 
-/* NID Card Official Physical Print Layout (Side-by-Side) */
+/* NID Card Official Physical Print Layout (Side-by-Side Standard CR80) */
 .nid-card-print-container {
   display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: flex-start;
-  gap: 16px;
-  background: #ffffff;
-  padding: 10px;
-  font-family: 'Hind Siliguri', 'Segoe UI', Arial, sans-serif;
+  gap: 6mm;
+  background: transparent;
+  padding: 8px;
+  font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', 'Segoe UI', Arial, sans-serif;
+}
+
+.nid-cards-wrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 6mm;
+  background: transparent;
+  padding: 0;
+  margin: 0 auto;
 }
 
 .nid-card-frame {
-  width: 334px;
-  height: 210px;
+  width: 85.6mm;
+  height: 53.98mm;
+  min-width: 85.6mm;
+  max-width: 85.6mm;
+  min-height: 53.98mm;
+  max-height: 53.98mm;
   border: 1px solid #000000;
   border-radius: 0px;
-  background-color: #ffffff;
-  background-image: none;
+  background-color: #fafcf8;
+  background-image: linear-gradient(135deg, rgba(235, 246, 235, 0.45) 0%, rgba(254, 252, 245, 0.55) 50%, rgba(253, 246, 238, 0.35) 100%);
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
   color: #000000;
   flex-shrink: 0;
-  box-shadow: none;
-  font-family: 'Hind Siliguri', 'Segoe UI', Arial, sans-serif;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', 'Segoe UI', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -547,17 +562,28 @@ a[data-link], button, .page-btn {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 140px;
-  height: 140px;
-  opacity: 0.10;
+  width: 142px;
+  height: 142px;
+  opacity: 0.12;
   pointer-events: none;
   user-select: none;
+  z-index: 1;
+}
+
+.nid-guilloche-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
 }
 
 @media print {
   @page {
     size: A4 portrait;
-    margin: 8mm 10mm;
+    margin: 15mm 16mm;
   }
   html, body {
     height: 100% !important;
@@ -566,6 +592,7 @@ a[data-link], button, .page-btn {
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
+    width: 210mm !important;
   }
   body * {
     visibility: hidden;
@@ -600,35 +627,42 @@ a[data-link], button, .page-btn {
     max-width: 100% !important;
   }
   #certificate-print-wrap {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: center !important;
-    align-items: flex-start !important;
-    padding: 10px 0 !important;
+    display: block !important;
+    padding: 0 !important;
     margin: 0 auto !important;
     background: transparent !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
   .nid-card-print-container {
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: center !important;
-    align-items: flex-start !important;
-    gap: 18px !important;
+    display: block !important;
     margin: 0 auto !important;
     background: transparent !important;
     padding: 0 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
+  .nid-cards-wrapper {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    gap: 6mm !important;
+    margin: 0 auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
   .nid-card-frame {
-    width: 334px !important;
-    height: 210px !important;
+    width: 85.6mm !important;
+    height: 53.98mm !important;
+    min-width: 85.6mm !important;
+    max-width: 85.6mm !important;
+    min-height: 53.98mm !important;
+    max-height: 53.98mm !important;
     border: 1px solid #000000 !important;
     border-radius: 0px !important;
-    background-color: #ffffff !important;
-    background-image: none !important;
+    background-color: #fafcf8 !important;
+    background-image: linear-gradient(135deg, rgba(235, 246, 235, 0.45) 0%, rgba(254, 252, 245, 0.55) 50%, rgba(253, 246, 238, 0.35) 100%) !important;
     box-shadow: none !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

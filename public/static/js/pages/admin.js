@@ -13,6 +13,7 @@ const FIELD_TYPE_OPTIONS = [
 ]
 
 const FULFILLMENT_MODE_LABELS = {
+  auto: { label: 'অটো সার্ভিস (তাত্ক্ষণিক)', color: 'text-emerald-300 bg-emerald-500/20 border border-emerald-500/30' },
   manual: { label: 'ম্যানুয়াল', color: 'text-amber-400 bg-amber-500/10' },
   api: { label: 'অটো (API)', color: 'text-brand-400 bg-brand-500/10' },
   hybrid: { label: 'হাইব্রিড', color: 'text-violet-400 bg-violet-500/10' },
@@ -697,7 +698,14 @@ async function renderAdminServices() {
                 </div>
               </td>
               <td class="px-4 py-3 text-xs">${escapeHtml(s.category_name_bn || '-')}</td>
-              <td class="px-4 py-3 font-bold">${formatMoney(s.price)}</td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="flex items-center gap-1.5">
+                  <span class="font-extrabold text-sm text-emerald-400">${formatMoney(s.price)}</span>
+                  <button data-rate-id="${s.id}" data-rate-name="${escapeHtml(s.name_bn)}" data-rate-price="${s.price}" data-rate-cost="${s.cost_price || 0}" class="btn-glow text-[11px] px-2 py-0.5 rounded-md bg-white/5 hover:bg-brand-500/20 text-brand-300 inline-flex items-center gap-1 border border-white/10" title="রেট পরিবর্তন করুন">
+                    <i class="fa-solid fa-pen text-[9px]"></i> রেট
+                  </button>
+                </div>
+              </td>
               <td class="px-4 py-3"><span class="text-[11px] px-2 py-0.5 rounded-full ${(FULFILLMENT_MODE_LABELS[s.fulfillment_mode] || {}).color || 'text-slate-400 bg-white/5'}">${(FULFILLMENT_MODE_LABELS[s.fulfillment_mode] || {}).label || s.fulfillment_mode}</span></td>
               <td class="px-4 py-3 text-xs">${toBnDigits(s.total_orders || 0)} <span class="text-slate-500">/ ${toBnDigits(s.success_orders || 0)} সফল</span></td>
               <td class="px-4 py-3">${statusBadge(s.status)}</td>
@@ -708,6 +716,18 @@ async function renderAdminServices() {
             </tr>`).join('')}
         </tbody>
       </table>`)
+
+    qsa('[data-rate-id]', tableEl).forEach((btn) => {
+      btn.addEventListener('click', () => {
+        openRateEditorModal(
+          btn.dataset.rateId,
+          btn.dataset.rateName,
+          parseFloat(btn.dataset.ratePrice) || 0,
+          parseFloat(btn.dataset.rateCost) || 0,
+          loadServices
+        )
+      })
+    })
 
     qsa('[data-edit]', tableEl).forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -734,6 +754,78 @@ async function renderAdminServices() {
   qs('#manage-categories-btn').addEventListener('click', () => openCategoriesModal(loadServices))
 
   loadServices()
+}
+
+function openRateEditorModal(id, name, currentPrice, currentCost, onDone) {
+  const modal = openModal(`
+    <div class="space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-white/10">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-brand-500/20 text-brand-400 flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-bangladeshi-taka-sign"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">রেট পরিবর্তন করুন</h3>
+            <p class="text-xs text-slate-400">${escapeHtml(name)}</p>
+          </div>
+        </div>
+        <button type="button" class="close-rate-modal w-8 h-8 rounded-lg glass flex items-center justify-center text-slate-400 hover:text-white text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="quick-rate-form" class="space-y-4 pt-1">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">সার্ভিস ফি / বিক্রয় মূল্য (৳) *</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">৳</span>
+            <input type="number" id="qrf-price" required min="0" step="0.01" value="${currentPrice}" class="w-full glass rounded-xl pl-8 pr-4 py-2.5 text-sm text-white font-bold outline-none input-glow border border-white/10" placeholder="0.00" autofocus />
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">ইউজার "Create NID" বা অর্ডার করলেই ওয়ালেট থেকে এই রেট অটো কর্তন হবে।</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">কস্ট প্রাইস (৳) (ঐচ্ছিক)</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">৳</span>
+            <input type="number" id="qrf-cost" min="0" step="0.01" value="${currentCost}" class="w-full glass rounded-xl pl-8 pr-4 py-2.5 text-sm text-slate-200 outline-none input-glow border border-white/10" placeholder="0.00" />
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center gap-3">
+          <button type="button" class="close-rate-modal flex-1 py-2.5 rounded-xl glass hover:bg-white/10 text-xs font-semibold text-slate-300 transition-colors">
+            বাতিল
+          </button>
+          <button type="submit" id="qrf-submit" class="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-all shadow-lg shadow-brand-500/20 flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i> রেট সেভ করুন
+          </button>
+        </div>
+      </form>
+    </div>
+  `, { maxWidth: 'max-w-md' })
+
+  qsa('.close-rate-modal', modal).forEach((btn) => btn.addEventListener('click', () => closeModal()))
+
+  qs('#quick-rate-form', modal).addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const submitBtn = qs('#qrf-submit', modal)
+    submitBtn.disabled = true
+    submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> সেভ হচ্ছে...`
+
+    const price = parseFloat(qs('#qrf-price', modal).value)
+    const costPrice = parseFloat(qs('#qrf-cost', modal).value) || 0
+
+    try {
+      const res = await API.patch(`/admin/services/${id}/rate`, { price, cost_price: costPrice })
+      showToast(res.message || 'রেট সফলভাবে আপডেট হয়েছে!', 'success')
+      closeModal()
+      if (typeof onDone === 'function') onDone()
+    } catch (err) {
+      showToast(getErrorMessage(err), 'error')
+      submitBtn.disabled = false
+      submitBtn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> রেট সেভ করুন`
+    }
+  })
 }
 
 function formFieldBuilderRowHtml(field = {}) {
@@ -851,6 +943,7 @@ function openServiceFormModal(service, onDone) {
           <div>
             <label class="block text-xs font-medium text-slate-300 mb-1.5">ফুলফিলমেন্ট মোড *</label>
             <select id="sf-fulfillment" class="w-full glass rounded-xl px-4 py-2.5 text-sm outline-none input-glow">
+              <option value="auto" ${service?.fulfillment_mode === 'auto' ? 'selected' : ''}>অটো সার্ভিস (তাত্ক্ষণিক)</option>
               <option value="manual" ${service?.fulfillment_mode === 'manual' ? 'selected' : ''}>ম্যানুয়াল</option>
               <option value="api" ${service?.fulfillment_mode === 'api' ? 'selected' : ''}>অটো (API)</option>
               <option value="hybrid" ${service?.fulfillment_mode === 'hybrid' ? 'selected' : ''}>হাইব্রিড</option>

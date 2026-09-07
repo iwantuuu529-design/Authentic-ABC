@@ -1030,17 +1030,17 @@ async function renderSuperFastPdfServicePage(content, service) {
             ${getNidSecurityBg(certData.watermark)}
 
             <!-- Card Header -->
-            <div class="flex items-center gap-2 relative z-10 pt-0.5" style="min-height: 38px;">
+            <div class="flex items-center relative z-10" style="min-height: 38px; padding: 2px 4px 0 2px;">
               <!-- Official Bangladesh Emblem Seal -->
-              <div style="width: 35px; height: 35px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-                <img src="${certData.logo}" alt="বাংলাদেশ সরকার" style="width: 35px; height: 35px; object-fit: contain; border-radius: 50%; display: block;" onerror="this.src='/static/img/bd_govt_logo.png'">
+              <div style="width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-right: 6px;">
+                <img src="${certData.logo}" alt="বাংলাদেশ সরকার" style="width: 36px; height: 36px; object-fit: contain; border-radius: 50%; display: block;" onerror="this.src='/static/img/bd_govt_logo.png'">
               </div>
 
-              <div class="text-center flex-1" style="overflow: hidden;">
-                <div style="color: #000000; font-weight: 700; font-size: 9.8pt; line-height: 1.15; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif; white-space: nowrap;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
-                <div style="color: #006a4e; font-weight: 700; font-size: 6.8pt; line-height: 1.1; font-family: Arial, 'Segoe UI', sans-serif; letter-spacing: 0.1px; white-space: nowrap; margin-top: 1px;">Government of the People's Republic of Bangladesh</div>
-                <div style="font-weight: 700; font-size: 7.8pt; line-height: 1.15; margin-top: 1px; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif; white-space: nowrap;">
-                  <span style="color: #c8102e;">National ID Card</span> <span style="color: #006a4e;">/ জাতীয় পরিচয় পত্র</span>
+              <div class="text-center flex-1" style="overflow: hidden; padding-right: 8px;">
+                <div style="color: #000000; font-weight: 700; font-size: 10pt; line-height: 1.18; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif; white-space: nowrap; letter-spacing: 0.2px;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
+                <div style="color: #006a4e; font-weight: 700; font-size: 6.8pt; line-height: 1.1; font-family: Arial, 'Segoe UI', sans-serif; letter-spacing: 0.2px; white-space: nowrap; margin-top: 1px;">Government of the People's Republic of Bangladesh</div>
+                <div style="font-size: 8pt; line-height: 1.2; margin-top: 1.5px; white-space: nowrap;">
+                  <span style="color: #c8102e; font-family: Arial, 'Segoe UI', sans-serif; font-weight: 700;">National ID Card</span><span style="color: #006a4e; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif; font-weight: 700;"> / জাতীয় পরিচয় পত্র</span>
                 </div>
               </div>
             </div>

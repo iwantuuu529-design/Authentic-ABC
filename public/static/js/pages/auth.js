@@ -26,7 +26,7 @@ async function renderLoginPage() {
     <p class="text-slate-400 text-sm mb-6">আপনার অ্যাকাউন্টে লগইন করুন</p>
     <form id="login-form" class="space-y-4">
       <div>
-        <label class="block text-sm font-medium text-slate-300 mb-2">মোবাইল নম্বর</label>
+        <label class="block text-sm font-medium text-slate-300 mb-2">মোবাইল নম্বর / ইমেইল</label>
         <div class="relative">
           <i class="fa-solid fa-mobile-screen absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
           <input type="text" id="login-phone" placeholder="01xxxxxxxxx" class="w-full glass rounded-xl pl-11 pr-4 py-3 text-sm outline-none input-glow" required />

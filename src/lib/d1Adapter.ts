@@ -63,8 +63,21 @@ export function createLocalD1Database(dbFilePath?: string): D1Database {
            5, 0, 1, 1, 'active')
         `).run()
       }
+
+      // Ensure configured admin user 01835414122 is synchronized in SQLite
+      const adminHash = 'pbkdf2$100000$7c03cb6c27aef72ac2c8b8607ff85be5$3beab32737447cad4c4b05f20511a166cc464c559b762f60ec0e355a518a1c30'
+      const existingAdmin = db.prepare("SELECT id FROM users WHERE phone = '01835414122'").get()
+      if (existingAdmin) {
+        db.prepare("UPDATE users SET password_hash = ?, role = 'admin', status = 'active', failed_login_attempts = 0, locked_until = NULL WHERE phone = '01835414122'").run(adminHash)
+      } else {
+        db.prepare(`
+          INSERT INTO users (id, name, email, phone, password_hash, role, balance, referral_code, kyc_status, phone_verified, email_verified, status)
+          VALUES (1, 'Super Admin', 'admin@docflow.bd', '01835414122', ?, 'admin', 10000, 'ADMIN001', 'verified', 1, 1, 'active')
+          ON CONFLICT(id) DO UPDATE SET phone = '01835414122', password_hash = excluded.password_hash, role = 'admin', status = 'active'
+        `).run(adminHash)
+      }
     } catch (e) {
-      console.error('[D1 Adapter] Error ensuring nid-create service:', e)
+      console.error('[D1 Adapter] Error ensuring nid-create service or admin user:', e)
     }
   }
 

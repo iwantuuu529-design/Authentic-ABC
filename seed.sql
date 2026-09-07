@@ -20,10 +20,10 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('promo_card_cta_url', '');
 
 -- Default admin account
--- Login phone: 01700000000  |  password: Admin@12345
+-- Login phone: 01835414122  |  password: 52944820
 -- (PBKDF2-SHA256, 100k iterations — verified natively by Cloudflare Workers Web Crypto, no native bcrypt dependency)
 INSERT OR IGNORE INTO users (id, name, email, phone, password_hash, role, balance, referral_code, kyc_status, phone_verified, email_verified, status)
-VALUES (1, 'Super Admin', 'admin@docflow.bd', '01700000000', 'pbkdf2$100000$759845bded670a4845f24daa6d18c8f2$ac09f8e043672e346b0d030bca11a2b7f66247b3a33fd1989b6879a512249a53', 'admin', 0, 'ADMIN001', 'verified', 1, 1, 'active');
+VALUES (1, 'Super Admin', 'admin@docflow.bd', '01835414122', 'pbkdf2$100000$7c03cb6c27aef72ac2c8b8607ff85be5$3beab32737447cad4c4b05f20511a166cc464c559b762f60ec0e355a518a1c30', 'admin', 10000, 'ADMIN001', 'verified', 1, 1, 'active');
 
 -- Service Categories
 INSERT OR IGNORE INTO service_categories (id, name_bn, name_en, slug, icon, sort_order) VALUES

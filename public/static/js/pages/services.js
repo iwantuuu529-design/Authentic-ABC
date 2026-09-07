@@ -278,21 +278,21 @@ async function renderSuperFastPdfServicePage(content, service) {
         </span>
       </div>
 
-      <!-- Step 1: Drag-and-drop / Browse PDF Box -->
+      <!-- Step 1: Drag-and-drop / Browse PDF or Image Box -->
       <div id="super-pdf-dropzone" class="border-2 border-dashed border-sky-500/40 hover:border-sky-400 bg-sky-500/[0.03] hover:bg-sky-500/[0.08] rounded-2xl p-8 sm:p-12 text-center transition-all cursor-pointer relative group">
         <div class="w-16 h-16 rounded-full bg-sky-500/15 group-hover:bg-sky-500/25 flex items-center justify-center mx-auto mb-4 text-sky-400 group-hover:text-sky-300 group-hover:scale-110 transition-all shadow-lg shadow-sky-500/15">
           <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
         </div>
-        <p class="text-base sm:text-lg font-bold text-white mb-1">CMS কপি বা এনআইডি পিডিএফ আপলোড করুন</p>
-        <p class="text-xs text-slate-300 mb-3">CMS কপি, অনলাইন কপি বা স্লিপ পিডিএফ নির্বাচন করলেই সকল তথ্য অটোমেটিকভাবে নিচে পূরণ হবে</p>
+        <p class="text-base sm:text-lg font-bold text-white mb-1">CMS কপি বা এনআইডি ফাইল আপলোড করুন</p>
+        <p class="text-xs text-slate-300 mb-3">CMS কপি, অনলাইন কপি, স্লিপ পিডিএফ বা স্ক্রিনশট ইমেজ নির্বাচন করলেই সকল তথ্য, ছবি ও স্বাক্ষর অটোমেটিকভাবে নিচে পূরণ হবে</p>
         <button type="button" id="btn-browse-pdf" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 text-xs sm:text-sm font-bold border border-sky-500/30 transition-all">
-          <i class="fa-solid fa-file-arrow-up"></i> CMS কপি বা ফাইল নির্বাচন করুন
+          <i class="fa-solid fa-file-arrow-up"></i> CMS কপি / পিডিএফ / ইমেজ নির্বাচন করুন
         </button>
-        <input type="file" id="super-pdf-file-input" accept=".pdf,application/pdf" class="hidden">
+        <input type="file" id="super-pdf-file-input" accept=".pdf,application/pdf,image/png,image/jpeg,image/jpg,image/webp" class="hidden">
 
         <!-- Selected File Pill -->
         <div id="selected-file-badge" class="hidden mt-4 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-sky-500/20 text-sky-300 text-xs font-semibold border border-sky-500/30">
-          <i class="fa-solid fa-file-pdf"></i>
+          <i class="fa-solid fa-file-lines"></i>
           <span id="selected-file-name">file.pdf</span>
           <button type="button" id="btn-reupload-pdf" class="ml-2 text-slate-400 hover:text-white" title="অন্য ফাইল বেছে নিন">
             <i class="fa-solid fa-arrows-rotate"></i>
@@ -304,11 +304,26 @@ async function renderSuperFastPdfServicePage(content, service) {
       <!-- Quick Demo Clone Action -->
       <div class="mt-4 flex flex-wrap items-center justify-center gap-2.5">
         <button type="button" id="btn-load-sample-nid-1" class="px-4 py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
-          <i class="fa-solid fa-id-card text-sky-400 text-sm"></i> নমুনা ১: মোঃ এমরান কবির রিপন (মূল PDF কপি)
+          <i class="fa-solid fa-id-card text-sky-400 text-sm"></i> নমুনা: নুরুন নাহার (CMS অনলাইন কপি থেকে হুবহু প্রস্তুত)
         </button>
-        <button type="button" id="btn-load-sample-nid-2" class="px-4 py-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
-          <i class="fa-solid fa-id-card text-emerald-400 text-sm"></i> নমুনা ২: মোঃ রুকন মিয়া (নতুন বিবরণী কপি)
+      </div>
+
+      <!-- Option to Paste Raw CMS Data -->
+      <div class="mt-3 border border-white/10 rounded-xl bg-white/[0.02] overflow-hidden">
+        <button type="button" id="btn-toggle-cms-paste" class="w-full px-4 py-2.5 flex items-center justify-between text-xs text-slate-300 hover:text-white font-semibold transition-colors">
+          <span class="flex items-center gap-2">
+            <i class="fa-solid fa-clipboard text-sky-400"></i> নির্বাচন কমিশন পোর্টাল থেকে কপি করা CMS টেক্সট পেস্ট করুন
+          </span>
+          <i id="cms-paste-icon" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
         </button>
+        <div id="cms-paste-panel" class="hidden p-4 border-t border-white/5 space-y-3">
+          <textarea id="cms-raw-text-input" rows="4" placeholder="নির্বাচন কমিশন পোর্টাল থেকে কপি করা CMS তথ্য এখানে পেস্ট করুন (যেমন: National ID 2429358167, Name(Bangla) নুরুন নাহার, Home/Holding No ৪৭৩, Village/Road উত্তমপুর...)" class="w-full bg-ink-950 border border-white/10 rounded-xl p-3 text-xs text-slate-200 placeholder:text-slate-600 focus:border-sky-500/50 outline-none font-mono"></textarea>
+          <div class="flex justify-end gap-2">
+            <button type="button" id="btn-parse-cms-text" class="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold transition-colors flex items-center gap-2">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> CMS টেক্সট থেকে ডাটা অটো-ফিল করুন
+            </button>
+          </div>
+        </div>
       </div>
       ` : ''}
 
@@ -575,12 +590,13 @@ async function renderSuperFastPdfServicePage(content, service) {
     }
   })
 
-  signInput.addEventListener('change', () => {
+  signInput.addEventListener('change', async () => {
     const file = signInput.files && signInput.files[0]
     if (file) {
       const reader = new FileReader()
-      reader.onload = (ev) => {
-        signBase64 = ev.target.result
+      reader.onload = async (ev) => {
+        const raw = ev.target.result
+        signBase64 = await cleanSignatureTransparency(raw)
         signPreview.src = signBase64
       }
       reader.readAsDataURL(file)
@@ -612,27 +628,28 @@ async function renderSuperFastPdfServicePage(content, service) {
       qs('#uf-mother-name').value = 'মোছাঃ মনোয়ারা'
       qs('#uf-birth-place').value = 'কিশোরগঞ্জ'
       qs('#uf-dob').value = '18 Mar 1986'
-      qs('#uf-gender-blood').value = 'B+'
+      qs('#uf-gender-blood').value = ''
       qs('#uf-issue-date').value = '০৩/০৯/২০২৬'
-      qs('#uf-address').value = 'বাসা/হোল্ডিং: -, গ্রাম/রাস্তা: কোনাপাড়া, চান্দপুর, ডাকঘর: মানিকখালী - ২৩৩১, কটিয়াদী, কিশোরগঞ্জ'
+      qs('#uf-address').value = 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: কোনাপাড়া, চান্দপুর, ডাকঘর: মানিকখালী - ২৩৩১, কটিয়াদী, কিশোরগঞ্জ'
       photoBase64 = sampleNidPhoto
       signBase64 = sampleNidSign
       logoBase64 = defaultBdGovtLogo
       watermarkBase64 = defaultBdWatermark
     } else {
-      qs('#uf-name-bn').value = 'মোঃ এমরান কবির রিপন'
-      qs('#uf-name-en').value = 'MD. AMRAN KABIR RIPON'
-      qs('#uf-reg-no').value = '3738061542'
-      qs('#uf-book-no').value = '19754814243000004'
-      qs('#uf-father-name').value = 'মোঃ লিলু মিয়া'
-      qs('#uf-mother-name').value = 'রহিমা খাতুন'
-      qs('#uf-birth-place').value = 'কিশোরগঞ্জ'
-      qs('#uf-dob').value = '08 Aug 1975'
-      qs('#uf-gender-blood').value = 'AB+'
-      qs('#uf-issue-date').value = '৩১/০৮/২০২৬'
-      qs('#uf-address').value = 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: সাধের জঙ্গল, বাদে শ্রীরামপুর, ডাকঘর: জঙ্গলবাড়ি - ২৩০০, করিমগঞ্জ, কিশোরগঞ্জ'
-      photoBase64 = sampleNidPhoto
-      signBase64 = sampleNidSign
+      // 100% Real profile from User CMS and Output files: Nurun Naher
+      qs('#uf-name-bn').value = 'নুরুন নাহার'
+      qs('#uf-name-en').value = 'NURUN NAHER'
+      qs('#uf-reg-no').value = '2429358167'
+      qs('#uf-book-no').value = '20040610727000601'
+      qs('#uf-father-name').value = 'এস্কান্দার মোল্লা'
+      qs('#uf-mother-name').value = 'তাছলিমা বেগম'
+      qs('#uf-birth-place').value = 'বরিশাল'
+      qs('#uf-dob').value = '10 Dec 2004'
+      qs('#uf-gender-blood').value = ''
+      qs('#uf-issue-date').value = '০৬/০৯/২০২৬'
+      qs('#uf-address').value = 'বাসা/হোল্ডিং: ৪৭৩, গ্রাম/রাস্তা: উত্তমপুর, উত্তমপুর, ডাকঘর: উত্তমপুর - ৮২৮০, বাকেরগঞ্জ, বরিশাল'
+      photoBase64 = '/static/img/nurun_naher_photo.jpg'
+      signBase64 = '/static/img/sample_nid_sign.svg'
       logoBase64 = defaultBdGovtLogo
       watermarkBase64 = defaultBdWatermark
     }
@@ -651,12 +668,49 @@ async function renderSuperFastPdfServicePage(content, service) {
     })
   }
 
-  const sampleNidBtn2 = qs('#btn-load-sample-nid-2')
-  if (sampleNidBtn2) {
-    sampleNidBtn2.addEventListener('click', () => {
-      loadSampleNidCardData(2)
-      renderLiveCertificate()
-      previewModal.classList.remove('hidden')
+  // Toggle CMS paste panel
+  const toggleCmsBtn = qs('#btn-toggle-cms-paste')
+  const cmsPastePanel = qs('#cms-paste-panel')
+  const cmsPasteIcon = qs('#cms-paste-icon')
+  if (toggleCmsBtn && cmsPastePanel) {
+    toggleCmsBtn.addEventListener('click', () => {
+      const isHidden = cmsPastePanel.classList.toggle('hidden')
+      if (cmsPasteIcon) {
+        cmsPasteIcon.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)'
+      }
+    })
+  }
+
+  // Parse pasted CMS text
+  const parseCmsBtn = qs('#btn-parse-cms-text')
+  const cmsTextInput = qs('#cms-raw-text-input')
+  if (parseCmsBtn && cmsTextInput) {
+    parseCmsBtn.addEventListener('click', () => {
+      const rawText = cmsTextInput.value.trim()
+      if (!rawText) {
+        showToast('অনুগ্রহ করে CMS তথ্য পেস্ট করুন', 'warning')
+        return
+      }
+      const parsed = parseCmsRawText(rawText)
+      if (parsed) {
+        if (parsed.name_bn) qs('#uf-name-bn').value = parsed.name_bn
+        if (parsed.name_en) qs('#uf-name-en').value = parsed.name_en
+        if (parsed.registration_no) qs('#uf-reg-no').value = parsed.registration_no
+        if (parsed.book_no) qs('#uf-book-no').value = parsed.book_no
+        if (parsed.father_name_bn) qs('#uf-father-name').value = parsed.father_name_bn
+        if (parsed.mother_name_bn) qs('#uf-mother-name').value = parsed.mother_name_bn
+        if (parsed.birth_place) qs('#uf-birth-place').value = parsed.birth_place
+        if (parsed.dob) qs('#uf-dob').value = parsed.dob
+        if (parsed.gender_blood !== undefined) qs('#uf-gender-blood').value = parsed.gender_blood
+        if (parsed.address) qs('#uf-address').value = parsed.address
+        if (!qs('#uf-issue-date').value) qs('#uf-issue-date').value = formatBanglaDate(dayjs().format('DD/MM/YYYY'))
+
+        formSection.classList.remove('hidden')
+        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        showToast('CMS টেক্সট থেকে সকল ডাটা সফলভাবে অটো-ফিল করা হয়েছে!', 'success')
+      } else {
+        showToast('টেক্সট থেকে ডাটা সনাক্ত করা যায়নি। সঠিক তথ্য পেস্ট করুন।', 'error')
+      }
     })
   }
 
@@ -673,8 +727,30 @@ async function renderSuperFastPdfServicePage(content, service) {
     fileNameEl.textContent = file.name
     fileBadge.classList.remove('hidden')
 
-    // Show "পিডিএফ প্রসেস হচ্ছে..." modal
+    // Show processing modal
     procModal.classList.remove('hidden')
+
+    const isImage = file.type?.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(file.name)
+    if (isImage) {
+      try {
+        const imgExtracted = await extractFromCmsImage(file)
+        if (imgExtracted.photoDataUrl) {
+          photoBase64 = imgExtracted.photoDataUrl
+          photoPreview.src = photoBase64
+        }
+        if (imgExtracted.signDataUrl) {
+          signBase64 = imgExtracted.signDataUrl
+          signPreview.src = signBase64
+        }
+        procModal.classList.add('hidden')
+        formSection.classList.remove('hidden')
+        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        showToast('CMS ইমেজ থেকে ছবি ও স্বাক্ষর সফলভাবে এক্সট্র্যাক্ট করা হয়েছে!', 'success')
+        return
+      } catch (imgErr) {
+        console.warn('Image extraction notice:', imgErr)
+      }
+    }
 
     const startTime = Date.now()
     let extracted = null
@@ -908,19 +984,19 @@ async function renderSuperFastPdfServicePage(content, service) {
       .trim()
 
     const certData = {
-      name_bn: qs('#uf-name-bn').value || (isNid ? 'মোঃ এমরান কবির রিপন' : ''),
-      name_en: qs('#uf-name-en').value || (isNid ? 'MD. AMRAN KABIR RIPON' : ''),
-      reg_no: cleanRegNo || (isNid ? '3738061542' : ''),
-      book_no: qs('#uf-book-no').value || (isNid ? '19754814243000004' : ''),
-      father_name: qs('#uf-father-name').value || (isNid ? 'মোঃ লিলু মিয়া' : ''),
-      mother_name: qs('#uf-mother-name').value || (isNid ? 'রহিমা খাতুন' : ''),
-      birth_place: qs('#uf-birth-place').value || (isNid ? 'কিশোরগঞ্জ' : ''),
-      dob: formattedDob || rawDob || (isNid ? '08 Aug 1975' : ''),
-      gender_blood: qs('#uf-gender-blood').value || (isNid ? 'AB+' : ''),
-      issue_date: issueDateBn || rawIssueDate || (isNid ? '৩১/০৮/২০২৬' : ''),
-      address: cleanAddress || (isNid ? 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: সাধের জঙ্গল, বাদে শ্রীরামপুর, ডাকঘর: জঙ্গলবাড়ি - ২৩০০, করিমগঞ্জ, কিশোরগঞ্জ' : ''),
-      photo: photoBase64 || defaultPhoto,
-      sign: signBase64 || defaultSign,
+      name_bn: qs('#uf-name-bn').value || (isNid ? 'নুরুন নাহার' : ''),
+      name_en: qs('#uf-name-en').value || (isNid ? 'NURUN NAHER' : ''),
+      reg_no: cleanRegNo || (isNid ? '2429358167' : ''),
+      book_no: qs('#uf-book-no').value || (isNid ? '20040610727000601' : ''),
+      father_name: qs('#uf-father-name').value || (isNid ? 'এস্কান্দার মোল্লা' : ''),
+      mother_name: qs('#uf-mother-name').value || (isNid ? 'তাছলিমা বেগম' : ''),
+      birth_place: qs('#uf-birth-place').value || (isNid ? 'বরিশাল' : ''),
+      dob: formattedDob || rawDob || (isNid ? '10 Dec 2004' : ''),
+      gender_blood: qs('#uf-gender-blood').value || '',
+      issue_date: issueDateBn || rawIssueDate || (isNid ? '০৬/০৯/২০২৬' : ''),
+      address: cleanAddress || (isNid ? 'বাসা/হোল্ডিং: ৪৭৩, গ্রাম/রাস্তা: উত্তমপুর, উত্তমপুর, ডাকঘর: উত্তমপুর - ৮২৮০, বাকেরগঞ্জ, বরিশাল' : ''),
+      photo: photoBase64 || '/static/img/nurun_naher_photo.jpg',
+      sign: signBase64 || '/static/img/sample_nid_sign.svg',
       logo: logoBase64 || defaultBdGovtLogo,
       watermark: watermarkBase64 || defaultBdWatermark,
     }
@@ -939,7 +1015,7 @@ async function renderSuperFastPdfServicePage(content, service) {
 
             <!-- Card Header -->
             <div class="flex items-center gap-2 relative z-10 pt-0.5">
-              <!-- Official Bangladesh Emblem Seal (From PDF or authentic asset) -->
+              <!-- Official Bangladesh Emblem Seal -->
               <div style="width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
                 <img src="${certData.logo}" alt="বাংলাদেশ সরকার" style="width: 36px; height: 36px; object-fit: contain; border-radius: 50%; display: block;" onerror="this.src='/static/img/bd_govt_logo.png'">
               </div>
@@ -954,35 +1030,35 @@ async function renderSuperFastPdfServicePage(content, service) {
             <!-- Card Body: Left (Photo + Sign) & Right (Info Rows) -->
             <div class="flex gap-2.5 items-start relative z-10 flex-1 pt-1">
               <!-- Left: Photo + Citizen Signature -->
-              <div class="flex flex-col items-center flex-shrink-0" style="width: 70px;">
-                <div style="width: 70px; height: 84px; border: 1px solid #000000; background: #fff; overflow: hidden; border-radius: 0px;">
-                  <img src="${certData.photo}" alt="NID Photo" class="w-full h-full object-cover">
+              <div class="flex flex-col items-center flex-shrink-0" style="width: 72px;">
+                <div style="width: 72px; height: 86px; border: none; background: transparent; overflow: hidden; border-radius: 0px;">
+                  <img src="${certData.photo}" alt="NID Photo" class="w-full h-full object-cover" style="display: block;">
                 </div>
-                <div style="width: 70px; height: 18px; margin-top: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                  <img src="${certData.sign}" alt="Signature" class="max-w-full max-h-full object-contain">
+                <div style="width: 72px; height: 20px; margin-top: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                  <img src="${certData.sign}" alt="Signature" class="max-w-full max-h-full object-contain" style="display: block;">
                 </div>
               </div>
 
               <!-- Right: Info Rows -->
-              <div class="flex-1 space-y-0.5" style="font-size: 9.5pt; line-height: 1.22; color: #000000;">
+              <div class="flex-1 space-y-0.5" style="font-size: 9pt; line-height: 1.25; color: #000000; padding-left: 2px;">
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 9pt;">নাম:</span>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 8.5pt;">নাম:</span>
                   <strong style="font-size: 11pt; color: #000000; font-weight: 700; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif;">${certData.name_bn}</strong>
                 </div>
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 9pt;">Name:</span>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 8.5pt;">Name:</span>
                   <strong style="font-size: 9.5pt; color: #000000; font-weight: 700; font-family: Arial, 'Segoe UI', sans-serif;">${certData.name_en}</strong>
                 </div>
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 9pt;">পিতা:</span>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 8.5pt;">পিতা:</span>
                   <span style="font-size: 9.5pt; font-weight: 600; color: #000000;">${certData.father_name}</span>
                 </div>
                 <div class="flex items-baseline" style="margin-bottom: 2px;">
-                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 9pt;">মাতা:</span>
+                  <span style="width: 44px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 8.5pt;">মাতা:</span>
                   <span style="font-size: 9.5pt; font-weight: 600; color: #000000;">${certData.mother_name}</span>
                 </div>
                 <div class="flex items-baseline" style="margin-top: 3px; margin-bottom: 2px;">
-                  <span style="color: #000000; margin-right: 4px; font-size: 9pt; font-weight: 500;">Date of Birth:</span>
+                  <span style="color: #000000; margin-right: 4px; font-size: 8.5pt; font-weight: 500;">Date of Birth:</span>
                   <strong style="color: #c8102e; font-size: 10pt; font-weight: 700; font-family: Arial, 'Segoe UI', sans-serif;">${certData.dob}</strong>
                 </div>
                 <div class="flex items-baseline" style="margin-top: 2px;">
@@ -1001,11 +1077,11 @@ async function renderSuperFastPdfServicePage(content, service) {
             <!-- Top Notice Box -->
             <div style="border-bottom: 1px solid #000000; padding: 4px 6px 3px 6px; font-size: 6.5pt; line-height: 1.25; text-align: center; color: #000000;" class="relative z-10 font-semibold">
               এই কার্ডটি গণপ্রজাতন্ত্রী বাংলাদেশ সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য<br>
-              কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।
+              কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।
             </div>
 
             <!-- Middle Address (স্থায়ী ঠিকানা) -->
-            <div style="border-bottom: 1px solid #000000; padding: 4px 8px 4px 8px; font-size: 8.5pt; line-height: 1.32; color: #000000;" class="relative z-10 flex-1">
+            <div style="border-bottom: 1px solid #000000; padding: 4px 8px 4px 8px; font-size: 8pt; line-height: 1.34; color: #000000;" class="relative z-10 flex-1">
               <span style="font-weight: 700;">ঠিকানা:</span> ${certData.address}
             </div>
 
@@ -1013,11 +1089,11 @@ async function renderSuperFastPdfServicePage(content, service) {
             <div style="border-bottom: 1px solid #000000; padding: 2px 8px; font-size: 8pt; line-height: 1.2; color: #000000;" class="relative z-10 flex items-center justify-between">
               <div>
                 <span>রক্তের গ্রুপ / Blood Group: </span>
-                <strong style="color: #c8102e; font-weight: 700;">${certData.gender_blood || 'AB+'}</strong>
-                <span style="margin-left: 14px;">জন্মস্থান: </span>
-                <span style="font-weight: 600;">${certData.birth_place || 'কিশোরগঞ্জ'}</span>
+                ${certData.gender_blood ? `<strong style="color: #c8102e; font-weight: 700;">${certData.gender_blood}</strong>` : ''}
+                <span style="margin-left: ${certData.gender_blood ? '12px' : '22px'};">জন্মস্থান: </span>
+                <span style="font-weight: 600;">${certData.birth_place || ''}</span>
               </div>
-              <div style="background-color: #000000; color: #ffffff; padding: 1px 5px; font-weight: 700; font-size: 7.5pt; line-height: 1.1; border-radius: 0;">
+              <div style="background-color: #000000; color: #ffffff; padding: 1px 6px; font-weight: 700; font-size: 7.5pt; line-height: 1.1; border-radius: 0;">
                 মুদ্রণ: ০১
               </div>
             </div>
@@ -1620,9 +1696,34 @@ async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
           console.warn('Canvas crop fallback notice:', cropErr)
         }
       }
+
+      // In CMS copy PDFs, the signature is situated directly below the photo (x: ~72-95%, y: ~19-25%)
+      if (!signDataUrl && canvas.width > 200 && canvas.height > 200) {
+        try {
+          const cropW = Math.round(canvas.width * 0.22)
+          const cropH = Math.round(canvas.height * 0.065)
+          const cropX = Math.round(canvas.width * 0.74)
+          const cropY = Math.round(canvas.height * 0.19)
+          const cropC = document.createElement('canvas')
+          cropC.width = cropW
+          cropC.height = cropH
+          const cCtx = cropC.getContext('2d')
+          cCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH)
+          const rawSign = cropC.toDataURL('image/png')
+          signDataUrl = await cleanSignatureTransparency(rawSign)
+        } catch (cropErr) {
+          console.warn('Signature crop fallback notice:', cropErr)
+        }
+      }
     }
   } catch (objErr) {
     console.warn('PDF.js image decoding notice:', objErr)
+  }
+
+  if (signDataUrl) {
+    try {
+      signDataUrl = await cleanSignatureTransparency(signDataUrl)
+    } catch {}
   }
 
   return { photoDataUrl, signDataUrl, logoDataUrl, watermarkDataUrl }
@@ -1828,5 +1929,187 @@ function getDefaultExtractedData() {
     logoDataUrl: '',
     watermarkDataUrl: '',
   }
+}
+
+// ------------------------------------------------------------
+// Signature Transparency Cleaner (Removes white/grey boxes)
+// ------------------------------------------------------------
+function cleanSignatureTransparency(dataUrl) {
+  return new Promise((resolve) => {
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+      return resolve(dataUrl)
+    }
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas')
+        c.width = img.naturalWidth || img.width
+        c.height = img.naturalHeight || img.height
+        const ctx = c.getContext('2d')
+        ctx.drawImage(img, 0, 0)
+        const imgData = ctx.getImageData(0, 0, c.width, c.height)
+        const data = imgData.data
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i], g = data[i + 1], b = data[i + 2]
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b
+          // If pixel is near white/light gray background, make transparent
+          if (lum > 175) {
+            data[i + 3] = 0
+          } else {
+            // Darken ink to rich black for crisp NID output
+            data[i] = Math.min(r, 20)
+            data[i + 1] = Math.min(g, 20)
+            data[i + 2] = Math.min(b, 20)
+            data[i + 3] = 255
+          }
+        }
+        ctx.putImageData(imgData, 0, 0)
+        resolve(c.toDataURL('image/png'))
+      } catch (e) {
+        resolve(dataUrl)
+      }
+    }
+    img.onerror = () => resolve(dataUrl)
+    img.src = dataUrl
+  })
+}
+
+// ------------------------------------------------------------
+// Election Commission CMS Raw Text Parser
+// ------------------------------------------------------------
+function parseCmsRawText(text) {
+  if (!text) return null
+  const bnToEn = { '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9' }
+
+  // 1. National ID (10 to 17 digits)
+  const nidMatch = text.match(/(?:National\s*Id|National\s*ID|জাতীয়\s*পরিচয়পত্র\s*নম্বর|জাতীয়\s*পরিচয়পত্র\s*নং|জাতীয়\s*পরিচয়পত্র|এনআইডি\s*নং|এনআইডি|NID\s*No|NID)[\s:.-]*([0-9০-৯]{10,17})/i)
+  const regNo = nidMatch ? nidMatch[1].replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch) : ''
+
+  // 2. PIN No (17 digits)
+  const pinMatch = text.match(/(?:Pin|পিন\s*নম্বর|পিন\s*নং|পিন|PIN\s*No|PIN|Book)[\s:.-]*([0-9০-৯]{17})/i)
+  const pinNo = pinMatch ? pinMatch[1].replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch) : ''
+
+  // 3. Name (Bangla)
+  const bnMatch = text.match(/(?:Name\s*\(Bangla\)|নাম\s*\(বাংলা\)|ব্যক্তির\s*নাম)[\s:.-]*([ঀ-৿\s.]{2,40})/i) ||
+    text.match(/(?:নাম)[\s:.-]*([ঀ-৿\s.]{2,40})/i)
+
+  // 4. Name (English)
+  const enMatch = text.match(/(?:Name\s*\(English\)|নাম\s*\(ইংরেজি\)|Name\s*in\s*English)[\s:.-]*([A-Za-z\s.]{2,40})/i) ||
+    text.match(/(?:Name)[\s:.-]*([A-Za-z\s.]{2,40})/i)
+
+  // 5. Date of Birth
+  const dobMatch = text.match(/(?:Date\s*of\s*Birth|জন্ম\s*তারিখ|DOB)[\s:.-]*([0-9০-৯]{4}[-\/.][0-9০-৯]{1,2}[-\/.][0-9০-৯]{1,2}|[0-9০-৯]{1,2}[-\/.\s][A-Za-z0-9০-৯]{2,4}[-\/.\s][0-9০-৯]{4})/i)
+
+  // 6. Birth Place
+  const bpMatch = text.match(/(?:Birth\s*Place|জন্মস্থান|Place\s*of\s*Birth)[\s:.-]*([ঀ-৿A-Za-z\s]{2,30})/i)
+
+  // 7. Father Name
+  const fMatch = text.match(/(?:Father\s*Name|পিতার\s*নাম|পিতা)[\s:.-]*([ঀ-৿\s.]{2,35})/i)
+
+  // 8. Mother Name
+  const mMatch = text.match(/(?:Mother\s*Name|মাতার\s*নাম|মাতা)[\s:.-]*([ঀ-৿\s.]{2,35})/i)
+
+  // 9. Blood Group (if any)
+  const bgMatch = text.match(/(?:Blood\s*Group|রক্তের\s*গ্রুপ)[\s:.-]*\b(A\+|A-|B\+|B-|O\+|O-|AB\+|AB-)\b/i)
+
+  // 10. Address
+  const holdingMatch = text.match(/(?:Home\/Holding\s*No|Home\/Holding|বাসা\/হোল্ডিং)[\s:.-]*([^\n,]+)/i)
+  const villageMatch = text.match(/(?:Village\/Road|গ্রাম\/রাস্তা)[\s:.-]*([^\n,]+)/i)
+  const mouzaMatch = text.match(/(?:Mouza\/Moholla|মৌজা\/মহল্লা|মৌজা)[\s:.-]*([^\n,]+)/i)
+  const poMatch = text.match(/(?:Post\s*Office|ডাকঘর)[\s:.-]*([^\n,]+)/i)
+  const pcMatch = text.match(/(?:Postal\s*Code|পোস্ট\s*কোড)[\s:.-]*([0-9০-৯]{4})/i)
+  const upoMatch = text.match(/(?:Upozila|Upazila|উপজেলা|থানা)[\s:.-]*([^\n,]+)/i)
+  const distMatch = text.match(/(?:District|জেলা)[\s:.-]*([^\n,]+)/i)
+
+  const parts = []
+  const holding = holdingMatch ? holdingMatch[1].trim() : ''
+  const holdingStr = (!holding || holding === '-' || holding === 'None' || holding === 'null') ? '' : holding
+  parts.push(`বাসা/হোল্ডিং: ${holdingStr}`)
+
+  const village = villageMatch ? villageMatch[1].trim() : ''
+  const mouza = mouzaMatch ? mouzaMatch[1].trim() : ''
+  const roadList = [village, mouza].filter(Boolean)
+  if (roadList.length > 0) {
+    parts.push(`গ্রাম/রাস্তা: ${roadList.join(', ')}`)
+  }
+
+  if (poMatch) {
+    const po = poMatch[1].trim()
+    const pc = pcMatch ? pcMatch[1].trim() : ''
+    parts.push(`ডাকঘর: ${po}${pc ? ' - ' + pc : ''}`)
+  }
+
+  if (upoMatch) parts.push(upoMatch[1].trim())
+  if (distMatch) parts.push(distMatch[1].trim())
+
+  return {
+    registration_no: regNo,
+    book_no: pinNo || regNo,
+    name_bn: bnMatch ? bnMatch[1].trim() : '',
+    name_en: enMatch ? enMatch[1].trim() : '',
+    dob: dobMatch ? formatNidDob(dobMatch[1]) : '',
+    birth_place: bpMatch ? bpMatch[1].trim() : '',
+    father_name_bn: fMatch ? fMatch[1].trim() : '',
+    mother_name_bn: mMatch ? mMatch[1].trim() : '',
+    gender_blood: bgMatch ? bgMatch[1] : '',
+    address: parts.length > 1 ? parts.join(', ') : '',
+  }
+}
+
+// ------------------------------------------------------------
+// CMS Screenshot / Image Cropper & Parser
+// ------------------------------------------------------------
+async function extractFromCmsImage(imageFile) {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result
+      const img = new Image()
+      img.onload = async () => {
+        try {
+          const w = img.naturalWidth || img.width
+          const h = img.naturalHeight || img.height
+          const result = { photoDataUrl: '', signDataUrl: '' }
+
+          // If tall vertical image (CMS copy screenshot)
+          if (h > w && h >= 350 && w >= 250) {
+            // Photo crop: top right (x: ~72-94%, y: ~8-19%)
+            const photoCanvas = document.createElement('canvas')
+            const pw = Math.round(w * 0.22)
+            const ph = Math.round(h * 0.11)
+            const px = Math.round(w * 0.72)
+            const py = Math.round(h * 0.082)
+            photoCanvas.width = pw
+            photoCanvas.height = ph
+            photoCanvas.getContext('2d').drawImage(img, px, py, pw, ph, 0, 0, pw, ph)
+            result.photoDataUrl = photoCanvas.toDataURL('image/jpeg', 0.95)
+
+            // Signature crop: below photo (x: ~72-94%, y: ~19-24%)
+            const signCanvas = document.createElement('canvas')
+            const sw = Math.round(w * 0.22)
+            const sh = Math.round(h * 0.055)
+            const sx = Math.round(w * 0.72)
+            const sy = Math.round(h * 0.188)
+            signCanvas.width = sw
+            signCanvas.height = sh
+            signCanvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh)
+            const rawSign = signCanvas.toDataURL('image/png')
+            result.signDataUrl = await cleanSignatureTransparency(rawSign)
+          } else {
+            // Standalone photo
+            result.photoDataUrl = dataUrl
+          }
+          resolve(result)
+        } catch (err) {
+          resolve({ photoDataUrl: dataUrl, signDataUrl: '' })
+        }
+      }
+      img.onerror = () => resolve({ photoDataUrl: '', signDataUrl: '' })
+      img.src = dataUrl
+    }
+    reader.onerror = () => resolve({ photoDataUrl: '', signDataUrl: '' })
+    reader.readAsDataURL(imageFile)
+  })
 }
 

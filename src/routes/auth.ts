@@ -98,18 +98,19 @@ auth.post('/register', async (c) => {
 // ---------------------------------------------------------------
 auth.post('/login', async (c) => {
   const body = await c.req.json().catch(() => ({}))
-  const phone = sanitizeText(body.phone, 20)
-  const password = typeof body.password === 'string' ? body.password : ''
+  const identifier = sanitizeText(body.phone || body.username || body.email || body.id, 100)
+  const password = typeof body.password === 'string' ? body.password.trim() : ''
 
-  if (!phone || !password) {
-    return c.json({ success: false, message: 'মোবাইল নম্বর ও পাসওয়ার্ড দিন।' }, 400)
+  if (!identifier || !password) {
+    return c.json({ success: false, message: 'মোবাইল নম্বর / ইউজারনেম ও পাসওয়ার্ড দিন।' }, 400)
   }
 
   const user = await c.env.DB.prepare(
     `SELECT id, name, phone, email, password_hash, role, balance, status, failed_login_attempts, locked_until
-     FROM users WHERE phone = ?`
+     FROM users 
+     WHERE phone = ? OR email = ?`
   )
-    .bind(phone)
+    .bind(identifier, identifier)
     .first<any>()
 
   if (!user) {
@@ -124,6 +125,7 @@ auth.post('/login', async (c) => {
   }
 
   const valid = await verifyPassword(password, user.password_hash)
+
   if (!valid) {
     const attempts = (user.failed_login_attempts || 0) + 1
     let lockedUntil: string | null = null

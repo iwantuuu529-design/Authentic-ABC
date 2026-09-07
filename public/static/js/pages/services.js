@@ -303,8 +303,11 @@ async function renderSuperFastPdfServicePage(content, service) {
       ${isNid ? `
       <!-- Quick Demo Clone Action -->
       <div class="mt-4 flex flex-wrap items-center justify-center gap-2.5">
-        <button type="button" id="btn-load-sample-nid-1" class="px-4 py-2.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
-          <i class="fa-solid fa-id-card text-sky-400 text-sm"></i> নমুনা: নুরুন নাহার (CMS অনলাইন কপি থেকে হুবহু প্রস্তুত)
+        <button type="button" id="btn-load-sample-nid-1" class="px-3.5 py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
+          <i class="fa-solid fa-id-card text-sky-400 text-sm"></i> নমুনা ১: নুরুন নাহার (CMS অনলাইন কপি)
+        </button>
+        <button type="button" id="btn-load-sample-nid-2" class="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/35 text-xs font-bold flex items-center gap-2 transition-all shadow-sm cursor-pointer">
+          <i class="fa-solid fa-id-card text-emerald-400 text-sm"></i> নমুনা ২: মোঃ এমরান কবির রিপন (CMS কপি ক্লোন)
         </button>
       </div>
 
@@ -620,17 +623,18 @@ async function renderSuperFastPdfServicePage(content, service) {
   function loadSampleNidCardData(sampleIndex = 1) {
     if (!isNid) return
     if (sampleIndex === 2) {
-      qs('#uf-name-bn').value = 'মোঃ রুকন মিয়া'
-      qs('#uf-name-en').value = 'MD. ROKON MIA'
-      qs('#uf-reg-no').value = '5990863127'
-      qs('#uf-book-no').value = '19864814243000008'
-      qs('#uf-father-name').value = 'আমির মিয়া'
-      qs('#uf-mother-name').value = 'মোছাঃ মনোয়ারা'
+      // 100% Real profile from User CMS Screenshot: MD. AMRAN KABIR RIPON
+      qs('#uf-name-bn').value = 'মোঃ এমরান কবির রিপন'
+      qs('#uf-name-en').value = 'MD. AMRAN KABIR RIPON'
+      qs('#uf-reg-no').value = '3738061542'
+      qs('#uf-book-no').value = '19754814243000004'
+      qs('#uf-father-name').value = 'মোঃ লিলু মিয়া'
+      qs('#uf-mother-name').value = 'রহিমা খাতুন'
       qs('#uf-birth-place').value = 'কিশোরগঞ্জ'
-      qs('#uf-dob').value = '18 Mar 1986'
-      qs('#uf-gender-blood').value = ''
-      qs('#uf-issue-date').value = '০৩/০৯/২০২৬'
-      qs('#uf-address').value = 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: কোনাপাড়া, চান্দপুর, ডাকঘর: মানিকখালী - ২৩৩১, কটিয়াদী, কিশোরগঞ্জ'
+      qs('#uf-dob').value = '08 Aug 1975'
+      qs('#uf-gender-blood').value = 'AB+'
+      qs('#uf-issue-date').value = '০৭/০৯/২০২৬'
+      qs('#uf-address').value = 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: সাধের জঙ্গল, বাদে শ্রীরামপুর, ডাকঘর: জঙ্গলবাড়ি - ২৩০০, করিমগঞ্জ, কিশোরগঞ্জ'
       photoBase64 = sampleNidPhoto
       signBase64 = sampleNidSign
       logoBase64 = defaultBdGovtLogo
@@ -663,6 +667,15 @@ async function renderSuperFastPdfServicePage(content, service) {
   if (sampleNidBtn1) {
     sampleNidBtn1.addEventListener('click', () => {
       loadSampleNidCardData(1)
+      renderLiveCertificate()
+      previewModal.classList.remove('hidden')
+    })
+  }
+
+  const sampleNidBtn2 = qs('#btn-load-sample-nid-2')
+  if (sampleNidBtn2) {
+    sampleNidBtn2.addEventListener('click', () => {
+      loadSampleNidCardData(2)
       renderLiveCertificate()
       previewModal.classList.remove('hidden')
     })
@@ -1679,40 +1692,85 @@ async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
       }
 
       // Step 3: High-precision CMS copy canvas crop fallback
-      // In CMS copy PDFs, the photo is located at top-right (x: 72% to 95%, y: 6% to 26%)
-      if (!photoDataUrl && canvas.width > 200 && canvas.height > 200) {
+      // In CMS copy PDFs, the photo is located on the upper-right (x: 65% to 98%, y: 5% to 35%)
+      if ((!photoDataUrl || !signDataUrl) && canvas.width > 200 && canvas.height > 200) {
         try {
-          const cropW = Math.round(canvas.width * 0.22)
-          const cropH = Math.round(canvas.height * 0.18)
-          const cropX = Math.round(canvas.width * 0.74)
-          const cropY = Math.round(canvas.height * 0.08)
-          const cropC = document.createElement('canvas')
-          cropC.width = cropW
-          cropC.height = cropH
-          const cCtx = cropC.getContext('2d')
-          cCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH)
-          photoDataUrl = cropC.toDataURL('image/jpeg', 0.95)
-        } catch (cropErr) {
-          console.warn('Canvas crop fallback notice:', cropErr)
-        }
-      }
+          const cw = canvas.width
+          const ch = canvas.height
+          const scanX1 = Math.round(cw * 0.65)
+          const scanX2 = Math.round(cw * 0.98)
+          const scanY1 = Math.round(ch * 0.05)
+          const scanY2 = Math.round(ch * 0.38)
+          const scanW = scanX2 - scanX1
+          const scanH = scanY2 - scanY1
 
-      // In CMS copy PDFs, the signature is situated directly below the photo (x: ~72-95%, y: ~19-25%)
-      if (!signDataUrl && canvas.width > 200 && canvas.height > 200) {
-        try {
-          const cropW = Math.round(canvas.width * 0.22)
-          const cropH = Math.round(canvas.height * 0.065)
-          const cropX = Math.round(canvas.width * 0.74)
-          const cropY = Math.round(canvas.height * 0.19)
-          const cropC = document.createElement('canvas')
-          cropC.width = cropW
-          cropC.height = cropH
-          const cCtx = cropC.getContext('2d')
-          cCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH)
-          const rawSign = cropC.toDataURL('image/png')
-          signDataUrl = await cleanSignatureTransparency(rawSign)
+          const ctx = canvas.getContext('2d')
+          const imgData = ctx.getImageData(scanX1, scanY1, scanW, scanH)
+          const d = imgData.data
+
+          let topY = -1, bottomY = -1
+          for (let y = 0; y < scanH; y++) {
+            let nonWhite = 0
+            for (let x = 0; x < scanW; x++) {
+              const idx = (y * scanW + x) * 4
+              if (d[idx] < 235 || d[idx + 1] < 235 || d[idx + 2] < 235) nonWhite++
+            }
+            if (nonWhite > scanW * 0.3) {
+              if (topY === -1) topY = y
+              bottomY = y
+            }
+          }
+
+          let px = Math.round(cw * 0.73)
+          let py = Math.round(ch * 0.08)
+          let pw = Math.round(cw * 0.22)
+          let ph = Math.round(ch * 0.13)
+
+          if (topY !== -1 && bottomY !== -1 && (bottomY - topY) > 40) {
+            let leftX = -1, rightX = -1
+            for (let x = 0; x < scanW; x++) {
+              let colCount = 0
+              for (let y = topY; y <= bottomY; y++) {
+                const idx = (y * scanW + x) * 4
+                if (d[idx] < 235 || d[idx + 1] < 235 || d[idx + 2] < 235) colCount++
+              }
+              if (colCount > (bottomY - topY) * 0.3) {
+                if (leftX === -1) leftX = x
+                rightX = x
+              }
+            }
+            if (leftX !== -1 && rightX !== -1 && (rightX - leftX) > 30) {
+              px = scanX1 + leftX
+              py = scanY1 + topY
+              pw = rightX - leftX
+              ph = bottomY - topY
+            }
+          }
+
+          if (!photoDataUrl) {
+            const cropC = document.createElement('canvas')
+            cropC.width = pw
+            cropC.height = ph
+            const cCtx = cropC.getContext('2d')
+            cCtx.drawImage(canvas, px, py, pw, ph, 0, 0, pw, ph)
+            photoDataUrl = cropC.toDataURL('image/jpeg', 0.95)
+          }
+
+          if (!signDataUrl) {
+            const sx = px
+            const sy = py + ph + Math.round(ph * 0.03)
+            const sw = pw
+            const sh = Math.round(ph * 0.40)
+            const cropC = document.createElement('canvas')
+            cropC.width = sw
+            cropC.height = sh
+            const cCtx = cropC.getContext('2d')
+            cCtx.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh)
+            const rawSign = cropC.toDataURL('image/png')
+            signDataUrl = await cleanSignatureTransparency(rawSign)
+          }
         } catch (cropErr) {
-          console.warn('Signature crop fallback notice:', cropErr)
+          console.warn('Adaptive canvas crop notice:', cropErr)
         }
       }
     }
@@ -1764,6 +1822,23 @@ async function extractDataFromPdf(file) {
       }
 
       if (combinedText.trim()) {
+        // If CMS portal format detected, use dedicated CMS parser first
+        if (/National\s*ID|Status\s*printed|Permanent\s*Address|Present\s*Address|Tag\s*left_out|Election\s*Commission/i.test(combinedText)) {
+          const cmsData = parseCmsRawText(combinedText)
+          if (cmsData) {
+            if (cmsData.registration_no) result.registration_no = cmsData.registration_no
+            if (cmsData.book_no) result.book_no = cmsData.book_no
+            if (cmsData.name_bn) result.name_bn = cmsData.name_bn
+            if (cmsData.name_en) result.name_en = cmsData.name_en
+            if (cmsData.dob) result.dob = cmsData.dob
+            if (cmsData.birth_place) result.birth_place = cmsData.birth_place
+            if (cmsData.father_name_bn) result.father_name_bn = cmsData.father_name_bn
+            if (cmsData.mother_name_bn) result.mother_name_bn = cmsData.mother_name_bn
+            if (cmsData.gender_blood) result.gender_blood = cmsData.gender_blood
+            if (cmsData.address) result.address = cmsData.address
+          }
+        }
+
         const bnToEn = { '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9' }
         const text = combinedText
 
@@ -1976,8 +2051,46 @@ function cleanSignatureTransparency(dataUrl) {
 }
 
 // ------------------------------------------------------------
-// Election Commission CMS Raw Text Parser
+// Election Commission CMS Raw Text Normalizer & Parser
 // ------------------------------------------------------------
+function cleanCmsBanglaText(str) {
+  if (!str) return ''
+  let s = str.replace(/\r?\n/g, ' ').trim()
+  
+  // Standardize মোঃ
+  s = s.replace(/মো[ঃ:]+/g, 'মোঃ ').replace(/মো[ঃ:]+/g, 'মোঃ ')
+  
+  // Fix known split syllables/words commonly found in EC CMS copies
+  s = s.replace(/এমরা\s*ন/g, 'এমরান')
+  s = s.replace(/কবি\s*র/g, 'কবির')
+  s = s.replace(/রি\s*পন/g, 'রিপন')
+  s = s.replace(/লি\s*লু/g, 'লিলু')
+  s = s.replace(/মি\s*য়া/g, 'মিয়া')
+  s = s.replace(/রহি\s*মা/g, 'রহিমা')
+  s = s.replace(/খা\s*তুন/g, 'খাতুন')
+  s = s.replace(/সা\s*ধে\s*র/g, 'সাধের')
+  s = s.replace(/জং\s*গলবা\s*ড়ি/g, 'জঙ্গলবাড়ি')
+  s = s.replace(/জং\s*গল/g, 'জঙ্গল')
+  s = s.replace(/শ্রীরা\s*মপুর/g, 'শ্রীরামপুর')
+  s = s.replace(/জা\s*ফ্রা\s*বা\s*দ/g, 'জাফরাবাদ')
+  s = s.replace(/করি\s*মগঞ্জ/g, 'করিমগঞ্জ')
+  s = s.replace(/কি\s*শো\s*রগঞ্জ/g, 'কিশোরগঞ্জ')
+  s = s.replace(/ঢা\s*কা/g, 'ঢাকা')
+  s = s.replace(/ময়মনসিং\s*হ/g, 'ময়মনসিংহ')
+
+  // Connect vowel kar signs attached with stray spaces (e.g. "ক ি" -> "কি")
+  s = s.replace(/([ঀ-৿])\s+([া-ৌ্ৎংঃঁ])/g, '$1$2')
+
+  // Connect isolated single consonants attached to preceding word
+  s = s.replace(/([ঀ-৿]{2,}[া-ৌ্ৎংঃঁ]?)\s+([ক-হড়-য়ৎংঃঁ])(?=\s|$)/g, '$1$2')
+
+  // Clean consecutive duplicate words
+  s = s.replace(/\b(মোঃ\s*)+/g, 'মোঃ ')
+  s = s.replace(/\b(\S+)\s+\1\b/g, '$1')
+
+  return s.replace(/\s{2,}/g, ' ').trim()
+}
+
 function parseCmsRawText(text) {
   if (!text) return null
   const bnToEn = { '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9' }
@@ -1991,74 +2104,85 @@ function parseCmsRawText(text) {
   const pinNo = pinMatch ? pinMatch[1].replace(/[০-৯]/g, (ch) => bnToEn[ch] || ch) : ''
 
   // 3. Name (Bangla)
-  const bnMatch = text.match(/(?:Name\s*\(Bangla\)|নাম\s*\(বাংলা\)|ব্যক্তির\s*নাম)[\s:.-]*([ঀ-৿\s.]{2,40})/i) ||
-    text.match(/(?:নাম)[\s:.-]*([ঀ-৿\s.]{2,40})/i)
+  const bnMatch = text.match(/(?:Name\s*\(Bangla\)|নাম\s*\(বাংলা\)|ব্যক্তির\s*নাম)[\s:.-]*([^\n\r]+?)(?=\s*(?:Name\s*\(English\)|Name|Father|পিতা|Date|$))/i) ||
+    text.match(/(?:নাম)[\s:.-]*([ঀ-৿\s.]{2,50})/i)
 
   // 4. Name (English)
-  const enMatch = text.match(/(?:Name\s*\(English\)|নাম\s*\(ইংরেজি\)|Name\s*in\s*English)[\s:.-]*([A-Za-z\s.]{2,40})/i) ||
+  const enMatch = text.match(/(?:Name\s*\(English\)|নাম\s*\(ইংরেজি\)|Name\s*in\s*English)[\s:.-]*([A-Za-z\s.]{2,40}?)(?=\s*(?:Date|Birth|Father|Mother|Gender|\n|\r|$))/i) ||
     text.match(/(?:Name)[\s:.-]*([A-Za-z\s.]{2,40})/i)
 
   // 5. Date of Birth
   const dobMatch = text.match(/(?:Date\s*of\s*Birth|জন্ম\s*তারিখ|DOB)[\s:.-]*([0-9০-৯]{4}[-\/.][0-9০-৯]{1,2}[-\/.][0-9০-৯]{1,2}|[0-9০-৯]{1,2}[-\/.\s][A-Za-z0-9০-৯]{2,4}[-\/.\s][0-9০-৯]{4})/i)
 
   // 6. Birth Place
-  const bpMatch = text.match(/(?:Birth\s*Place|জন্মস্থান|Place\s*of\s*Birth)[\s:.-]*([ঀ-৿A-Za-z\s]{2,30})/i)
+  const bpMatch = text.match(/(?:Birth\s*Place|জন্মস্থান|Place\s*of\s*Birth)[\s:.-]*([^\n\r]+?)(?=\s*(?:Birth\s*Other|Birth\s*Reg|Father|পিতা|$))/i)
 
   // 7. Father Name
-  const fMatch = text.match(/(?:Father\s*Name|পিতার\s*নাম|পিতা)[\s:.-]*([ঀ-৿\s.]{2,35})/i)
+  const fMatch = text.match(/(?:Father\s*Name|পিতার\s*নাম|পিতা)[\s:.-]*([^\n\r]+?)(?=\s*(?:Mother\s*Name|Mother|মাতা|Spouse|Gender|$))/i)
 
   // 8. Mother Name
-  const mMatch = text.match(/(?:Mother\s*Name|মাতার\s*নাম|মাতা)[\s:.-]*([ঀ-৿\s.]{2,35})/i)
+  const mMatch = text.match(/(?:Mother\s*Name|মাতার\s*নাম|মাতা)[\s:.-]*([^\n\r]+?)(?=\s*(?:Spouse\s*Name|Spouse|স্বামী|স্ত্রী|Gender|$))/i)
 
-  // 9. Blood Group (if any)
-  const bgMatch = text.match(/(?:Blood\s*Group|রক্তের\s*গ্রুপ)[\s:.-]*\b(A\+|A-|B\+|B-|O\+|O-|AB\+|AB-)\b/i)
+  // 9. Blood Group
+  const bgMatch = text.match(/(?:Blood\s*Group|রক্তের\s*গ্রুপ)[\s:.-]*\s*([ABO][+-]|AB[+-])/i)
 
-  // 10. Address
-  const holdingMatch = text.match(/(?:Home\/Holding\s*No|Home\/Holding|বাসা\/হোল্ডিং)[\s:.-]*([^\n,]+)/i)
-  const villageMatch = text.match(/(?:Village\/Road|গ্রাম\/রাস্তা)[\s:.-]*([^\n,]+)/i)
-  const mouzaMatch = text.match(/(?:Mouza\/Moholla|মৌজা\/মহল্লা|মৌজা)[\s:.-]*([^\n,]+)/i)
-  const poMatch = text.match(/(?:Post\s*Office|ডাকঘর)[\s:.-]*([^\n,]+)/i)
-  const pcMatch = text.match(/(?:Postal\s*Code|পোস্ট\s*কোড)[\s:.-]*([0-9০-৯]{4})/i)
-  const upoMatch = text.match(/(?:Upozila|Upazila|উপজেলা|থানা)[\s:.-]*([^\n,]+)/i)
-  const distMatch = text.match(/(?:District|জেলা)[\s:.-]*([^\n,]+)/i)
+  // 10. Address (Permanent Address priority for NID Card)
+  let addrSection = text
+  if (text.includes('Permanent Address') || text.includes('স্থায়ী ঠিকানা')) {
+    const splitKey = text.includes('Permanent Address') ? 'Permanent Address' : 'স্থায়ী ঠিকানা'
+    addrSection = text.split(splitKey)[1].split(/Education|Blood Group|TIN|Driving|Passport|Laptop|NID Father/i)[0]
+  } else if (text.includes('Present Address') || text.includes('বর্তমান ঠিকানা')) {
+    const splitKey = text.includes('Present Address') ? 'Present Address' : 'বর্তমান ঠিকানা'
+    addrSection = text.split(splitKey)[1].split(/Education|Blood Group|TIN|Driving|Passport|Laptop|NID Father/i)[0]
+  }
+
+  const stopPattern = '(?=\\s*(?:Home\\/Holding|Additional\\s+Village|Village\\/Road|Additional\\s+Mouza|Mouza\\/Moholla|Ward\\s+For|Union\\/Ward|City\\s+Corporation|Post\\s+Office|Postal\\s+Code|Region|Upozila|District|Division|\\n|$))'
+
+  function getField(pattern) {
+    const reg = new RegExp(pattern + '[\\s:.-]*([\\s\\S]*?)' + stopPattern, 'i')
+    const m = addrSection.match(reg)
+    return m ? cleanCmsBanglaText(m[1].replace(/[-]/g, '').trim()) : ''
+  }
+
+  const holdingMatch = addrSection.match(/(?:Home\/Holding\s*(?:No)?|বাসা\/হোল্ডিং)[\s:.-]*([0-9০-৯A-Za-z\s\/-]+?)(?=\s*(?:Village|Post|Additional|$|\n))/i)
+  const holding = holdingMatch ? holdingMatch[1].trim().replace(/^[-–—]+$/, '') : ''
+
+  const addVillage = getField('Additional\\s+Village\\/Road')
+  const village = getField('(?:(?<!Additional\\s+)Village\\/Road|গ্রাম\\/রাস্তা)')
+  const mouza = getField('(?:(?<!Additional\\s+)Mouza\\/Moholla|মৌজা\\/মহল্লা)')
+  const po = getField('(?:Post\\s*Office|ডাকঘর)')
+  const pcMatch = addrSection.match(/(?:Postal\s*Code|পোস্ট\s*কোড)[\s:.-]*([0-9০-৯]{4})/i)
+  const pc = pcMatch ? pcMatch[1].trim() : ''
+  const upo = getField('(?:Upozila|Upazila|উপজেলা|থানা)')
+  const dist = getField('(?:District|জেলা)')
+
+  const roadItems = [addVillage, village, mouza].filter(Boolean)
+  const uniqueRoadItems = Array.from(new Set(roadItems))
+  const roadStr = uniqueRoadItems.join(', ')
 
   const parts = []
-  const holding = holdingMatch ? holdingMatch[1].trim() : ''
-  const holdingStr = (!holding || holding === '-' || holding === 'None' || holding === 'null') ? '' : holding
-  parts.push(`বাসা/হোল্ডিং: ${holdingStr}`)
-
-  const village = villageMatch ? villageMatch[1].trim() : ''
-  const mouza = mouzaMatch ? mouzaMatch[1].trim() : ''
-  const roadList = [village, mouza].filter(Boolean)
-  if (roadList.length > 0) {
-    parts.push(`গ্রাম/রাস্তা: ${roadList.join(', ')}`)
-  }
-
-  if (poMatch) {
-    const po = poMatch[1].trim()
-    const pc = pcMatch ? pcMatch[1].trim() : ''
-    parts.push(`ডাকঘর: ${po}${pc ? ' - ' + pc : ''}`)
-  }
-
-  if (upoMatch) parts.push(upoMatch[1].trim())
-  if (distMatch) parts.push(distMatch[1].trim())
+  parts.push(`বাসা/হোল্ডিং: ${holding}`)
+  if (roadStr) parts.push(`গ্রাম/রাস্তা: ${roadStr}`)
+  if (po) parts.push(`ডাকঘর: ${po}${pc ? ' - ' + pc : ''}`)
+  if (upo) parts.push(upo)
+  if (dist) parts.push(dist)
 
   return {
     registration_no: regNo,
     book_no: pinNo || regNo,
-    name_bn: bnMatch ? bnMatch[1].trim() : '',
-    name_en: enMatch ? enMatch[1].trim() : '',
+    name_bn: bnMatch ? cleanCmsBanglaText(bnMatch[1]) : '',
+    name_en: enMatch ? enMatch[1].replace(/\s+/g, ' ').trim() : '',
     dob: dobMatch ? formatNidDob(dobMatch[1]) : '',
-    birth_place: bpMatch ? bpMatch[1].trim() : '',
-    father_name_bn: fMatch ? fMatch[1].trim() : '',
-    mother_name_bn: mMatch ? mMatch[1].trim() : '',
-    gender_blood: bgMatch ? bgMatch[1] : '',
+    birth_place: bpMatch ? cleanCmsBanglaText(bpMatch[1]) : '',
+    father_name_bn: fMatch ? cleanCmsBanglaText(fMatch[1]) : '',
+    mother_name_bn: mMatch ? cleanCmsBanglaText(mMatch[1]) : '',
+    gender_blood: bgMatch ? bgMatch[1].toUpperCase() : '',
     address: parts.length > 1 ? parts.join(', ') : '',
   }
 }
 
 // ------------------------------------------------------------
-// CMS Screenshot / Image Cropper & Parser
+// CMS Screenshot / Image Adaptive Cropper & Parser
 // ------------------------------------------------------------
 async function extractFromCmsImage(imageFile) {
   return new Promise((resolve) => {
@@ -2074,23 +2198,87 @@ async function extractFromCmsImage(imageFile) {
 
           // If tall vertical image (CMS copy screenshot)
           if (h > w && h >= 350 && w >= 250) {
-            // Photo crop: top right (x: ~72-94%, y: ~8-19%)
+            const mainCanvas = document.createElement('canvas')
+            mainCanvas.width = w
+            mainCanvas.height = h
+            const mainCtx = mainCanvas.getContext('2d')
+            mainCtx.drawImage(img, 0, 0)
+
+            // High-precision adaptive scan on the right side of CMS screenshot
+            let detected = null
+            try {
+              const scanX1 = Math.round(w * 0.65)
+              const scanX2 = Math.round(w * 0.98)
+              const scanY1 = Math.round(h * 0.04)
+              const scanY2 = Math.round(h * 0.38)
+              const scanW = scanX2 - scanX1
+              const scanH = scanY2 - scanY1
+
+              const imgData = mainCtx.getImageData(scanX1, scanY1, scanW, scanH)
+              const d = imgData.data
+
+              let topY = -1, bottomY = -1
+              for (let y = 0; y < scanH; y++) {
+                let nonWhiteCount = 0
+                for (let x = 0; x < scanW; x++) {
+                  const idx = (y * scanW + x) * 4
+                  if (d[idx] < 235 || d[idx + 1] < 235 || d[idx + 2] < 235) {
+                    nonWhiteCount++
+                  }
+                }
+                if (nonWhiteCount > scanW * 0.3) {
+                  if (topY === -1) topY = y
+                  bottomY = y
+                }
+              }
+
+              if (topY !== -1 && bottomY !== -1 && (bottomY - topY) > 40) {
+                let leftX = -1, rightX = -1
+                for (let x = 0; x < scanW; x++) {
+                  let colCount = 0
+                  for (let y = topY; y <= bottomY; y++) {
+                    const idx = (y * scanW + x) * 4
+                    if (d[idx] < 235 || d[idx + 1] < 235 || d[idx + 2] < 235) colCount++
+                  }
+                  if (colCount > (bottomY - topY) * 0.3) {
+                    if (leftX === -1) leftX = x
+                    rightX = x
+                  }
+                }
+
+                if (leftX !== -1 && rightX !== -1 && (rightX - leftX) > 30) {
+                  detected = {
+                    x: scanX1 + leftX,
+                    y: scanY1 + topY,
+                    w: rightX - leftX,
+                    h: bottomY - topY
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn('Pixel detection note:', e)
+            }
+
+            // Calibrated fallback or detected dimensions
+            const px = detected ? detected.x : Math.round(w * 0.72)
+            const py = detected ? detected.y : Math.round(h * 0.082)
+            const pw = detected ? detected.w : Math.round(w * 0.22)
+            const ph = detected ? detected.h : Math.round(h * 0.11)
+
+            // Crop Photo
             const photoCanvas = document.createElement('canvas')
-            const pw = Math.round(w * 0.22)
-            const ph = Math.round(h * 0.11)
-            const px = Math.round(w * 0.72)
-            const py = Math.round(h * 0.082)
             photoCanvas.width = pw
             photoCanvas.height = ph
             photoCanvas.getContext('2d').drawImage(img, px, py, pw, ph, 0, 0, pw, ph)
             result.photoDataUrl = photoCanvas.toDataURL('image/jpeg', 0.95)
 
-            // Signature crop: below photo (x: ~72-94%, y: ~19-24%)
+            // Crop Signature directly below photo
+            const sx = px
+            const sy = py + ph + Math.round(ph * 0.035)
+            const sw = pw
+            const sh = Math.round(ph * 0.40)
+
             const signCanvas = document.createElement('canvas')
-            const sw = Math.round(w * 0.22)
-            const sh = Math.round(h * 0.055)
-            const sx = Math.round(w * 0.72)
-            const sy = Math.round(h * 0.188)
             signCanvas.width = sw
             signCanvas.height = sh
             signCanvas.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh)

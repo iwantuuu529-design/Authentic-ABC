@@ -896,8 +896,8 @@ async function renderSuperFastPdfServicePage(content, service) {
       sign = 'data:image/png;base64,' + sign
     }
 
-    // Extract CMS copy Permanent Address (স্থায়ী ঠিকানা) logic
-    let addr = d.permanent_address || d.permanentAddress || d.address || d.present_address || ''
+    // Extract CMS copy Address (Present Address / বর্তমান ঠিকানা ONLY for NID Card back)
+    let addr = d.present_address || d.presentAddress || d.address || ''
     if (typeof addr === 'object' && addr !== null) {
       const parts = []
       const holding = addr.holding || addr.home || addr.holding_no || ''
@@ -1533,11 +1533,12 @@ async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
   let logoDataUrl = ''
   let watermarkDataUrl = ''
 
+  const allCandidates = []
+
   // Step 1: Direct Binary JPEG Stream Scanner (Extracts raw embedded JPEG images instantly)
   try {
     const bytes = new Uint8Array(arrayBuffer)
     const len = bytes.length
-    const candidates = []
 
     for (let i = 0; i < len - 4; i++) {
       if (bytes[i] === 0xFF && bytes[i + 1] === 0xD8 && bytes[i + 2] === 0xFF) {
@@ -1562,12 +1563,12 @@ async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
             if (dataUrl) {
               const dims = await new Promise((res) => {
                 const img = new Image()
-                img.onload = () => res({ width: img.naturalWidth, height: img.naturalHeight, dataUrl, size: slice.length })
+                img.onload = () => res({ width: img.naturalWidth, height: img.naturalHeight, dataUrl, size: slice.length, source: 'binary' })
                 img.onerror = () => res(null)
                 img.src = dataUrl
               })
               if (dims && dims.width > 20 && dims.height > 20) {
-                candidates.push(dims)
+                allCandidates.push(dims)
               }
             }
           } catch (e) {}
@@ -1575,33 +1576,17 @@ async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
         }
       }
     }
-
-    if (candidates.length > 0) {
-      const signatures = candidates.filter((c) => (c.width / c.height >= 1.25) || (c.height <= 85 && c.width > c.height))
-      const portraits = candidates.filter((c) => (c.width / c.height < 1.25) && c.width >= 40 && c.height >= 40)
-
-      if (portraits.length > 0) {
-        portraits.sort((a, b) => (b.width * b.height) - (a.width * a.height))
-        photoDataUrl = portraits[0].dataUrl
-        if (portraits.length > 1) {
-          logoDataUrl = portraits[1].dataUrl
-        }
-      }
-      if (signatures.length > 0) {
-        signatures.sort((a, b) => (b.width / b.height) - (a.width / a.height))
-        signDataUrl = signatures[0].dataUrl
-      }
-    }
   } catch (rawErr) {
     console.warn('Binary JPEG extraction notice:', rawErr)
   }
 
   // Step 2: PDF.js Operator List & Decoded Objects (Handles PNG, FlateDecode, and masked images)
+  let canvas = null
   try {
     if (pdf && pdf.numPages > 0) {
       const page = await pdf.getPage(1)
       const viewport = page.getViewport({ scale: 1.5 })
-      const canvas = document.createElement('canvas')
+      canvas = document.createElement('canvas')
       canvas.width = viewport.width
       canvas.height = viewport.height
       const ctx = canvas.getContext('2d')
@@ -1610,7 +1595,6 @@ async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
       await page.render({ canvasContext: ctx, viewport }).promise
 
       const ops = await page.getOperatorList()
-      const decodedImages = []
 
       for (let i = 0; i < ops.fnArray.length; i++) {
         const fn = ops.fnArray[i]
@@ -1657,125 +1641,133 @@ async function extractCitizenImagesFromPdf(arrayBuffer, pdf) {
             }
             tCtx.putImageData(imgData, 0, 0)
             const dUrl = tempCanvas.toDataURL('image/png', 0.95)
-            decodedImages.push({ width: imgObj.width, height: imgObj.height, dataUrl: dUrl })
+            allCandidates.push({ width: imgObj.width, height: imgObj.height, dataUrl: dUrl, size: imgObj.width * imgObj.height, source: 'pdfjs' })
           }
-        }
-      }
-
-      if (!photoDataUrl || !signDataUrl || !logoDataUrl) {
-        const sigs = decodedImages.filter((c) => (c.width / c.height >= 1.25) || (c.height <= 85 && c.width > c.height))
-        const ports = decodedImages.filter((c) => (c.width / c.height < 1.25) && c.width >= 40 && c.height >= 40)
-        if (!photoDataUrl && ports.length > 0) {
-          ports.sort((a, b) => (b.width * b.height) - (a.width * a.height))
-          photoDataUrl = ports[0].dataUrl
-        }
-        if (!logoDataUrl) {
-          // Look for logo candidates (circular/square monograms)
-          const logos = decodedImages.filter((c) => {
-            const ratio = c.width / c.height
-            return ratio >= 0.75 && ratio <= 1.3 && c.dataUrl !== photoDataUrl
-          })
-          if (logos.length > 0) {
-            logoDataUrl = logos[0].dataUrl
-          }
-        }
-        if (!signDataUrl && sigs.length > 0) {
-          sigs.sort((a, b) => (b.width / b.height) - (a.width / a.height))
-          signDataUrl = sigs[0].dataUrl
-        }
-      }
-
-      // Check watermark candidates (large background image)
-      const watermarks = decodedImages.filter((c) => c.width >= 120 && c.height >= 120 && c.dataUrl !== photoDataUrl && c.dataUrl !== logoDataUrl)
-      if (watermarks.length > 0) {
-        watermarkDataUrl = watermarks[0].dataUrl
-      }
-
-      // Step 3: High-precision CMS copy canvas crop fallback
-      // In CMS copy PDFs, the photo is located on the upper-right (x: 65% to 98%, y: 5% to 35%)
-      if ((!photoDataUrl || !signDataUrl) && canvas.width > 200 && canvas.height > 200) {
-        try {
-          const cw = canvas.width
-          const ch = canvas.height
-          const scanX1 = Math.round(cw * 0.65)
-          const scanX2 = Math.round(cw * 0.98)
-          const scanY1 = Math.round(ch * 0.05)
-          const scanY2 = Math.round(ch * 0.38)
-          const scanW = scanX2 - scanX1
-          const scanH = scanY2 - scanY1
-
-          const ctx = canvas.getContext('2d')
-          const imgData = ctx.getImageData(scanX1, scanY1, scanW, scanH)
-          const d = imgData.data
-
-          let topY = -1, bottomY = -1
-          for (let y = 0; y < scanH; y++) {
-            let nonWhite = 0
-            for (let x = 0; x < scanW; x++) {
-              const idx = (y * scanW + x) * 4
-              if (d[idx] < 235 || d[idx + 1] < 235 || d[idx + 2] < 235) nonWhite++
-            }
-            if (nonWhite > scanW * 0.3) {
-              if (topY === -1) topY = y
-              bottomY = y
-            }
-          }
-
-          let px = Math.round(cw * 0.73)
-          let py = Math.round(ch * 0.08)
-          let pw = Math.round(cw * 0.22)
-          let ph = Math.round(ch * 0.13)
-
-          if (topY !== -1 && bottomY !== -1 && (bottomY - topY) > 40) {
-            let leftX = -1, rightX = -1
-            for (let x = 0; x < scanW; x++) {
-              let colCount = 0
-              for (let y = topY; y <= bottomY; y++) {
-                const idx = (y * scanW + x) * 4
-                if (d[idx] < 235 || d[idx + 1] < 235 || d[idx + 2] < 235) colCount++
-              }
-              if (colCount > (bottomY - topY) * 0.3) {
-                if (leftX === -1) leftX = x
-                rightX = x
-              }
-            }
-            if (leftX !== -1 && rightX !== -1 && (rightX - leftX) > 30) {
-              px = scanX1 + leftX
-              py = scanY1 + topY
-              pw = rightX - leftX
-              ph = bottomY - topY
-            }
-          }
-
-          if (!photoDataUrl) {
-            const cropC = document.createElement('canvas')
-            cropC.width = pw
-            cropC.height = ph
-            const cCtx = cropC.getContext('2d')
-            cCtx.drawImage(canvas, px, py, pw, ph, 0, 0, pw, ph)
-            photoDataUrl = cropC.toDataURL('image/jpeg', 0.95)
-          }
-
-          if (!signDataUrl) {
-            const sx = px
-            const sy = py + ph + Math.round(ph * 0.03)
-            const sw = pw
-            const sh = Math.round(ph * 0.40)
-            const cropC = document.createElement('canvas')
-            cropC.width = sw
-            cropC.height = sh
-            const cCtx = cropC.getContext('2d')
-            cCtx.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh)
-            const rawSign = cropC.toDataURL('image/png')
-            signDataUrl = await cleanSignatureTransparency(rawSign)
-          }
-        } catch (cropErr) {
-          console.warn('Adaptive canvas crop notice:', cropErr)
         }
       }
     }
   } catch (objErr) {
     console.warn('PDF.js image decoding notice:', objErr)
+  }
+
+  // Multi-engine sorting and categorization of extracted image candidates
+  if (allCandidates.length > 0) {
+    // Signatures: wide aspect ratio (width/height >= 1.20) or short height
+    const signatures = allCandidates.filter((c) => (c.width / c.height >= 1.20) || (c.height <= 95 && c.width > c.height))
+    // Portraits: vertical/square (width/height between 0.65 and 1.25)
+    const portraits = allCandidates.filter((c) => {
+      const ratio = c.width / c.height
+      return ratio >= 0.65 && ratio < 1.25 && c.width >= 40 && c.height >= 40
+    })
+    // Logos / Monograms: circular or small square
+    const logos = allCandidates.filter((c) => {
+      const ratio = c.width / c.height
+      return ratio >= 0.80 && ratio <= 1.20 && c.width >= 35 && c.width <= 140
+    })
+
+    if (portraits.length > 0) {
+      portraits.sort((a, b) => (b.width * b.height) - (a.width * a.height))
+      photoDataUrl = portraits[0].dataUrl
+      if (portraits.length > 1 && !logoDataUrl) {
+        logoDataUrl = portraits[1].dataUrl
+      }
+    }
+    if (signatures.length > 0) {
+      signatures.sort((a, b) => (b.width / b.height) - (a.width / a.height))
+      signDataUrl = signatures[0].dataUrl
+    }
+    if (!logoDataUrl && logos.length > 0) {
+      const unusedLogo = logos.find((l) => l.dataUrl !== photoDataUrl && l.dataUrl !== signDataUrl)
+      if (unusedLogo) logoDataUrl = unusedLogo.dataUrl
+    }
+    const watermarks = allCandidates.filter((c) => c.width >= 120 && c.height >= 120 && c.dataUrl !== photoDataUrl && c.dataUrl !== logoDataUrl && c.dataUrl !== signDataUrl)
+    if (watermarks.length > 0) {
+      watermarkDataUrl = watermarks[0].dataUrl
+    }
+  }
+
+  // Step 3: High-precision CMS copy canvas crop fallback
+  // In CMS copy PDFs, the photo is located on the upper-right (x: 60% to 98%, y: 4% to 38%)
+  if ((!photoDataUrl || !signDataUrl) && canvas && canvas.width > 200 && canvas.height > 200) {
+    try {
+      const cw = canvas.width
+      const ch = canvas.height
+      const scanX1 = Math.round(cw * 0.58)
+      const scanX2 = Math.round(cw * 0.99)
+      const scanY1 = Math.round(ch * 0.03)
+      const scanY2 = Math.round(ch * 0.40)
+      const scanW = scanX2 - scanX1
+      const scanH = scanY2 - scanY1
+
+      const ctx = canvas.getContext('2d')
+      const imgData = ctx.getImageData(scanX1, scanY1, scanW, scanH)
+      const d = imgData.data
+
+      // Row density scan for solid portrait block
+      let topY = -1, bottomY = -1
+      for (let y = 0; y < scanH; y++) {
+        let nonWhite = 0
+        for (let x = 0; x < scanW; x++) {
+          const idx = (y * scanW + x) * 4
+          if (d[idx] < 235 || d[idx + 1] < 235 || d[idx + 2] < 235) nonWhite++
+        }
+        if (nonWhite > scanW * 0.28) {
+          if (topY === -1) topY = y
+          bottomY = y
+        }
+      }
+
+      let px = Math.round(cw * 0.73)
+      let py = Math.round(ch * 0.08)
+      let pw = Math.round(cw * 0.22)
+      let ph = Math.round(ch * 0.12)
+
+      if (topY !== -1 && bottomY !== -1 && (bottomY - topY) > 35) {
+        let leftX = -1, rightX = -1
+        for (let x = 0; x < scanW; x++) {
+          let colCount = 0
+          for (let y = topY; y <= bottomY; y++) {
+            const idx = (y * scanW + x) * 4
+            if (d[idx] < 235 || d[idx + 1] < 235 || d[idx + 2] < 235) colCount++
+          }
+          if (colCount > (bottomY - topY) * 0.28) {
+            if (leftX === -1) leftX = x
+            rightX = x
+          }
+        }
+        if (leftX !== -1 && rightX !== -1 && (rightX - leftX) > 30) {
+          px = scanX1 + leftX
+          py = scanY1 + topY
+          pw = rightX - leftX
+          ph = bottomY - topY
+        }
+      }
+
+      if (!photoDataUrl) {
+        const cropC = document.createElement('canvas')
+        cropC.width = pw
+        cropC.height = ph
+        const cCtx = cropC.getContext('2d')
+        cCtx.drawImage(canvas, px, py, pw, ph, 0, 0, pw, ph)
+        photoDataUrl = cropC.toDataURL('image/jpeg', 0.95)
+      }
+
+      if (!signDataUrl) {
+        const sx = px
+        const sy = py + ph + Math.round(ph * 0.03)
+        const sw = pw
+        const sh = Math.round(ph * 0.42)
+        const cropC = document.createElement('canvas')
+        cropC.width = sw
+        cropC.height = sh
+        const cCtx = cropC.getContext('2d')
+        cCtx.drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh)
+        const rawSign = cropC.toDataURL('image/png')
+        signDataUrl = await cleanSignatureTransparency(rawSign)
+      }
+    } catch (cropErr) {
+      console.warn('Adaptive canvas crop notice:', cropErr)
+    }
   }
 
   if (signDataUrl) {
@@ -1924,37 +1916,41 @@ async function extractDataFromPdf(file) {
           text.match(/\b(A\+|A-|B\+|B-|O\+|O-|AB\+|AB-)\b/)
         if (bgMatch) result.gender_blood = bgMatch[1]
 
-        // 10. Permanent Address from CMS Copy Table
-        const holdingMatch = text.match(/(?:Home\/Holding\s*No|বাসা\/হোল্ডিং)[\s:.-]*([^\n,]{1,20})/i)
-        const addlVillageMatch = text.match(/(?:Additional\s*Village\/Road|অতিরিক্ত\s*গ্রাম\/রাস্তা)[\s:.-]*([ঀ-৿A-Za-z\s]{2,40})/i)
-        const mouzaMatch = text.match(/(?:Mouza\/Moholla|মৌজা\/মহল্লা|গ্রাম\/রাস্তা)[\s:.-]*([ঀ-৿A-Za-z\s]{2,40})/i)
-        const poMatch = text.match(/(?:Post\s*Office|ডাকঘর)[\s:.-]*([ঀ-৿A-Za-z\s]{2,40})/i)
-        const pcMatch = text.match(/(?:Postal\s*Code|পোস্ট\s*কোড)[\s:.-]*([0-9০-৯]{4})/i)
-        const upoMatch = text.match(/(?:Upozila|Upazila|উপজেলা|থানা)[\s:.-]*([ঀ-৿A-Za-z\s]{2,30})/i)
-        const distMatch = text.match(/(?:District|জেলা)[\s:.-]*([ঀ-৿A-Za-z\s]{2,30})/i)
+        // 10. Present Address extraction (Strictly Present Address ONLY, never Permanent Address)
+        if (!result.address) {
+          if (text.includes('Present Address') || text.includes('বর্তমান ঠিকানা')) {
+            const splitKey = text.includes('Present Address') ? 'Present Address' : 'বর্তমান ঠিকানা'
+            const sec = text.split(splitKey)[1].split(/Permanent Address|স্থায়ী ঠিকানা|স্থায়ী ঠিকানা|Education|Blood Group|TIN|Driving|Passport|Laptop|NID Father/i)[0]
 
-        if (poMatch || mouzaMatch || upoMatch || distMatch) {
-          const parts = []
-          const holding = holdingMatch ? holdingMatch[1].trim() : ''
-          const holdingStr = (!holding || holding === '-' || holding === 'None' || holding === 'null') ? '' : holding
-          parts.push(`বাসা/হোল্ডিং: ${holdingStr}`)
-          const vList = [addlVillageMatch?.[1]?.trim(), mouzaMatch?.[1]?.trim()].filter(Boolean)
-          if (vList.length > 0) parts.push(`গ্রাম/রাস্তা: ${vList.join(', ')}`)
-          if (poMatch) {
-            const po = poMatch[1].trim()
-            const pc = pcMatch ? pcMatch[1].trim() : ''
-            parts.push(`ডাকঘর: ${po}${pc ? ' - ' + pc : ''}`)
-          }
-          if (upoMatch) parts.push(upoMatch[1].trim())
-          if (distMatch) parts.push(distMatch[1].trim())
-          result.address = parts.join(', ')
-        } else {
-          const permMatch = text.match(/(?:Permanent\s*Address|স্থায়ী\s*ঠিকানা|স্থায়ী\s*ঠিকানা)[\s:.-]*([ঀ-৿A-Za-z0-9\s,:.-]{10,140})/i)
-          if (permMatch) {
-            result.address = permMatch[1].trim()
+            const holdingMatch = sec.match(/(?:Home\/Holding\s*No|Home\/Holding|বাসা\/হোল্ডিং)[\s:.-]*([^\n,]{1,20})/i)
+            const addlVillageMatch = sec.match(/(?:Additional\s*Village\/Road|অতিরিক্ত\s*গ্রাম\/রাস্তা)[\s:.-]*([ঀ-৿A-Za-z\s]{2,40})/i)
+            const mouzaMatch = sec.match(/(?:Mouza\/Moholla|মৌজা\/মহল্লা|গ্রাম\/রাস্তা)[\s:.-]*([ঀ-৿A-Za-z\s]{2,40})/i)
+            const poMatch = sec.match(/(?:Post\s*Office|ডাকঘর)[\s:.-]*([ঀ-৿A-Za-z\s]{2,40})/i)
+            const pcMatch = sec.match(/(?:Postal\s*Code|পোস্ট\s*কোড)[\s:.-]*([0-9০-৯]{4})/i)
+            const upoMatch = sec.match(/(?:Upozila|Upazila|উপজেলা|থানা)[\s:.-]*([ঀ-৿A-Za-z\s]{2,30})/i)
+            const distMatch = sec.match(/(?:District|জেলা)[\s:.-]*([ঀ-৿A-Za-z\s]{2,30})/i)
+
+            const parts = []
+            const holding = holdingMatch ? holdingMatch[1].trim() : ''
+            const holdingStr = (!holding || holding === '-' || holding === 'None' || holding === 'null') ? '' : holding
+            parts.push(`বাসা/হোল্ডিং: ${holdingStr}`)
+            const vList = [addlVillageMatch?.[1]?.trim(), mouzaMatch?.[1]?.trim()].filter(Boolean)
+            if (vList.length > 0) parts.push(`গ্রাম/রাস্তা: ${vList.join(', ')}`)
+            if (poMatch) {
+              const po = poMatch[1].trim()
+              const pc = pcMatch ? pcMatch[1].trim() : ''
+              parts.push(`ডাকঘর: ${po}${pc ? ' - ' + pc : ''}`)
+            }
+            if (upoMatch) parts.push(upoMatch[1].trim())
+            if (distMatch) parts.push(distMatch[1].trim())
+            if (parts.length > 1) {
+              result.address = cleanCmsBanglaText(parts.join(', '))
+            }
           } else {
-            const addrMatch = text.match(/(?:ঠিকানা|Address)[\s:.-]*([ঀ-৿A-Za-z0-9\s,:.-]{8,120})/i)
-            if (addrMatch) result.address = addrMatch[1].trim()
+            const presentMatch = text.match(/(?:Present\s*Address|বর্তমান\s*ঠিকানা)[\s:.-]*([ঀ-৿A-Za-z0-9\s,:.-]{10,140})/i)
+            if (presentMatch) {
+              result.address = cleanCmsBanglaText(presentMatch[1].trim())
+            }
           }
         }
 
@@ -2007,7 +2003,7 @@ function getDefaultExtractedData() {
 }
 
 // ------------------------------------------------------------
-// Signature Transparency Cleaner (Removes white/grey boxes)
+// Signature Transparency Cleaner (Removes white/grey boxes with smart adaptive ink thresholding)
 // ------------------------------------------------------------
 function cleanSignatureTransparency(dataUrl) {
   return new Promise((resolve) => {
@@ -2025,22 +2021,82 @@ function cleanSignatureTransparency(dataUrl) {
         ctx.drawImage(img, 0, 0)
         const imgData = ctx.getImageData(0, 0, c.width, c.height)
         const data = imgData.data
-        for (let i = 0; i < data.length; i += 4) {
-          const r = data[i], g = data[i + 1], b = data[i + 2]
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b
-          // If pixel is near white/light gray background, make transparent
-          if (lum > 175) {
-            data[i + 3] = 0
-          } else {
-            // Darken ink to rich black for crisp NID output
-            data[i] = Math.min(r, 20)
-            data[i + 1] = Math.min(g, 20)
-            data[i + 2] = Math.min(b, 20)
-            data[i + 3] = 255
+
+        // Step 1: Compute background luminosity from border perimeter (4 corners and borders)
+        let bgSum = 0
+        let bgCount = 0
+        const w = c.width
+        const h = c.height
+        for (let x = 0; x < w; x++) {
+          // Top row
+          let idx = x * 4
+          bgSum += (data[idx] + data[idx + 1] + data[idx + 2]) / 3
+          // Bottom row
+          idx = ((h - 1) * w + x) * 4
+          bgSum += (data[idx] + data[idx + 1] + data[idx + 2]) / 3
+          bgCount += 2
+        }
+        for (let y = 0; y < h; y++) {
+          // Left edge
+          let idx = (y * w) * 4
+          bgSum += (data[idx] + data[idx + 1] + data[idx + 2]) / 3
+          // Right edge
+          idx = (y * w + (w - 1)) * 4
+          bgSum += (data[idx] + data[idx + 1] + data[idx + 2]) / 3
+          bgCount += 2
+        }
+        const avgBgLum = bgCount > 0 ? (bgSum / bgCount) : 240
+        // Threshold dynamically tuned to background lightness (default ~180-210)
+        const threshold = Math.max(160, Math.min(220, avgBgLum - 25))
+
+        let minX = w, maxX = 0, minY = h, maxY = 0
+        let hasInk = false
+
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 4
+            const r = data[i], g = data[i + 1], b = data[i + 2]
+            const lum = 0.299 * r + 0.587 * g + 0.114 * b
+
+            if (lum > threshold) {
+              data[i + 3] = 0 // Transparent background
+            } else {
+              // Darken ink to crisp deep black (#050505) for laser-sharp NID print
+              data[i] = Math.min(r, 15)
+              data[i + 1] = Math.min(g, 15)
+              data[i + 2] = Math.min(b, 15)
+              // Soft alpha gradient for anti-aliased edge smoothing
+              const factor = Math.max(0, (threshold - lum) / 45)
+              data[i + 3] = Math.min(255, Math.round(factor * 255))
+
+              if (data[i + 3] > 30) {
+                hasInk = true
+                if (x < minX) minX = x
+                if (x > maxX) maxX = x
+                if (y < minY) minY = y
+                if (y > maxY) maxY = y
+              }
+            }
           }
         }
         ctx.putImageData(imgData, 0, 0)
-        resolve(c.toDataURL('image/png'))
+
+        // If ink was found, trim extra empty whitespace margins for crisp placement
+        if (hasInk && (maxX > minX + 5) && (maxY > minY + 5)) {
+          const pad = 4
+          const cropX = Math.max(0, minX - pad)
+          const cropY = Math.max(0, minY - pad)
+          const cropW = Math.min(w - cropX, (maxX - minX) + pad * 2)
+          const cropH = Math.min(h - cropY, (maxY - minY) + pad * 2)
+
+          const trimCanvas = document.createElement('canvas')
+          trimCanvas.width = cropW
+          trimCanvas.height = cropH
+          trimCanvas.getContext('2d').drawImage(c, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH)
+          resolve(trimCanvas.toDataURL('image/png'))
+        } else {
+          resolve(c.toDataURL('image/png'))
+        }
       } catch (e) {
         resolve(dataUrl)
       }
@@ -2126,46 +2182,54 @@ function parseCmsRawText(text) {
   // 9. Blood Group
   const bgMatch = text.match(/(?:Blood\s*Group|রক্তের\s*গ্রুপ)[\s:.-]*\s*([ABO][+-]|AB[+-])/i)
 
-  // 10. Address (Permanent Address priority for NID Card)
-  let addrSection = text
-  if (text.includes('Permanent Address') || text.includes('স্থায়ী ঠিকানা')) {
-    const splitKey = text.includes('Permanent Address') ? 'Permanent Address' : 'স্থায়ী ঠিকানা'
-    addrSection = text.split(splitKey)[1].split(/Education|Blood Group|TIN|Driving|Passport|Laptop|NID Father/i)[0]
-  } else if (text.includes('Present Address') || text.includes('বর্তমান ঠিকানা')) {
+  // 10. Address (Present Address / বর্তমান ঠিকানা First Priority as per NID rules)
+  function parseSectionAddress(secText) {
+    if (!secText) return ''
+    const stopPattern = '(?=\\s*(?:Home\\/Holding|Additional\\s+Village|Village\\/Road|Additional\\s+Mouza|Mouza\\/Moholla|Ward\\s+For|Union\\/Ward|City\\s+Corporation|Post\\s+Office|Postal\\s+Code|Region|Upozila|District|Division|\\n|$))'
+
+    function getField(pattern) {
+      const reg = new RegExp(pattern + '[\\s:.-]*([\\s\\S]*?)' + stopPattern, 'i')
+      const m = secText.match(reg)
+      return m ? cleanCmsBanglaText(m[1].replace(/[-]/g, '').trim()) : ''
+    }
+
+    const holdingMatch = secText.match(/(?:Home\/Holding\s*(?:No)?|বাসা\/হোল্ডিং)[\s:.-]*([0-9০-৯A-Za-z\s\/-]+?)(?=\s*(?:Village|Post|Additional|$|\n))/i)
+    const holding = holdingMatch ? holdingMatch[1].trim().replace(/^[-–—]+$/, '') : ''
+
+    const addVillage = getField('Additional\\s+Village\\/Road')
+    const village = getField('(?:(?<!Additional\\s+)Village\\/Road|গ্রাম\\/রাস্তা)')
+    const mouza = getField('(?:(?<!Additional\\s+)Mouza\\/Moholla|মৌজা\\/মহল্লা)')
+    const po = getField('(?:Post\\s*Office|ডাকঘর)')
+    const pcMatch = secText.match(/(?:Postal\s*Code|পোস্ট\s*কোড)[\s:.-]*([0-9০-৯]{4})/i)
+    const pc = pcMatch ? pcMatch[1].trim() : ''
+    const upo = getField('(?:Upozila|Upazila|উপজেলা|থানা)')
+    const dist = getField('(?:District|জেলা)')
+
+    const roadItems = [addVillage, village, mouza].filter(Boolean)
+    const uniqueRoadItems = Array.from(new Set(roadItems))
+    const roadStr = uniqueRoadItems.join(', ')
+
+    const parts = []
+    parts.push(`বাসা/হোল্ডিং: ${holding}`)
+    if (roadStr) parts.push(`গ্রাম/রাস্তা: ${roadStr}`)
+    if (po) parts.push(`ডাকঘর: ${po}${pc ? ' - ' + pc : ''}`)
+    if (upo) parts.push(upo)
+    if (dist) parts.push(dist)
+
+    if (parts.length > 1 && (roadStr || po || upo || dist)) {
+      return parts.join(', ')
+    }
+    return ''
+  }
+
+  // 10. Address (Strictly Present Address / বর্তমান ঠিকানা ONLY as per Bangladesh NID regulations)
+  // Permanent Address is NEVER printed or used on the back of Bangladesh NID card.
+  let extractedAddress = ''
+  if (text.includes('Present Address') || text.includes('বর্তমান ঠিকানা')) {
     const splitKey = text.includes('Present Address') ? 'Present Address' : 'বর্তমান ঠিকানা'
-    addrSection = text.split(splitKey)[1].split(/Education|Blood Group|TIN|Driving|Passport|Laptop|NID Father/i)[0]
+    const sec = text.split(splitKey)[1].split(/Permanent Address|স্থায়ী ঠিকানা|স্থায়ী ঠিকানা|Education|Blood Group|TIN|Driving|Passport|Laptop|NID Father/i)[0]
+    extractedAddress = parseSectionAddress(sec)
   }
-
-  const stopPattern = '(?=\\s*(?:Home\\/Holding|Additional\\s+Village|Village\\/Road|Additional\\s+Mouza|Mouza\\/Moholla|Ward\\s+For|Union\\/Ward|City\\s+Corporation|Post\\s+Office|Postal\\s+Code|Region|Upozila|District|Division|\\n|$))'
-
-  function getField(pattern) {
-    const reg = new RegExp(pattern + '[\\s:.-]*([\\s\\S]*?)' + stopPattern, 'i')
-    const m = addrSection.match(reg)
-    return m ? cleanCmsBanglaText(m[1].replace(/[-]/g, '').trim()) : ''
-  }
-
-  const holdingMatch = addrSection.match(/(?:Home\/Holding\s*(?:No)?|বাসা\/হোল্ডিং)[\s:.-]*([0-9০-৯A-Za-z\s\/-]+?)(?=\s*(?:Village|Post|Additional|$|\n))/i)
-  const holding = holdingMatch ? holdingMatch[1].trim().replace(/^[-–—]+$/, '') : ''
-
-  const addVillage = getField('Additional\\s+Village\\/Road')
-  const village = getField('(?:(?<!Additional\\s+)Village\\/Road|গ্রাম\\/রাস্তা)')
-  const mouza = getField('(?:(?<!Additional\\s+)Mouza\\/Moholla|মৌজা\\/মহল্লা)')
-  const po = getField('(?:Post\\s*Office|ডাকঘর)')
-  const pcMatch = addrSection.match(/(?:Postal\s*Code|পোস্ট\s*কোড)[\s:.-]*([0-9০-৯]{4})/i)
-  const pc = pcMatch ? pcMatch[1].trim() : ''
-  const upo = getField('(?:Upozila|Upazila|উপজেলা|থানা)')
-  const dist = getField('(?:District|জেলা)')
-
-  const roadItems = [addVillage, village, mouza].filter(Boolean)
-  const uniqueRoadItems = Array.from(new Set(roadItems))
-  const roadStr = uniqueRoadItems.join(', ')
-
-  const parts = []
-  parts.push(`বাসা/হোল্ডিং: ${holding}`)
-  if (roadStr) parts.push(`গ্রাম/রাস্তা: ${roadStr}`)
-  if (po) parts.push(`ডাকঘর: ${po}${pc ? ' - ' + pc : ''}`)
-  if (upo) parts.push(upo)
-  if (dist) parts.push(dist)
 
   return {
     registration_no: regNo,
@@ -2177,7 +2241,7 @@ function parseCmsRawText(text) {
     father_name_bn: fMatch ? cleanCmsBanglaText(fMatch[1]) : '',
     mother_name_bn: mMatch ? cleanCmsBanglaText(mMatch[1]) : '',
     gender_blood: bgMatch ? bgMatch[1].toUpperCase() : '',
-    address: parts.length > 1 ? parts.join(', ') : '',
+    address: extractedAddress,
   }
 }
 
@@ -2196,8 +2260,8 @@ async function extractFromCmsImage(imageFile) {
           const h = img.naturalHeight || img.height
           const result = { photoDataUrl: '', signDataUrl: '' }
 
-          // If tall vertical image (CMS copy screenshot)
-          if (h > w && h >= 350 && w >= 250) {
+          // If tall vertical image (CMS copy screenshot or full document capture)
+          if (h > w && h >= 300 && w >= 200) {
             const mainCanvas = document.createElement('canvas')
             mainCanvas.width = w
             mainCanvas.height = h
@@ -2205,65 +2269,92 @@ async function extractFromCmsImage(imageFile) {
             mainCtx.drawImage(img, 0, 0)
 
             // High-precision adaptive scan on the right side of CMS screenshot
-            let detected = null
+            let photoBox = null
+            let signBox = null
+
             try {
-              const scanX1 = Math.round(w * 0.65)
-              const scanX2 = Math.round(w * 0.98)
-              const scanY1 = Math.round(h * 0.04)
-              const scanY2 = Math.round(h * 0.38)
+              // Search zone for Photo: upper right quadrant
+              const scanX1 = Math.round(w * 0.58)
+              const scanX2 = Math.round(w * 0.99)
+              const scanY1 = Math.round(h * 0.03)
+              const scanY2 = Math.round(h * 0.40)
               const scanW = scanX2 - scanX1
               const scanH = scanY2 - scanY1
 
               const imgData = mainCtx.getImageData(scanX1, scanY1, scanW, scanH)
               const d = imgData.data
 
-              let topY = -1, bottomY = -1
+              // Find horizontal projection of non-white content
+              const rowDensity = new Float32Array(scanH)
               for (let y = 0; y < scanH; y++) {
-                let nonWhiteCount = 0
+                let nonWhite = 0
                 for (let x = 0; x < scanW; x++) {
                   const idx = (y * scanW + x) * 4
-                  if (d[idx] < 235 || d[idx + 1] < 235 || d[idx + 2] < 235) {
-                    nonWhiteCount++
+                  // Count pixel if not light background
+                  if (d[idx] < 238 || d[idx + 1] < 238 || d[idx + 2] < 238) {
+                    nonWhite++
                   }
                 }
-                if (nonWhiteCount > scanW * 0.3) {
-                  if (topY === -1) topY = y
-                  bottomY = y
+                rowDensity[y] = nonWhite / scanW
+              }
+
+              // Scan for contiguous solid block matching portrait photo (aspect ratio ~ 0.75 - 1.25)
+              let bestBlock = null
+              let curStart = -1
+              for (let y = 0; y < scanH; y++) {
+                if (rowDensity[y] > 0.25) {
+                  if (curStart === -1) curStart = y
+                } else {
+                  if (curStart !== -1) {
+                    const blockH = y - curStart
+                    if (blockH >= Math.round(h * 0.06) && blockH <= Math.round(h * 0.22)) {
+                      if (!bestBlock || blockH > bestBlock.h) {
+                        bestBlock = { startY: curStart, endY: y, h: blockH }
+                      }
+                    }
+                    curStart = -1
+                  }
+                }
+              }
+              if (curStart !== -1) {
+                const blockH = scanH - curStart
+                if (blockH >= Math.round(h * 0.06) && blockH <= Math.round(h * 0.22)) {
+                  if (!bestBlock || blockH > bestBlock.h) {
+                    bestBlock = { startY: curStart, endY: scanH, h: blockH }
+                  }
                 }
               }
 
-              if (topY !== -1 && bottomY !== -1 && (bottomY - topY) > 40) {
-                let leftX = -1, rightX = -1
-                for (let x = 0; x < scanW; x++) {
-                  let colCount = 0
-                  for (let y = topY; y <= bottomY; y++) {
+              if (bestBlock) {
+                // Find horizontal bounds for this block
+                let minX = scanW, maxX = 0
+                for (let y = bestBlock.startY; y < bestBlock.endY; y++) {
+                  for (let x = 0; x < scanW; x++) {
                     const idx = (y * scanW + x) * 4
-                    if (d[idx] < 235 || d[idx + 1] < 235 || d[idx + 2] < 235) colCount++
-                  }
-                  if (colCount > (bottomY - topY) * 0.3) {
-                    if (leftX === -1) leftX = x
-                    rightX = x
+                    if (d[idx] < 235 || d[idx + 1] < 235 || d[idx + 2] < 235) {
+                      if (x < minX) minX = x
+                      if (x > maxX) maxX = x
+                    }
                   }
                 }
-
-                if (leftX !== -1 && rightX !== -1 && (rightX - leftX) > 30) {
-                  detected = {
-                    x: scanX1 + leftX,
-                    y: scanY1 + topY,
-                    w: rightX - leftX,
-                    h: bottomY - topY
+                if (maxX > minX + 25) {
+                  photoBox = {
+                    x: scanX1 + minX,
+                    y: scanY1 + bestBlock.startY,
+                    w: maxX - minX,
+                    h: bestBlock.h
                   }
                 }
               }
             } catch (e) {
-              console.warn('Pixel detection note:', e)
+              console.warn('Adaptive photo detection notice:', e)
             }
 
-            // Calibrated fallback or detected dimensions
-            const px = detected ? detected.x : Math.round(w * 0.72)
-            const py = detected ? detected.y : Math.round(h * 0.082)
-            const pw = detected ? detected.w : Math.round(w * 0.22)
-            const ph = detected ? detected.h : Math.round(h * 0.11)
+            // Calibrated fallback or detected photo dimensions
+            const px = photoBox ? photoBox.x : Math.round(w * 0.72)
+            const py = photoBox ? photoBox.y : Math.round(h * 0.082)
+            const pw = photoBox ? photoBox.w : Math.round(w * 0.22)
+            const ph = photoBox ? photoBox.h : Math.round(h * 0.11)
 
             // Crop Photo
             const photoCanvas = document.createElement('canvas')
@@ -2272,11 +2363,52 @@ async function extractFromCmsImage(imageFile) {
             photoCanvas.getContext('2d').drawImage(img, px, py, pw, ph, 0, 0, pw, ph)
             result.photoDataUrl = photoCanvas.toDataURL('image/jpeg', 0.95)
 
+            // Scan zone for signature right below photo
+            try {
+              const signSearchY1 = py + ph
+              const signSearchY2 = Math.min(h, py + ph + Math.round(ph * 0.65))
+              const signSearchX1 = Math.max(0, px - Math.round(pw * 0.1))
+              const signSearchX2 = Math.min(w, px + pw + Math.round(pw * 0.1))
+              const sW = signSearchX2 - signSearchX1
+              const sH = signSearchY2 - signSearchY1
+
+              if (sW > 20 && sH > 15) {
+                const sImgData = mainCtx.getImageData(signSearchX1, signSearchY1, sW, sH)
+                const sData = sImgData.data
+
+                let sMinX = sW, sMaxX = 0, sMinY = sH, sMaxY = 0
+                let sInk = false
+                for (let sy = 0; sy < sH; sy++) {
+                  for (let sx = 0; sx < sW; sx++) {
+                    const idx = (sy * sW + sx) * 4
+                    if (sData[idx] < 220 || sData[idx + 1] < 220 || sData[idx + 2] < 220) {
+                      sInk = true
+                      if (sx < sMinX) sMinX = sx
+                      if (sx > sMaxX) sMaxX = sx
+                      if (sy < sMinY) sMinY = sy
+                      if (sy > sMaxY) sMaxY = sy
+                    }
+                  }
+                }
+                if (sInk && (sMaxX > sMinX + 15) && (sMaxY > sMinY + 8)) {
+                  const pad = 3
+                  signBox = {
+                    x: Math.max(0, signSearchX1 + sMinX - pad),
+                    y: Math.max(0, signSearchY1 + sMinY - pad),
+                    w: Math.min(w - signSearchX1, (sMaxX - sMinX) + pad * 2),
+                    h: Math.min(h - signSearchY1, (sMaxY - sMinY) + pad * 2)
+                  }
+                }
+              }
+            } catch (e) {
+              console.warn('Adaptive signature detection notice:', e)
+            }
+
             // Crop Signature directly below photo
-            const sx = px
-            const sy = py + ph + Math.round(ph * 0.035)
-            const sw = pw
-            const sh = Math.round(ph * 0.40)
+            const sx = signBox ? signBox.x : px
+            const sy = signBox ? signBox.y : py + ph + Math.round(ph * 0.035)
+            const sw = signBox ? signBox.w : pw
+            const sh = signBox ? signBox.h : Math.round(ph * 0.40)
 
             const signCanvas = document.createElement('canvas')
             signCanvas.width = sw

@@ -225,8 +225,8 @@ async function renderSuperFastPdfServicePage(content, service) {
 
   const sampleNidPhoto = '/static/img/sample_nid_photo.jpg'
   const sampleNidSign = '/static/img/sample_nid_sign.svg'
-  const defaultBdGovtLogo = '/static/img/bd_govt_logo.png'
-  const defaultBdWatermark = '/static/img/bd_nid_watermark.png'
+  const defaultBdGovtLogo = '/static/img/bd_govt_logo.svg'
+  const defaultBdWatermark = '/static/img/bd_nid_watermark.svg'
 
   let uploadedPdfFile = null
   let photoBase64 = isNid ? sampleNidPhoto : ''

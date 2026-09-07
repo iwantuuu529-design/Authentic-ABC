@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="120" height="40">
+  <!-- Clean Cursive English Signature: Ripon -->
+  <g fill="none" stroke="#050505" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Capital R with downward stem and top loop -->
+    <path d="M 18 32 L 18 10 C 18 10, 28 8, 32 14 C 36 20, 24 23, 18 23 C 24 23, 28 25, 36 34" />
+    <!-- cursive 'ipon' connected curve -->
+    <path d="M 38 24 L 42 32 C 45 28, 48 24, 52 32 C 55 35, 54 39, 52 42 M 52 26 C 56 24, 62 25, 61 31 C 60 34, 55 34, 53 30" />
+    <path d="M 64 26 C 63 30, 65 33, 70 33 C 74 33, 76 29, 74 25 C 72 23, 66 23, 65 28 C 67 29, 74 31, 80 26 C 83 24, 86 28, 89 31 C 92 33, 96 28, 98 25" />
+    <!-- dot above i -->
+    <circle cx="41" cy="19" r="1.4" fill="#050505" />
+  </g>
+</svg>

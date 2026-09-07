@@ -224,7 +224,7 @@ async function renderSuperFastPdfServicePage(content, service) {
     : `নোট: এই সেবার জন্য আপনার ${toBnDigits(serviceCharge)} টাকা চার্জ হবে!`
 
   const sampleNidPhoto = '/static/img/sample_nid_photo.jpg'
-  const sampleNidSign = '/static/img/sample_nid_sign.svg'
+  const sampleNidSign = '/static/img/sample_nid_sign_ripon.svg'
   const defaultBdGovtLogo = '/static/img/bd_govt_logo.svg'
   const defaultBdWatermark = '/static/img/bd_nid_watermark.svg'
 
@@ -505,8 +505,11 @@ async function renderSuperFastPdfServicePage(content, service) {
             <span class="font-bold text-sm">${isNid ? 'জাতীয় পরিচয়পত্র (NID Card) প্রিভিউ' : 'জন্ম নিবন্ধন সনদ প্রিভিউ'}</span>
           </div>
           <div class="flex items-center gap-2">
-            <button type="button" id="btn-cert-print" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors">
-              <i class="fa-solid fa-print"></i> প্রিন্ট / সেভ করুন
+            <button type="button" id="btn-cert-download-pdf" class="px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm">
+              <i class="fa-solid fa-file-arrow-down"></i> PDF ডাউনলোড
+            </button>
+            <button type="button" id="btn-cert-print" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm">
+              <i class="fa-solid fa-print"></i> প্রিন্ট করুন
             </button>
             <button type="button" id="btn-cert-close" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors">
               <i class="fa-solid fa-xmark"></i>
@@ -633,10 +636,10 @@ async function renderSuperFastPdfServicePage(content, service) {
       qs('#uf-birth-place').value = 'কিশোরগঞ্জ'
       qs('#uf-dob').value = '08 Aug 1975'
       qs('#uf-gender-blood').value = 'AB+'
-      qs('#uf-issue-date').value = '০৭/০৯/২০২৬'
+      qs('#uf-issue-date').value = '৩১/০৮/২০২৬'
       qs('#uf-address').value = 'বাসা/হোল্ডিং: , গ্রাম/রাস্তা: সাধের জঙ্গল, বাদে শ্রীরামপুর, ডাকঘর: জঙ্গলবাড়ি - ২৩০০, করিমগঞ্জ, কিশোরগঞ্জ'
       photoBase64 = sampleNidPhoto
-      signBase64 = sampleNidSign
+      signBase64 = '/static/img/sample_nid_sign_ripon.svg'
       logoBase64 = defaultBdGovtLogo
       watermarkBase64 = defaultBdWatermark
     } else {
@@ -1022,21 +1025,23 @@ async function renderSuperFastPdfServicePage(content, service) {
         <div class="nid-cards-wrapper">
           
           <!-- FRONT SIDE -->
-          <div class="nid-card-frame select-none flex flex-col justify-between" style="padding: 5px 8px 5px 8px; box-sizing: border-box;">
+          <div class="nid-card-frame select-none flex flex-col justify-between" style="padding: 4.5px 8px 4.5px 8px; box-sizing: border-box;">
             <!-- Background Guilloche & Watermark -->
             ${getNidSecurityBg(certData.watermark)}
 
             <!-- Card Header -->
             <div class="flex items-center gap-2 relative z-10 pt-0.5" style="min-height: 38px;">
               <!-- Official Bangladesh Emblem Seal -->
-              <div style="width: 34px; height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-                <img src="${certData.logo}" alt="বাংলাদেশ সরকার" style="width: 34px; height: 34px; object-fit: contain; border-radius: 50%; display: block;" onerror="this.src='/static/img/bd_govt_logo.png'">
+              <div style="width: 35px; height: 35px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                <img src="${certData.logo}" alt="বাংলাদেশ সরকার" style="width: 35px; height: 35px; object-fit: contain; border-radius: 50%; display: block;" onerror="this.src='/static/img/bd_govt_logo.png'">
               </div>
 
               <div class="text-center flex-1" style="overflow: hidden;">
                 <div style="color: #000000; font-weight: 700; font-size: 9.8pt; line-height: 1.15; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif; white-space: nowrap;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
                 <div style="color: #006a4e; font-weight: 700; font-size: 6.8pt; line-height: 1.1; font-family: Arial, 'Segoe UI', sans-serif; letter-spacing: 0.1px; white-space: nowrap; margin-top: 1px;">Government of the People's Republic of Bangladesh</div>
-                <div style="color: #c8102e; font-weight: 700; font-size: 7.8pt; line-height: 1.15; margin-top: 1px; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif; white-space: nowrap;">National ID Card / জাতীয় পরিচয় পত্র</div>
+                <div style="font-weight: 700; font-size: 7.8pt; line-height: 1.15; margin-top: 1px; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif; white-space: nowrap;">
+                  <span style="color: #c8102e;">National ID Card</span> <span style="color: #006a4e;">/ জাতীয় পরিচয় পত্র</span>
+                </div>
               </div>
             </div>
 
@@ -1044,7 +1049,7 @@ async function renderSuperFastPdfServicePage(content, service) {
             <div class="flex gap-2 items-start relative z-10 flex-1 pt-1">
               <!-- Left: Photo + Citizen Signature -->
               <div class="flex flex-col items-center flex-shrink-0" style="width: 71px;">
-                <div style="width: 71px; height: 85px; border: 0.75px solid #222222; background: #ffffff; overflow: hidden; border-radius: 0px; box-sizing: border-box;">
+                <div style="width: 71px; height: 85px; border: 0.75px solid #000000; background: #ffffff; overflow: hidden; border-radius: 0px; box-sizing: border-box;">
                   <img src="${certData.photo}" alt="NID Photo" class="w-full h-full object-cover" style="display: block;">
                 </div>
                 <div style="width: 71px; height: 20px; margin-top: 2px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
@@ -1053,28 +1058,28 @@ async function renderSuperFastPdfServicePage(content, service) {
               </div>
 
               <!-- Right: Info Rows -->
-              <div class="flex-1 space-y-0.5" style="font-size: 8.5pt; line-height: 1.25; color: #000000; padding-left: 2px;">
-                <div class="flex items-baseline" style="margin-bottom: 2.5px;">
+              <div class="flex-1 flex flex-col justify-between" style="font-size: 8.5pt; line-height: 1.25; color: #000000; padding-left: 3px; height: 107px;">
+                <div class="flex items-baseline">
                   <span style="width: 36px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 8.5pt;">নাম:</span>
                   <strong style="font-size: 10.5pt; color: #000000; font-weight: 700; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif; line-height: 1.15;">${certData.name_bn}</strong>
                 </div>
-                <div class="flex items-baseline" style="margin-bottom: 2.5px;">
+                <div class="flex items-baseline">
                   <span style="width: 36px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 8.5pt;">Name:</span>
                   <strong style="font-size: 9.2pt; color: #000000; font-weight: 700; font-family: Arial, 'Segoe UI', sans-serif; line-height: 1.15;">${certData.name_en}</strong>
                 </div>
-                <div class="flex items-baseline" style="margin-bottom: 2.5px;">
+                <div class="flex items-baseline">
                   <span style="width: 36px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 8.5pt;">পিতা:</span>
                   <span style="font-size: 9pt; font-weight: 600; color: #000000; line-height: 1.15;">${certData.father_name}</span>
                 </div>
-                <div class="flex items-baseline" style="margin-bottom: 2.5px;">
+                <div class="flex items-baseline">
                   <span style="width: 36px; flex-shrink: 0; color: #000000; font-weight: 500; font-size: 8.5pt;">মাতা:</span>
                   <span style="font-size: 9pt; font-weight: 600; color: #000000; line-height: 1.15;">${certData.mother_name}</span>
                 </div>
-                <div class="flex items-baseline" style="margin-top: 3px; margin-bottom: 2.5px;">
+                <div class="flex items-baseline">
                   <span style="color: #000000; margin-right: 4px; font-size: 8.5pt; font-weight: 500;">Date of Birth:</span>
                   <strong style="color: #c8102e; font-size: 9.5pt; font-weight: 700; font-family: Arial, 'Segoe UI', sans-serif;">${certData.dob}</strong>
                 </div>
-                <div class="flex items-baseline" style="margin-top: 2px;">
+                <div class="flex items-baseline">
                   <span style="color: #000000; margin-right: 4px; font-size: 9pt; font-weight: 600;">ID NO:</span>
                   <strong style="color: #c8102e; font-size: 11.5pt; font-weight: 800; letter-spacing: 0.5px; font-family: 'Courier New', monospace, sans-serif;">${certData.reg_no}</strong>
                 </div>
@@ -1088,25 +1093,25 @@ async function renderSuperFastPdfServicePage(content, service) {
             ${getNidSecurityBg(certData.watermark)}
 
             <!-- Top Notice Box -->
-            <div style="border-bottom: 0.75px solid #000000; padding: 4px 6px 3px 6px; font-size: 6.2pt; line-height: 1.25; text-align: center; color: #000000;" class="relative z-10 font-semibold">
+            <div style="border-bottom: 0.75px solid #000000; padding: 4px 6px 3px 6px; font-size: 6.4pt; line-height: 1.25; text-align: center; color: #000000;" class="relative z-10 font-semibold">
               এই কার্ডটি গণপ্রজাতন্ত্রী বাংলাদেশ সরকারের সম্পত্তি। কার্ডটি ব্যবহারকারী ব্যতীত অন্য<br>
               কোথাও পাওয়া গেলে নিকটস্থ পোস্ট অফিসে জমা দেবার জন্য অনুরোধ করা হলো।
             </div>
 
             <!-- Middle Address (স্থায়ী ঠিকানা) -->
-            <div style="border-bottom: 0.75px solid #000000; padding: 3px 8px 3px 8px; font-size: 7.6pt; line-height: 1.28; color: #000000;" class="relative z-10 flex-1">
-              <span style="font-weight: 700;">ঠিকানা:</span> ${certData.address}
+            <div style="border-bottom: 0.75px solid #000000; padding: 3px 8px 3px 8px; font-size: 7.6pt; line-height: 1.28; color: #000000;" class="relative z-10 flex-1 flex flex-col justify-center">
+              <div><span style="font-weight: 700;">ঠিকানা:</span> ${certData.address}</div>
             </div>
 
             <!-- Blood Group, Birth Place & Print Count Row -->
-            <div style="border-bottom: 0.75px solid #000000; padding: 2px 8px; font-size: 7.6pt; line-height: 1.2; color: #000000;" class="relative z-10 flex items-center justify-between">
+            <div style="border-bottom: 0.75px solid #000000; padding: 2px 8px; font-size: 7.6pt; line-height: 1.2; color: #000000; min-height: 18px;" class="relative z-10 flex items-center justify-between">
               <div>
                 <span>রক্তের গ্রুপ / Blood Group: </span>
                 ${certData.gender_blood ? `<strong style="color: #c8102e; font-weight: 700;">${certData.gender_blood}</strong>` : ''}
                 <span style="margin-left: ${certData.gender_blood ? '12px' : '22px'};">জন্মস্থান: </span>
                 <span style="font-weight: 600;">${certData.birth_place || ''}</span>
               </div>
-              <div style="background-color: #000000; color: #ffffff; padding: 1px 6px; font-weight: 700; font-size: 7.2pt; line-height: 1.1; border-radius: 0;">
+              <div style="background-color: #000000; color: #ffffff; padding: 1.5px 6px; font-weight: 700; font-size: 7.2pt; line-height: 1.1; border-radius: 0;">
                 মুদ্রণ: ০১
               </div>
             </div>
@@ -1115,10 +1120,10 @@ async function renderSuperFastPdfServicePage(content, service) {
             <div style="padding: 2px 8px 1px 8px; font-size: 7.5pt; color: #000000;" class="relative z-10 flex items-end justify-between">
               <!-- Official Authority Signature -->
               <div class="text-center" style="width: 130px;">
-                <div style="height: 17px; display: flex; align-items: flex-end; justify-content: center;">
-                  <svg class="h-4 w-24" viewBox="0 0 100 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 17 C15 10, 18 2, 22 2 C25 2, 26 7, 24 12 C22 16, 17 18, 14 17 C20 16, 30 11, 40 7 C46 5, 49 9, 47 13 C45 16, 39 18, 44 17 C52 15, 64 10, 78 7 C86 5, 94 9, 98 10" stroke="#000000" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M16 15 Q50 17 80 14 T96 12" stroke="#000000" stroke-width="1.1" stroke-linecap="round"/>
+                <div style="height: 18px; display: flex; align-items: flex-end; justify-content: center;">
+                  <svg class="h-4 w-24" viewBox="0 0 110 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 28 20 C 26 12, 30 4, 34 3 C 37 2, 38 8, 35 15 C 32 21, 26 22, 22 20 C 18 18, 25 15, 36 12 C 44 9, 52 12, 50 17 C 48 20, 42 21, 47 18 C 55 14, 68 8, 80 6 C 88 4, 95 8, 92 12 C 90 14, 86 15, 94 13" stroke="#000000" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M 32 19 Q 60 18 90 15" stroke="#000000" stroke-width="1.1" stroke-linecap="round"/>
                   </svg>
                 </div>
                 <div style="border-top: 0.75px solid #000000; font-size: 6.8pt; font-weight: 600; padding-top: 1px;">
@@ -1133,8 +1138,8 @@ async function renderSuperFastPdfServicePage(content, service) {
             </div>
 
             <!-- Bottom 2D PDF417 Barcode -->
-            <div style="padding: 1px 6px 2px 6px;" class="relative z-10">
-              <canvas id="nid-barcode-canvas" style="width: 100%; height: 34px; image-rendering: pixelated; display: block;"></canvas>
+            <div style="padding: 1px 6px 3px 6px;" class="relative z-10">
+              <canvas id="nid-barcode-canvas" style="width: 100%; height: 38px; image-rendering: pixelated; display: block;"></canvas>
             </div>
           </div>
         </div>
@@ -1392,7 +1397,7 @@ async function renderSuperFastPdfServicePage(content, service) {
           bcid: 'pdf417',
           text: barcodeXml,
           scale: 2,
-          height: 9,
+          height: 11,
           columns: 16,
           eclevel: 4,
           includetext: false,
@@ -1404,7 +1409,7 @@ async function renderSuperFastPdfServicePage(content, service) {
             bcid: 'pdf417',
             text: barcodeXml,
             scale: 2,
-            height: 9,
+            height: 11,
             columns: 14,
             eclevel: 4,
             includetext: false,
@@ -1432,6 +1437,33 @@ async function renderSuperFastPdfServicePage(content, service) {
     previewModal.classList.remove('hidden')
     setTimeout(() => window.print(), 200)
   })
+
+  const downloadPdfBtn = qs('#btn-cert-download-pdf')
+  if (downloadPdfBtn) {
+    downloadPdfBtn.addEventListener('click', () => {
+      const renderEl = qs('#certificate-content-render')
+      if (!renderEl) return
+      const rawRegNo = qs('#uf-reg-no')?.value || 'NID_Card'
+      if (window.html2pdf) {
+        showToast('উচ্চমানের A4 PDF প্রস্তুত হচ্ছে...', 'info')
+        const opt = {
+          margin: [24, 0, 0, 0],
+          filename: `NID_${rawRegNo}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 3, useCORS: true, letterRendering: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }
+        window.html2pdf().set(opt).from(renderEl).save().then(() => {
+          showToast('PDF ফাইল সফলভাবে ডাউনলোড হয়েছে!', 'success')
+        }).catch((err) => {
+          console.error('HTML2PDF error:', err)
+          window.print()
+        })
+      } else {
+        window.print()
+      }
+    })
+  }
 
   qs('#btn-cert-print').addEventListener('click', () => {
     window.print()

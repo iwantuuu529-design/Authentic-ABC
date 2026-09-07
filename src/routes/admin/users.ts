@@ -150,4 +150,27 @@ adminUsers.put('/:id/kyc', async (c) => {
   return c.json({ success: true, message: 'KYC স্ট্যাটাস আপডেট হয়েছে।' })
 })
 
+// DELETE /api/admin/users/:id — delete user account and associated records
+adminUsers.delete('/:id', async (c) => {
+  const admin = c.get('user')!
+  const id = c.req.param('id')
+
+  const target = await c.env.DB.prepare('SELECT id, name, phone, role FROM users WHERE id = ?').bind(id).first<any>()
+  if (!target) return c.json({ success: false, message: 'ইউজার পাওয়া যায়নি।' }, 404)
+  if (target.role === 'admin') return c.json({ success: false, message: 'এডমিন একাউন্ট ডিলিট করা যাবে না।' }, 403)
+
+  try {
+    await c.env.DB.prepare('DELETE FROM transactions WHERE user_id = ?').bind(id).run()
+    await c.env.DB.prepare('DELETE FROM notifications WHERE user_id = ?').bind(id).run()
+    await c.env.DB.prepare('DELETE FROM orders WHERE user_id = ?').bind(id).run()
+    await c.env.DB.prepare('DELETE FROM users WHERE id = ?').bind(id).run()
+
+    await logAdminAction(c.env.DB, admin.id, 'user_delete', 'user', parseInt(id), `Deleted user ${target.name} (${target.phone})`)
+    return c.json({ success: true, message: 'ইউজার সফলভাবে ডিলিট করা হয়েছে।' })
+  } catch (err: any) {
+    console.error('Delete user error:', err)
+    return c.json({ success: false, message: 'ইউজার ডিলিট করতে সমস্যা হয়েছে: ' + (err.message || 'ত্রুটি') }, 500)
+  }
+})
+
 export default adminUsers

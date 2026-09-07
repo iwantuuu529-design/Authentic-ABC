@@ -1405,10 +1405,35 @@ async function renderAdminUsers() {
               <td class="px-4 py-3">${statusBadge(u.kyc_status === 'unverified' ? 'closed' : u.kyc_status)}</td>
               <td class="px-4 py-3">${statusBadge(u.status)}</td>
               <td class="px-4 py-3 text-xs text-slate-400">${formatDate(u.created_at)}</td>
-              <td class="px-4 py-3"><a href="/admin/users/${u.id}" data-link class="text-brand-400 hover:underline text-xs font-semibold">বিস্তারিত →</a></td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <a href="/admin/users/${u.id}" data-link class="text-brand-400 hover:underline text-xs font-semibold">বিস্তারিত →</a>
+                  <button data-id="${u.id}" data-name="${escapeHtml(u.name)}" class="btn-delete-user text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-1.5 rounded-lg transition-colors" title="ইউজার ডিলিট করুন">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                  </button>
+                </div>
+              </td>
             </tr>`).join('')}
         </tbody>
       </table>`)
+
+    qsa('.btn-delete-user', tableEl).forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation()
+        const id = btn.getAttribute('data-id')
+        const name = btn.getAttribute('data-name')
+        if (!confirm(`আপনি কি নিশ্চিতভাবে "${name}" ইউজারকে ডিলিট করতে চান? এর সাথে তার সমস্ত ডাটা স্থায়ীভাবে মুছে যাবে।`)) return
+        btn.disabled = true
+        try {
+          const res = await API.delete(`/admin/users/${id}`)
+          showToast(res.message || 'ইউজার ডিলিট করা হয়েছে', 'success')
+          loadUsers()
+        } catch (err) {
+          showToast(getErrorMessage(err), 'error')
+          btn.disabled = false
+        }
+      })
+    })
 
     const totalPages = Math.max(1, Math.ceil((data.total || 0) / (data.limit || 20)))
     pagEl.innerHTML = pagination(currentPage, totalPages, 'data-page')
@@ -1502,6 +1527,9 @@ async function renderAdminUserDetail(params) {
             <option value="verified" ${user.kyc_status === 'verified' ? 'selected' : ''}>KYC: যাচাইকৃত</option>
             <option value="rejected" ${user.kyc_status === 'rejected' ? 'selected' : ''}>KYC: প্রত্যাখ্যাত</option>
           </select>
+          <button id="au-delete-btn" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 transition-colors ml-auto">
+            <i class="fa-solid fa-trash-can"></i> ইউজার ডিলিট করুন
+          </button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1561,6 +1589,19 @@ async function renderAdminUserDetail(params) {
         load()
       } catch (err) {
         showToast(getErrorMessage(err), 'error')
+      }
+    })
+    qs('#au-delete-btn')?.addEventListener('click', async () => {
+      if (!confirm(`আপনি কি নিশ্চিতভাবে "${user.name}" এর একাউন্ট মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না।`)) return
+      const btn = qs('#au-delete-btn')
+      btn.disabled = true
+      try {
+        const res = await API.delete(`/admin/users/${user.id}`)
+        showToast(res.message || 'ইউজার ডিলিট করা হয়েছে', 'success')
+        navigateTo('/admin/users')
+      } catch (err) {
+        showToast(getErrorMessage(err), 'error')
+        btn.disabled = false
       }
     })
   }

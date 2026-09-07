@@ -732,7 +732,7 @@ async function renderSuperFastPdfServicePage(content, service) {
 
   // Pre-fill sample clone on initial load for NID service
   if (isNid) {
-    loadSampleNidCardData(1)
+    loadSampleNidCardData(2)
   }
 
   // ------------------------------------------------------------
@@ -1441,19 +1441,20 @@ async function renderSuperFastPdfServicePage(content, service) {
   const downloadPdfBtn = qs('#btn-cert-download-pdf')
   if (downloadPdfBtn) {
     downloadPdfBtn.addEventListener('click', () => {
-      const renderEl = qs('#certificate-content-render')
-      if (!renderEl) return
+      const nidWrapper = qs('.nid-cards-wrapper')
+      const targetEl = nidWrapper || qs('#certificate-content-render')
+      if (!targetEl) return
       const rawRegNo = qs('#uf-reg-no')?.value || 'NID_Card'
       if (window.html2pdf) {
         showToast('উচ্চমানের A4 PDF প্রস্তুত হচ্ছে...', 'info')
         const opt = {
-          margin: [24, 0, 0, 0],
-          filename: `NID_${rawRegNo}.pdf`,
+          margin: nidWrapper ? [24, 16.4, 0, 16.4] : [10, 10, 10, 10],
+          filename: `${isNid ? 'NID' : 'Certificate'}_${rawRegNo}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: { scale: 3, useCORS: true, letterRendering: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         }
-        window.html2pdf().set(opt).from(renderEl).save().then(() => {
+        window.html2pdf().set(opt).from(targetEl).save().then(() => {
           showToast('PDF ফাইল সফলভাবে ডাউনলোড হয়েছে!', 'success')
         }).catch((err) => {
           console.error('HTML2PDF error:', err)

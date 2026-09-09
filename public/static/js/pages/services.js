@@ -19,7 +19,7 @@ async function renderServicesPage() {
 
   let data
   try {
-    data = await API.get('/services')
+    data = await CatalogService.list()
   } catch (err) {
     content.innerHTML = emptyState('fa-triangle-exclamation', 'সার্ভিস লোড করা যায়নি', getErrorMessage(err))
     return
@@ -88,15 +88,13 @@ async function renderServiceOrderPage(params) {
   const content = qs('#page-content')
   content.innerHTML = skeletonCard('h-96')
 
-  let data
+  let service
   try {
-    data = await API.get(`/services/${params.slug}`)
+    service = await CatalogService.getBySlug(params.slug)
   } catch (err) {
     content.innerHTML = emptyState('fa-triangle-exclamation', 'সার্ভিস পাওয়া যায়নি', getErrorMessage(err), `<a href="/dashboard/services" data-link class="btn-glow bg-brand-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl">সার্ভিসে ফিরে যান</a>`)
     return
   }
-
-  const service = data.service
 
   // Special multi-step flow for NID CREATE, NID Make, and NIBANDAN PDF CREATE
   if (service.slug === 'nid-create' || service.slug === 'nid-make' || service.slug === 'nibandan-pdf-create') {
@@ -172,31 +170,28 @@ async function renderServiceOrderPage(params) {
 
     try {
       let res
+      const cc = qs('#captcha-container')
+      const captchaOpts = service.requires_captcha
+        ? { captchaToken: cc?.dataset.token || '', captchaAnswer: qs('#captcha-answer-input')?.value || '' }
+        : {}
       if (hasFileField) {
         const fd = new FormData(qs('#order-form'))
         fd.set('service_slug', service.slug)
         if (service.requires_captcha) {
-          const cc = qs('#captcha-container')
-          fd.set('captcha_token', cc.dataset.token || '')
-          fd.set('captcha_answer', qs('#captcha-answer-input')?.value || '')
+          fd.set('captcha_token', captchaOpts.captchaToken)
+          fd.set('captcha_answer', captchaOpts.captchaAnswer)
         }
-        res = await API.postForm('/orders', fd)
+        res = await OrderService.createRaw(fd)
       } else {
         const formData = {}
         service.form_schema.forEach((f) => {
           formData[f.name] = qs(`#field-${fieldDomId(f.name)}`)?.value || ''
         })
-        const payload = { service_slug: service.slug, form_data: formData }
-        if (service.requires_captcha) {
-          const cc = qs('#captcha-container')
-          payload.captcha_token = cc.dataset.token || ''
-          payload.captcha_answer = qs('#captcha-answer-input')?.value || ''
-        }
-        res = await API.post('/orders', payload)
+        res = await OrderService.createJson(service.slug, formData, captchaOpts)
       }
       showToast(res.message, 'success')
       const u = getStoredUser()
-      if (u) { try { const me = await API.get('/auth/me'); setStoredUser({ ...u, balance: me.user.balance }) } catch {} }
+      if (u) { try { const me = await AuthService.me(); setStoredUser({ ...u, balance: me.balance }) } catch {} }
       navigate(`/dashboard/orders/${res.order.id}`)
     } catch (err) {
       showToast(getErrorMessage(err), 'error')
@@ -774,15 +769,7 @@ async function renderSuperFastPdfServicePage(content, service) {
 
     try {
       // 1. Send real PDF to backend proxy calling core.skseba.shop
-      const fd = new FormData()
-      fd.append('pdf', file)
-
-      const apiRes = await fetch('/api/services/nid-analyze', {
-        method: 'POST',
-        body: fd
-      })
-
-      const apiData = await apiRes.json()
+      const apiData = await CatalogService.analyzeNidPdf(file)
 
       if (apiData && (apiData.status === 'success' || apiData.status === true || apiData.success === true)) {
         extracted = mapSksebaData(apiData.data || apiData)
@@ -1529,16 +1516,16 @@ async function renderSuperFastPdfServicePage(content, service) {
         fd.set('sign_file', signInput.files[0])
       }
 
-      const res = await API.postForm('/orders', fd)
+      const res = await OrderService.createRaw(fd)
       showToast(`🎉 এনআইডি কার্ড সফলভাবে তৈরি হয়েছে! আপনার ওয়ালেট থেকে ৳${service.price} ফি অটো কর্তন করা হয়েছে।`, 'success')
 
       // Refresh balance across the interface
       try {
-        const me = await API.get('/auth/me')
-        if (me && me.user) {
-          setStoredUser(me.user)
-          const navBal = qs('#nav-user-balance')
-          if (navBal) navBal.textContent = formatMoney(me.user.balance)
+        const me = await AuthService.me()
+        if (me) {
+          setStoredUser(me)
+          const navBal = qs('#topbar-balance')
+          if (navBal) navBal.textContent = formatMoney(me.balance)
         }
       } catch {}
 

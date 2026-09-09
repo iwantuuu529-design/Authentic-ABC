@@ -5,8 +5,8 @@
   const stored = getStoredUser()
   if (stored) {
     try {
-      const res = await API.get('/auth/me')
-      setStoredUser(res.user)
+      const user = await AuthService.me()
+      setStoredUser(user)
     } catch {
       localStorage.removeItem('df_user')
     }

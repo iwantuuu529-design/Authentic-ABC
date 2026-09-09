@@ -15,7 +15,7 @@ async function renderProfilePage() {
 
   let data
   try {
-    data = await API.get('/auth/me')
+    data = { user: await AuthService.me() }
   } catch (err) {
     content.innerHTML = emptyState('fa-triangle-exclamation', 'প্রোফাইল লোড করা যায়নি', getErrorMessage(err))
     return
@@ -129,7 +129,7 @@ async function renderProfilePage() {
           payload.current_password = qs('#pf-phone-confirm-password').value
         }
       }
-      const res = await API.put('/auth/profile', payload)
+      const res = await AuthService.updateProfile(payload)
       showToast(res.message, 'success')
       const u = getStoredUser()
       if (u) setStoredUser({ ...u, name: qs('#pf-name').value, phone: res.phone || u.phone })
@@ -151,7 +151,7 @@ async function renderProfilePage() {
     btn.disabled = true
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> পরিবর্তন হচ্ছে...`
     try {
-      const res = await API.post('/auth/change-password', {
+      const res = await AuthService.changePassword({
         current_password: qs('#pw-current').value,
         new_password: qs('#pw-new').value,
       })

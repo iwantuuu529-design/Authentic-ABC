@@ -36,6 +36,10 @@ async function renderRoute() {
   const match = matchRoute(path)
   const user = getStoredUser()
 
+  // Mobile bottom nav only belongs to dashboard shells — clear it here,
+  // dashboardShell() re-adds it for pages that render the shell.
+  if (typeof clearMobileBottomNav === 'function') clearMobileBottomNav()
+
   if (!match) {
     qs('#app').innerHTML = notFoundPage()
     return

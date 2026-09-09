@@ -51,9 +51,10 @@ function renderTopbar(user, isAdmin = false) {
       </div>
       <div class="flex items-center gap-3">
         ${!isAdmin ? `
-        <a href="/dashboard/wallet" data-link class="hidden sm:flex items-center gap-2 glass rounded-full px-4 py-2 btn-glow">
-          <i class="fa-solid fa-wallet text-brand-400"></i>
-          <span id="topbar-balance" class="font-bold text-sm count-up">${formatMoney(user?.balance || 0)}</span>
+        <a href="/dashboard/wallet" data-link class="balance-chip" title="ওয়ালেটে যান" aria-label="বর্তমান ব্যালেন্স">
+          <i class="fa-solid fa-wallet"></i>
+          <span id="topbar-balance" class="count-up">${formatMoney(user?.balance || 0)}</span>
+          <i class="fa-solid fa-plus text-[10px] opacity-70"></i>
         </a>` : `
         <span class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-300 text-xs font-semibold ring-1 ring-amber-500/25">
           <i class="fa-solid fa-triangle-exclamation"></i> এখানে করা পরিবর্তন সরাসরি প্ল্যাটফর্মে প্রভাব ফেলে
@@ -166,8 +167,7 @@ function bindShellEvents() {
     qs('#notif-dropdown')?.classList.add('hidden')
   })
   qs('#logout-btn')?.addEventListener('click', async () => {
-    try { await API.post('/auth/logout') } catch {}
-    localStorage.removeItem('df_user')
+    await AuthService.logout()
     navigate('/login')
   })
 
@@ -176,7 +176,7 @@ function bindShellEvents() {
 
 async function refreshNotifDot() {
   try {
-    const res = await API.get('/notifications')
+    const res = await NotificationService.list()
     const dot = qs('#notif-dot')
     if (dot) dot.classList.toggle('hidden', !(res.unread_count > 0))
   } catch {}
@@ -185,7 +185,7 @@ async function refreshNotifDot() {
 async function loadNotifDropdown(container) {
   container.innerHTML = `<div class="p-6 text-center text-slate-500 text-sm"><i class="fa-solid fa-spinner fa-spin mr-2"></i>লোড হচ্ছে...</div>`
   try {
-    const res = await API.get('/notifications')
+    const res = await NotificationService.list()
     if (!res.notifications.length) {
       container.innerHTML = `<div class="p-8 text-center text-slate-500 text-sm"><i class="fa-regular fa-bell-slash text-2xl mb-2 block"></i>কোনো নোটিফিকেশন নেই</div>`
       return
@@ -211,7 +211,7 @@ async function loadNotifDropdown(container) {
       </div>`
     qs('#mark-all-read')?.addEventListener('click', async (e) => {
       e.stopPropagation()
-      await API.post('/notifications/read-all')
+      await NotificationService.markAllRead()
       refreshNotifDot()
       loadNotifDropdown(container)
     })
@@ -222,6 +222,7 @@ async function loadNotifDropdown(container) {
 
 function dashboardShell(navItems, activePath, isAdmin = false) {
   const user = getStoredUser()
+  document.body.classList.add('has-bottom-nav')
   return `
   <div class="flex ${isAdmin ? 'admin-mode' : ''}">
     ${isAdmin ? `<div class="fixed top-0 left-0 right-0 h-[3px] z-[60] bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500 bg-[length:200%_100%] animate-shimmer"></div>` : ''}
@@ -231,7 +232,36 @@ function dashboardShell(navItems, activePath, isAdmin = false) {
       <main id="page-content" class="p-4 lg:p-6 max-w-[1600px] mx-auto"></main>
     </div>
   </div>
+  ${renderMobileBottomNav(navItems, activePath, isAdmin)}
   ${syncWhatsappFloatButton(isAdmin)}`
+}
+
+// ------------------------------------------------------------
+// Mobile bottom navigation — phones get the 5 most-used sections
+// as a fixed thumb-reach bar (desktop keeps the sidebar). The full
+// menu stays reachable through the topbar hamburger / sidebar.
+// ------------------------------------------------------------
+function renderMobileBottomNav(navItems, activePath, isAdmin = false) {
+  const picks = isAdmin
+    ? ['/admin', '/admin/orders', '/admin/recharge', '/admin/users', '/admin/settings']
+    : ['/dashboard', '/dashboard/services', '/dashboard/orders', '/dashboard/wallet', '/dashboard/support']
+  const items = picks
+    .map((path) => navItems.find((n) => n.path === path))
+    .filter(Boolean)
+    .map((item) => {
+      const isActive = activePath === item.path
+      return `<a href="${item.path}" data-link class="${isActive ? 'active' : ''}" ${isActive ? 'aria-current="page"' : ''}>
+        <i class="fa-solid ${item.icon}"></i><span>${item.label}</span>
+      </a>`
+    })
+    .join('')
+  return `<nav class="mobile-bottom-nav visible" aria-label="মোবাইল নেভিগেশন">${items}</nav>`
+}
+
+/** Removes the bottom-nav body flag on non-dashboard pages (landing/auth). */
+function clearMobileBottomNav() {
+  document.body.classList.remove('has-bottom-nav')
+  qs('.mobile-bottom-nav')?.remove()
 }
 
 // ------------------------------------------------------------
@@ -260,8 +290,8 @@ function syncWhatsappFloatButton(isAdmin) {
 async function resolveWhatsappNumber() {
   try {
     if (_whatsappNumberCache === null) {
-      const res = await API.get('/settings')
-      _whatsappNumberCache = (res.settings && res.settings.support_whatsapp) || ''
+      const settings = await MiscService.publicSettings()
+      _whatsappNumberCache = settings.support_whatsapp || ''
     }
     return String(_whatsappNumberCache || '').replace(/[^0-9]/g, '')
   } catch {
@@ -282,8 +312,7 @@ let _settingsCache = null
 async function getPublicSettings() {
   try {
     if (_settingsCache === null) {
-      const res = await API.get('/settings')
-      _settingsCache = res.settings || {}
+      _settingsCache = await MiscService.publicSettings()
     }
     return _settingsCache
   } catch {
@@ -564,7 +593,7 @@ function bindFileDropzones(container) {
 async function loadCaptcha(container) {
   container.innerHTML = `<div class="glass rounded-xl p-4 flex items-center gap-3"><i class="fa-solid fa-spinner fa-spin text-brand-400"></i><span class="text-sm text-slate-400">ক্যাপচা লোড হচ্ছে...</span></div>`
   try {
-    const res = await API.get('/captcha')
+    const res = await MiscService.captcha()
     container.dataset.token = res.token
     container.innerHTML = `
       <div class="glass rounded-xl p-4">

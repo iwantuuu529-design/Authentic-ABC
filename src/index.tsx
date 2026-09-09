@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import type { AppEnv } from './types/bindings'
+import { ApiError } from './services/errors'
 
 import auth from './routes/auth'
 import services from './routes/services'
@@ -27,6 +28,19 @@ app.use('*', async (c, next) => {
     c.env.JWT_SECRET = 'dev-secret-key-abc-authentic-2026'
   }
   await next()
+})
+
+// -----------------------------------------------------------------
+// Global error handler — every service throws ApiError; this turns
+// it into the standard { success:false, message } JSON envelope so
+// routes stay free of repetitive try/catch + c.json(error) plumbing.
+// -----------------------------------------------------------------
+app.onError((err, c) => {
+  if (err instanceof ApiError) {
+    return c.json({ success: false, message: err.message, ...err.extra }, err.status as any)
+  }
+  console.error('Unhandled API error:', err)
+  return c.json({ success: false, message: 'সার্ভারে একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।' }, 500)
 })
 
 // -----------------------------------------------------------------
@@ -147,6 +161,7 @@ const HTML_SHELL = `<!DOCTYPE html>
     }
   </script>
   <link href="/static/css/app.css" rel="stylesheet">
+  <link href="/static/css/design-system-v2.css" rel="stylesheet">
 </head>
 <body class="bg-ink-950 text-slate-100 font-sans antialiased min-h-screen overflow-x-hidden">
   <!-- Live Notice ticker — admin-controlled, body-level (outside #app) so it
@@ -215,6 +230,14 @@ const HTML_SHELL = `<!DOCTYPE html>
 
   <script src="/static/js/utils.js" defer></script>
   <script src="/static/js/api.js" defer></script>
+  <!-- Service layer: every API call + client-side business logic lives here -->
+  <script src="/static/js/services/auth.service.js" defer></script>
+  <script src="/static/js/services/catalog.service.js" defer></script>
+  <script src="/static/js/services/order.service.js" defer></script>
+  <script src="/static/js/services/wallet.service.js" defer></script>
+  <script src="/static/js/services/dashboard.service.js" defer></script>
+  <script src="/static/js/services/support.service.js" defer></script>
+  <script src="/static/js/services/admin.service.js" defer></script>
   <script src="/static/js/components.js" defer></script>
   <script src="/static/js/pages/landing.js" defer></script>
   <script src="/static/js/pages/auth.js" defer></script>

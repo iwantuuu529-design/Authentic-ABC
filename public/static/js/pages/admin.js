@@ -61,7 +61,7 @@ async function renderAdminDashboard() {
 
   let data
   try {
-    data = await API.get('/admin/dashboard')
+    data = await AdminService.dashboard.stats()
   } catch (err) {
     content.innerHTML = emptyState('fa-triangle-exclamation', 'তথ্য লোড করা যায়নি', getErrorMessage(err))
     return
@@ -218,11 +218,7 @@ async function renderAdminOrders() {
 
     let data
     try {
-      const params = new URLSearchParams()
-      if (activeStatus) params.set('status', activeStatus)
-      if (searchQuery) params.set('q', searchQuery)
-      params.set('page', currentPage)
-      data = await API.get(`/admin/orders?${params.toString()}`)
+      data = await AdminService.orders.list({ status: activeStatus, q: searchQuery, page: currentPage })
     } catch (err) {
       listEl.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
       return
@@ -312,7 +308,7 @@ async function renderAdminOrderDetail(params) {
   async function load() {
     let data
     try {
-      data = await API.get(`/admin/orders/${params.id}`)
+      data = await AdminService.orders.get(params.id)
     } catch (err) {
       content.innerHTML = emptyState('fa-triangle-exclamation', 'অর্ডার পাওয়া যায়নি', getErrorMessage(err), `<a href="/admin/orders" data-link class="btn-glow bg-brand-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl">সব অর্ডার</a>`)
       return
@@ -414,7 +410,7 @@ async function renderAdminOrderDetail(params) {
       const reason = await promptDialog('অর্ডার বাতিল করুন', 'বাতিলের কারণ লিখুন (টাকা থাকলে অটো রিফান্ড হবে)', true)
       if (reason === null) return
       try {
-        const res = await API.put(`/admin/orders/${order.id}/reject`, { reason })
+        const res = await AdminService.orders.reject(order.id, reason)
         showToast(res.message, 'success')
         load()
       } catch (err) {
@@ -425,7 +421,7 @@ async function renderAdminOrderDetail(params) {
       const note = await promptDialog('অভ্যন্তরীণ নোট যোগ করুন', 'নোট লিখুন')
       if (note === null) return
       try {
-        const res = await API.put(`/admin/orders/${order.id}/note`, { note })
+        const res = await AdminService.orders.setNote(order.id, note)
         showToast(res.message, 'success')
         load()
       } catch (err) {
@@ -476,7 +472,7 @@ function openOrderApproveModal(order, onDone) {
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> প্রসেস হচ্ছে...`
     try {
       const fd = new FormData(qs('#approve-form', modal))
-      const res = await API.putForm(`/admin/orders/${order.id}/approve`, fd)
+      const res = await AdminService.orders.approve(order.id, fd)
       showToast(res.message, 'success')
       closeModal()
       onDone()
@@ -523,7 +519,7 @@ async function renderAdminRecharge() {
 
     let data
     try {
-      data = await API.get(`/admin/recharge-requests?status=${activeStatus}&page=${currentPage}`)
+      data = await AdminService.recharge.list({ status: activeStatus, page: currentPage })
     } catch (err) {
       listEl.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
       return
@@ -578,7 +574,7 @@ async function renderAdminRecharge() {
         const ok = await confirmDialog('রিচার্জ অনুমোদন করবেন?', 'অনুমোদন করলে সাথে সাথে ইউজারের ওয়ালেটে টাকা যোগ হবে।', 'অনুমোদন করুন')
         if (!ok) return
         try {
-          const res = await API.put(`/admin/recharge-requests/${btn.dataset.approve}/approve`)
+          const res = await AdminService.recharge.approve(btn.dataset.approve)
           showToast(res.message, 'success')
           loadRequests()
         } catch (err) {
@@ -591,7 +587,7 @@ async function renderAdminRecharge() {
         const reason = await promptDialog('রিচার্জ প্রত্যাখ্যান করুন', 'বাতিলের কারণ লিখুন', true)
         if (reason === null) return
         try {
-          const res = await API.put(`/admin/recharge-requests/${btn.dataset.reject}/reject`, { reason })
+          const res = await AdminService.recharge.reject(btn.dataset.reject, reason)
           showToast(res.message, 'success')
           loadRequests()
         } catch (err) {
@@ -656,9 +652,9 @@ async function renderAdminServices() {
     let servicesData, catData, provData
     try {
       [servicesData, catData, provData] = await Promise.all([
-        API.get('/admin/services'),
-        API.get('/admin/services/categories'),
-        API.get('/admin/api-providers'),
+        AdminService.services.list(),
+        AdminService.services.listCategories(),
+        AdminService.providers.list(),
       ])
     } catch (err) {
       tableEl.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
@@ -740,7 +736,7 @@ async function renderAdminServices() {
         const ok = await confirmDialog('সার্ভিস মুছে ফেলবেন?', 'অর্ডার হিস্ট্রি থাকলে সার্ভিসটি নিষ্ক্রিয় করা হবে, নাহলে সম্পূর্ণ মুছে যাবে।', 'মুছে ফেলুন', true)
         if (!ok) return
         try {
-          const res = await API.del(`/admin/services/${btn.dataset.del}`)
+          const res = await AdminService.services.remove(btn.dataset.del)
           showToast(res.message, 'success')
           loadServices()
         } catch (err) {
@@ -816,7 +812,7 @@ function openRateEditorModal(id, name, currentPrice, currentCost, onDone) {
     const costPrice = parseFloat(qs('#qrf-cost', modal).value) || 0
 
     try {
-      const res = await API.patch(`/admin/services/${id}/rate`, { price, cost_price: costPrice })
+      const res = await AdminService.services.updateRate(id, price, costPrice)
       showToast(res.message || 'রেট সফলভাবে আপডেট হয়েছে!', 'success')
       closeModal()
       if (typeof onDone === 'function') onDone()
@@ -1022,8 +1018,8 @@ function openServiceFormModal(service, onDone) {
 
     try {
       const res = isEdit
-        ? await API.put(`/admin/services/${service.id}`, payload)
-        : await API.post('/admin/services', payload)
+        ? await AdminService.services.update(service.id, payload)
+        : await AdminService.services.create(payload)
       showToast(res.message, 'success')
       closeModal()
       onDone()
@@ -1064,7 +1060,7 @@ function openCategoriesModal(onDone) {
   qs('#new-cat-form', modal).addEventListener('submit', async (e) => {
     e.preventDefault()
     try {
-      const res = await API.post('/admin/services/categories', {
+      const res = await AdminService.services.createCategory({
         name_bn: qs('#cat-name-bn', modal).value.trim(),
         name_en: qs('#cat-name-en', modal).value.trim(),
         slug: qs('#cat-slug', modal).value.trim(),
@@ -1100,7 +1096,7 @@ async function renderAdminProviders() {
     listEl.innerHTML = Array(4).fill(0).map(() => skeletonCard('h-40')).join('')
     let data
     try {
-      data = await API.get('/admin/api-providers')
+      data = await AdminService.providers.list()
     } catch (err) {
       listEl.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
       return
@@ -1151,7 +1147,7 @@ async function renderAdminProviders() {
         const ok = await confirmDialog('প্রোভাইডার মুছে ফেলবেন?', 'এই প্রোভাইডারটি কোনো সার্ভিসে ব্যবহৃত না থাকলে মুছে যাবে।', 'মুছে ফেলুন', true)
         if (!ok) return
         try {
-          const res = await API.del(`/admin/api-providers/${btn.dataset.delProvider}`)
+          const res = await AdminService.providers.remove(btn.dataset.delProvider)
           showToast(res.message, 'success')
           loadProviders()
         } catch (err) {
@@ -1272,8 +1268,8 @@ function openProviderFormModal(provider, onDone) {
 
     try {
       const res = isEdit
-        ? await API.put(`/admin/api-providers/${provider.id}`, payload)
-        : await API.post('/admin/api-providers', payload)
+        ? await AdminService.providers.update(provider.id, payload)
+        : await AdminService.providers.create(payload)
       showToast(res.message, 'success')
       closeModal()
       onDone()
@@ -1308,7 +1304,7 @@ function openProviderTestModal(providerId) {
     btn.disabled = true
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> চলছে...`
     try {
-      const res = await API.post(`/admin/api-providers/${providerId}/test`, { sample_data: sampleData })
+      const res = await AdminService.providers.test(providerId, sampleData)
       resultEl.classList.remove('hidden')
       resultEl.textContent = JSON.stringify(res.test_result, null, 2)
       resultEl.classList.toggle('text-brand-400', res.success)
@@ -1363,11 +1359,7 @@ async function renderAdminUsers() {
 
     let data
     try {
-      const params = new URLSearchParams()
-      if (searchQuery) params.set('q', searchQuery)
-      if (statusFilter) params.set('status', statusFilter)
-      params.set('page', currentPage)
-      data = await API.get(`/admin/users?${params.toString()}`)
+      data = await AdminService.users.list({ q: searchQuery, status: statusFilter, page: currentPage })
     } catch (err) {
       tableEl.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
       return
@@ -1425,7 +1417,7 @@ async function renderAdminUsers() {
         if (!confirm(`আপনি কি নিশ্চিতভাবে "${name}" ইউজারকে ডিলিট করতে চান? এর সাথে তার সমস্ত ডাটা স্থায়ীভাবে মুছে যাবে।`)) return
         btn.disabled = true
         try {
-          const res = await API.delete(`/admin/users/${id}`)
+          const res = await AdminService.users.remove(id)
           showToast(res.message || 'ইউজার ডিলিট করা হয়েছে', 'success')
           loadUsers()
         } catch (err) {
@@ -1472,7 +1464,7 @@ async function renderAdminUserDetail(params) {
   async function load() {
     let data
     try {
-      data = await API.get(`/admin/users/${params.id}`)
+      data = await AdminService.users.get(params.id)
     } catch (err) {
       content.innerHTML = emptyState('fa-triangle-exclamation', 'ইউজার পাওয়া যায়নি', getErrorMessage(err), `<a href="/admin/users" data-link class="btn-glow bg-brand-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl">সব ইউজার</a>`)
       return
@@ -1566,7 +1558,7 @@ async function renderAdminUserDetail(params) {
     qs('#au-adjust-btn').addEventListener('click', () => openBalanceAdjustModal(user, load))
     qs('#au-approve-btn')?.addEventListener('click', async () => {
       try {
-        const res = await API.put(`/admin/users/${user.id}/status`, { status: 'active' })
+        const res = await AdminService.users.setStatus(user.id, 'active')
         showToast(res.message, 'success')
         load()
       } catch (err) {
@@ -1575,7 +1567,7 @@ async function renderAdminUserDetail(params) {
     })
     qs('#au-status-select').addEventListener('change', async (e) => {
       try {
-        const res = await API.put(`/admin/users/${user.id}/status`, { status: e.target.value })
+        const res = await AdminService.users.setStatus(user.id, e.target.value)
         showToast(res.message, 'success')
         load()
       } catch (err) {
@@ -1584,7 +1576,7 @@ async function renderAdminUserDetail(params) {
     })
     qs('#au-kyc-select').addEventListener('change', async (e) => {
       try {
-        const res = await API.put(`/admin/users/${user.id}/kyc`, { status: e.target.value })
+        const res = await AdminService.users.setKyc(user.id, e.target.value)
         showToast(res.message, 'success')
         load()
       } catch (err) {
@@ -1596,7 +1588,7 @@ async function renderAdminUserDetail(params) {
       const btn = qs('#au-delete-btn')
       btn.disabled = true
       try {
-        const res = await API.delete(`/admin/users/${user.id}`)
+        const res = await AdminService.users.remove(user.id)
         showToast(res.message || 'ইউজার ডিলিট করা হয়েছে', 'success')
         navigateTo('/admin/users')
       } catch (err) {
@@ -1632,10 +1624,11 @@ function openBalanceAdjustModal(user, onDone) {
     const btn = qs('#adj-submit', modal)
     btn.disabled = true
     try {
-      const res = await API.post(`/admin/users/${user.id}/adjust-balance`, {
-        amount: parseFloat(qs('#adj-amount', modal).value),
-        reason: qs('#adj-reason', modal).value.trim(),
-      })
+      const res = await AdminService.users.adjustBalance(
+        user.id,
+        parseFloat(qs('#adj-amount', modal).value),
+        qs('#adj-reason', modal).value.trim()
+      )
       showToast(res.message, 'success')
       closeModal()
       onDone()
@@ -1666,7 +1659,7 @@ async function renderAdminCoupons() {
     tableEl.innerHTML = skeletonCard('h-96')
     let data
     try {
-      data = await API.get('/admin/coupons')
+      data = await AdminService.coupons.list()
     } catch (err) {
       tableEl.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
       return
@@ -1711,7 +1704,7 @@ async function renderAdminCoupons() {
       btn.addEventListener('click', async () => {
         const newStatus = btn.dataset.current === 'active' ? 'inactive' : 'active'
         try {
-          await API.put(`/admin/coupons/${btn.dataset.toggleCoupon}`, { status: newStatus })
+          await AdminService.coupons.toggle(btn.dataset.toggleCoupon, newStatus)
           showToast('কুপন আপডেট হয়েছে।', 'success')
           loadCoupons()
         } catch (err) {
@@ -1724,7 +1717,7 @@ async function renderAdminCoupons() {
         const ok = await confirmDialog('কুপন মুছে ফেলবেন?', 'এই কাজটি ফিরিয়ে নেওয়া যাবে না।', 'মুছে ফেলুন', true)
         if (!ok) return
         try {
-          const res = await API.del(`/admin/coupons/${btn.dataset.delCoupon}`)
+          const res = await AdminService.coupons.remove(btn.dataset.delCoupon)
           showToast(res.message, 'success')
           loadCoupons()
         } catch (err) {
@@ -1803,7 +1796,7 @@ function openCouponFormModal(onDone) {
     const btn = qs('#cf-submit', modal)
     btn.disabled = true
     try {
-      const res = await API.post('/admin/coupons', {
+      const res = await AdminService.coupons.create({
         code: qs('#cf-code', modal).value.trim(),
         type: qs('#cf-type', modal).value,
         value: parseFloat(qs('#cf-value', modal).value),
@@ -1859,7 +1852,7 @@ async function renderAdminSupport() {
     listEl.innerHTML = Array(4).fill(0).map(() => skeletonCard('h-20')).join('')
     let data
     try {
-      data = await API.get(`/admin/support/tickets${status ? `?status=${status}` : ''}`)
+      data = await AdminService.support.listTickets(status)
     } catch (err) {
       listEl.innerHTML = emptyState('fa-triangle-exclamation', 'টিকেট লোড করা যায়নি', getErrorMessage(err))
       return
@@ -1910,7 +1903,7 @@ async function renderAdminSupportDetail(params) {
   async function load() {
     let data
     try {
-      data = await API.get(`/admin/support/tickets/${params.id}`)
+      data = await AdminService.support.getTicket(params.id)
     } catch (err) {
       content.innerHTML = emptyState('fa-triangle-exclamation', 'টিকেট পাওয়া যায়নি', getErrorMessage(err), `<a href="/admin/support" data-link class="btn-glow bg-brand-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl">সব টিকেট</a>`)
       return
@@ -1974,7 +1967,7 @@ async function renderAdminSupportDetail(params) {
       const btn = qs('#admin-reply-submit')
       btn.disabled = true
       try {
-        await API.post(`/admin/support/tickets/${params.id}/reply`, { message: msg })
+        await AdminService.support.reply(params.id, msg)
         input.value = ''
         await load()
       } catch (err) {
@@ -1986,7 +1979,7 @@ async function renderAdminSupportDetail(params) {
 
     qs('#ticket-status-select')?.addEventListener('change', async (e) => {
       try {
-        await API.put(`/admin/support/tickets/${params.id}/status`, { status: e.target.value })
+        await AdminService.support.setStatus(params.id, e.target.value)
         showToast('স্ট্যাটাস আপডেট হয়েছে', 'success')
         await load()
       } catch (err) {
@@ -2063,7 +2056,7 @@ async function renderAdminSettings() {
   async function loadGeneralTab(el) {
     let data
     try {
-      data = await API.get('/admin/settings')
+      data = await AdminService.settings.getAll()
     } catch (err) {
       el.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
       return
@@ -2090,7 +2083,7 @@ async function renderAdminSettings() {
       const payload = {}
       qsa('.general-setting-input', el).forEach((inp) => { payload[inp.dataset.key] = inp.value })
       try {
-        const res = await API.put('/admin/settings', payload)
+        const res = await AdminService.settings.update(payload)
         showToast(res.message || 'সংরক্ষণ সফল হয়েছে', 'success')
       } catch (err) {
         showToast(getErrorMessage(err), 'error')
@@ -2103,7 +2096,7 @@ async function renderAdminSettings() {
   async function loadNoticeTab(el) {
     let data
     try {
-      data = await API.get('/admin/settings')
+      data = await AdminService.settings.getAll()
     } catch (err) {
       el.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
       return
@@ -2187,7 +2180,7 @@ async function renderAdminSettings() {
         promo_card_cta_url: qs('#ns-promo-cta-url', el).value.trim(),
       }
       try {
-        const res = await API.put('/admin/settings', payload)
+        const res = await AdminService.settings.update(payload)
         showToast(res.message || 'সংরক্ষণ সফল হয়েছে', 'success')
       } catch (err) {
         showToast(getErrorMessage(err), 'error')
@@ -2209,7 +2202,7 @@ async function renderAdminSettings() {
     el.innerHTML = skeletonCard('h-64')
     let data
     try {
-      data = await API.get('/admin/storage/usage')
+      data = await AdminService.storage.usage()
     } catch (err) {
       el.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
       return
@@ -2267,7 +2260,7 @@ async function renderAdminSettings() {
           e.target.disabled = true
           e.target.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> মুছে ফেলা হচ্ছে...`
           try {
-            const res = await API.del('/admin/storage/orphaned')
+            const res = await AdminService.storage.purgeOrphaned()
             closeModal()
             showToast(res.message || 'অব্যবহৃত ফাইল মুছে ফেলা হয়েছে', 'success')
             loadStorageTab(el)
@@ -2284,7 +2277,7 @@ async function renderAdminSettings() {
   async function loadMethodsTab(el) {
     let data
     try {
-      data = await API.get('/admin/settings/payment-methods')
+      data = await AdminService.settings.listPaymentMethods()
     } catch (err) {
       el.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
       return
@@ -2322,7 +2315,7 @@ async function renderAdminSettings() {
     }))
     qsa('.method-toggle-btn', el).forEach((btn) => btn.addEventListener('click', async () => {
       try {
-        await API.put(`/admin/settings/payment-methods/${btn.dataset.id}`, { status: btn.dataset.status })
+        await AdminService.settings.updatePaymentMethod(btn.dataset.id, { status: btn.dataset.status })
         showToast('স্ট্যাটাস আপডেট হয়েছে', 'success')
         loadMethodsTab(el)
       } catch (err) {
@@ -2333,7 +2326,7 @@ async function renderAdminSettings() {
       const ok = await confirmDialog('মেথড ডিলিট করুন?', 'এই পেমেন্ট মেথডটি স্থায়ীভাবে ডিলিট হয়ে যাবে।', 'ডিলিট করুন', true)
       if (!ok) return
       try {
-        await API.del(`/admin/settings/payment-methods/${btn.dataset.id}`)
+        await AdminService.settings.deletePaymentMethod(btn.dataset.id)
         showToast('ডিলিট করা হয়েছে', 'success')
         loadMethodsTab(el)
       } catch (err) {
@@ -2395,8 +2388,8 @@ async function renderAdminSettings() {
       }
       try {
         const res = isEdit
-          ? await API.put(`/admin/settings/payment-methods/${method.id}`, payload)
-          : await API.post('/admin/settings/payment-methods', payload)
+          ? await AdminService.settings.updatePaymentMethod(method.id, payload)
+          : await AdminService.settings.createPaymentMethod(payload)
         showToast(res.message || 'সফল হয়েছে', 'success')
         closeModal()
         onDone()
@@ -2410,7 +2403,7 @@ async function renderAdminSettings() {
   async function loadGatewaysTab(el) {
     let data
     try {
-      data = await API.get('/admin/settings/payment-gateways')
+      data = await AdminService.settings.listPaymentGateways()
     } catch (err) {
       el.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
       return
@@ -2495,7 +2488,7 @@ async function renderAdminSettings() {
       if (apiSecret) payload.api_secret = apiSecret
       if (config !== undefined) payload.config = config
       try {
-        const res = await API.put(`/admin/settings/payment-gateways/${gateway.id}`, payload)
+        const res = await AdminService.settings.updatePaymentGateway(gateway.id, payload)
         showToast(res.message || 'সংরক্ষণ সফল হয়েছে', 'success')
         closeModal()
         onDone()

@@ -18,7 +18,7 @@ async function renderReferralPage() {
 
   let data
   try {
-    data = await API.get('/referral')
+    data = await ReferralService.summary()
   } catch (err) {
     content.innerHTML = emptyState('fa-triangle-exclamation', 'তথ্য লোড করা যায়নি', getErrorMessage(err))
     return

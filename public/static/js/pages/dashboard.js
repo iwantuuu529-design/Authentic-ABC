@@ -25,7 +25,7 @@ async function renderDashboardHome() {
 
   let data
   try {
-    data = await API.get('/dashboard/summary')
+    data = await DashboardService.summary()
   } catch (err) {
     content.innerHTML = emptyState('fa-triangle-exclamation', 'তথ্য লোড করা যায়নি', getErrorMessage(err))
     return

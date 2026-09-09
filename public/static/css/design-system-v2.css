@@ -1,0 +1,277 @@
+/* ============================================================
+   ABC Authentic — Design System v2
+   Layered ON TOP of app.css: design tokens, accessibility,
+   mobile bottom navigation, refined form/table components and
+   motion preferences. Pure CSS — no markup changes required
+   for existing pages to benefit.
+   ============================================================ */
+
+/* ---------- 1. Design tokens ---------- */
+:root {
+  --ds-brand-400: #3ed49c;
+  --ds-brand-500: #17b881;
+  --ds-brand-600: #0d9668;
+  --ds-violet-500: #8b5cf6;
+  --ds-ink-950: #05070a;
+  --ds-radius-card: 1rem;
+  --ds-radius-control: 0.75rem;
+  --ds-ring: 0 0 0 3px rgba(62, 212, 156, 0.35);
+  --ds-ring-violet: 0 0 0 3px rgba(139, 92, 246, 0.35);
+  --ds-shadow-card: 0 10px 30px -12px rgba(0, 0, 0, 0.55);
+  --ds-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------- 2. Accessibility: visible focus, reduced motion ---------- */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-ring);
+  border-radius: 6px;
+}
+.admin-mode :focus-visible {
+  box-shadow: var(--ds-ring-violet);
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Selection color in brand */
+::selection { background: rgba(23, 184, 129, 0.35); }
+
+/* ---------- 3. Mobile bottom navigation (user panel) ----------
+   Core nav is always one thumb-reach away on phones; the sidebar
+   remains available via the topbar hamburger for the full list. */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom));
+  background: rgba(10, 14, 20, 0.88);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  transform: translateY(105%);
+  transition: transform 0.35s var(--ds-ease);
+}
+.mobile-bottom-nav.visible { transform: translateY(0); }
+@media (min-width: 1024px) {
+  .mobile-bottom-nav { display: none; }
+}
+.mobile-bottom-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0.35rem 0.2rem;
+  border-radius: 0.85rem;
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+.mobile-bottom-nav a i { font-size: 17px; transition: transform 0.25s var(--ds-ease); }
+.mobile-bottom-nav a.active {
+  color: var(--ds-brand-400);
+  background: rgba(23, 184, 129, 0.1);
+}
+.mobile-bottom-nav a.active i { transform: translateY(-2px) scale(1.12); }
+.mobile-bottom-nav a:active { transform: scale(0.94); }
+
+/* Keep page content above the bottom nav on mobile */
+@media (max-width: 1023.98px) {
+  body.has-bottom-nav #page-content { padding-bottom: 5.5rem !important; }
+  body.has-bottom-nav .whatsapp-fab { bottom: 5.25rem; }
+}
+
+/* ---------- 4. Topbar balance chip ---------- */
+.balance-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #6ee7b7;
+  background: linear-gradient(135deg, rgba(23, 184, 129, 0.16), rgba(23, 184, 129, 0.06));
+  border: 1px solid rgba(23, 184, 129, 0.28);
+  transition: transform 0.2s var(--ds-ease), box-shadow 0.25s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.balance-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px -6px rgba(23, 184, 129, 0.45);
+}
+.balance-chip i { font-size: 0.75rem; opacity: 0.9; }
+
+/* ---------- 5. Refined form controls ---------- */
+.ds-input,
+input.input-glow:focus, select.input-glow:focus, textarea.input-glow:focus {
+  border-color: rgba(62, 212, 156, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(62, 212, 156, 0.12);
+}
+.admin-mode input.input-glow:focus, .admin-mode select.input-glow:focus, .admin-mode textarea.input-glow:focus {
+  border-color: rgba(139, 92, 246, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+}
+
+/* Floating field hint for required fields */
+.form-field label { transition: color 0.2s ease; }
+.form-field:focus-within label { color: #e2e8f0; }
+
+/* Invalid state (set via JS: input.classList.add('ds-invalid')) */
+.ds-invalid {
+  border-color: rgba(244, 63, 94, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.14) !important;
+  animation: dsShake 0.35s ease;
+}
+@keyframes dsShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  60% { transform: translateX(4px); }
+  80% { transform: translateX(-2px); }
+}
+.ds-field-error {
+  display: flex; align-items: center; gap: 0.35rem;
+  margin-top: 0.4rem;
+  font-size: 0.72rem; font-weight: 600;
+  color: #fb7185;
+}
+
+/* ---------- 6. Section headers ---------- */
+.ds-page-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+.ds-page-sub {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin-top: 0.3rem;
+}
+
+/* ---------- 7. Table polish (admin + lists) ---------- */
+.ds-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.ds-table thead th {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.02);
+}
+.ds-table tbody td {
+  padding: 0.7rem 0.9rem;
+  font-size: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+  vertical-align: middle;
+}
+.ds-table tbody tr { transition: background 0.15s ease; }
+.ds-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+.ds-table tbody tr:last-child td { border-bottom: none; }
+
+/* ---------- 8. Button states ---------- */
+button:disabled, a[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: saturate(0.7);
+}
+.btn-press:active { transform: scale(0.97); }
+
+/* ---------- 9. Toast refinement ---------- */
+#toast-container > div {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------- 10. Page transitions: softer entrance ---------- */
+.page-enter { animation: pageEnter 0.4s var(--ds-ease) both; }
+@keyframes pageEnter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 11. Sidebar nav item active indicator ---------- */
+.nav-link { position: relative; }
+.nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: -0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 99px;
+  background: linear-gradient(180deg, var(--ds-brand-400), var(--ds-brand-600));
+}
+.admin-mode .nav-link.active::before {
+  background: linear-gradient(180deg, #a78bfa, #7c3aed);
+}
+
+/* ---------- 12. Empty-state illustration glow ---------- */
+.empty-glow {
+  box-shadow: 0 0 44px -10px rgba(23, 184, 129, 0.35);
+}
+
+/* ---------- 13. Better mobile tables → stacked cards ---------- */
+@media (max-width: 640px) {
+  .ds-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .ds-table { min-width: 640px; }
+}
+
+/* ---------- 14. Landing/auth shared bits ---------- */
+.hero-grid-pattern {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, #000 30%, transparent 75%);
+}
+
+.feature-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(12px);
+}
+.feature-pill i { color: var(--ds-brand-400); }
+
+/* ---------- 15. Skeleton shimmer upgrade ---------- */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.045) !important;
+}
+.skeleton::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  transform: translateX(-100%);
+  animation: dsSkeletonSweep 1.4s ease infinite;
+}
+@keyframes dsSkeletonSweep {
+  100% { transform: translateX(100%); }
+}

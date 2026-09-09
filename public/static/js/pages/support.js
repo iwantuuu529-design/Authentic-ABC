@@ -34,7 +34,7 @@ async function renderSupportPage() {
 
   let data
   try {
-    data = await API.get('/support/tickets')
+    data = await SupportService.listTickets()
   } catch (err) {
     qs('#tickets-list').innerHTML = emptyState('fa-triangle-exclamation', 'টিকেট লোড করা যায়নি', getErrorMessage(err))
     return
@@ -95,7 +95,7 @@ function openNewTicketModal() {
     btn.disabled = true
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> সাবমিট হচ্ছে...`
     try {
-      const res = await API.post('/support/tickets', {
+      const res = await SupportService.createTicket({
         category: qs('#nt-category', modal).value,
         subject: qs('#nt-subject', modal).value,
         message: qs('#nt-message', modal).value,
@@ -124,7 +124,7 @@ async function renderSupportDetailPage(params) {
   async function load() {
     let data
     try {
-      data = await API.get(`/support/tickets/${params.id}`)
+      data = await SupportService.getTicket(params.id)
     } catch (err) {
       content.innerHTML = emptyState('fa-triangle-exclamation', 'টিকেট পাওয়া যায়নি', getErrorMessage(err), `<a href="/dashboard/support" data-link class="btn-glow bg-brand-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl">সব টিকেট</a>`)
       return
@@ -181,7 +181,7 @@ async function renderSupportDetailPage(params) {
       const btn = qs('#reply-submit')
       btn.disabled = true
       try {
-        await API.post(`/support/tickets/${params.id}/reply`, { message: msg })
+        await SupportService.reply(params.id, msg)
         input.value = ''
         await load()
       } catch (err) {

@@ -1,158 +1,36 @@
+// ============================================================
+// Public service catalog routes — thin adapters over CatalogService.
+// ============================================================
+
 import { Hono } from 'hono'
 import type { AppEnv } from '../types/bindings'
 import { authOptional } from '../middleware/auth'
+import { CatalogService } from '../services'
 
 const services = new Hono<AppEnv>()
 
-let servicesInitialized = false
-
-async function ensureDefaultServices(db: any) {
-  if (servicesInitialized || !db) return
-  try {
-    // 1. Ensure categories exist
-    await db.prepare(`
-      INSERT OR IGNORE INTO service_categories (id, name_bn, name_en, slug, icon, sort_order) VALUES
-      (1, 'জন্ম নিবন্ধন', 'Birth Registration', 'birth', 'fa-baby', 1),
-      (2, 'এনআইডি ও ভোটার সেবা', 'NID & Voter Services', 'nid', 'fa-id-card', 2),
-      (3, 'ভূমি সেবা', 'Land Services', 'land', 'fa-map-location-dot', 3),
-      (4, 'অন্যান্য সেবা', 'Other Services', 'others', 'fa-layer-group', 4)
-    `).run()
-
-    // 2. Ensure nid-create service exists in Category 2 (NID & Voter Services)
-    // Update legacy nibandan-pdf-create or existing nid-create to auto fulfillment mode
-    await db.prepare(`
-      UPDATE services
-      SET category_id = 2,
-          name_bn = 'এনআইডি ক্রিয়েট',
-          name_en = 'NID CREATE',
-          slug = 'nid-create',
-          fulfillment_mode = 'auto',
-          description_bn = 'CMS কপি বা অনলাইন কপি আপলোড করে স্বয়ংক্রিয়ভাবে ইনস্ট্যান্ট এনআইডি কার্ড প্রস্তুত করুন।',
-          icon = 'fa-id-card'
-      WHERE slug = 'nibandan-pdf-create' OR slug = 'nid-create'
-    `).run()
-
-    const checkNid = await db.prepare("SELECT id FROM services WHERE slug = 'nid-create'").first()
-    if (!checkNid) {
-      await db.prepare(`
-        INSERT INTO services
-        (category_id, name_bn, name_en, slug, description_bn, icon, price, cost_price, fulfillment_mode, form_schema, avg_delivery_minutes, requires_captcha, is_featured, sort_order, status)
-        VALUES
-        (2, 'এনআইডি ক্রিয়েট', 'NID CREATE', 'nid-create',
-         'CMS কপি বা অনলাইন কপি আপলোড করে স্বয়ংক্রিয়ভাবে ইনস্ট্যান্ট এনআইডি কার্ড প্রস্তুত করুন।', 'fa-id-card', 4.00, 1.00, 'auto',
-         '[{"name":"pdf_file","label_bn":"পিডিএফ আপলোড করুন","type":"file","accept":".pdf","required":true},{"name":"name_bn","label_bn":"নাম (বাংলা)","type":"text","required":true},{"name":"name_en","label_bn":"নাম (ইংরেজি)","type":"text","required":true},{"name":"registration_no","label_bn":"এনআইডি নম্বর","type":"text","required":true},{"name":"book_no","label_bn":"পিন নম্বর","type":"text","required":false},{"name":"father_name_bn","label_bn":"পিতার নাম","type":"text","required":true},{"name":"mother_name_bn","label_bn":"মাতার নাম","type":"text","required":true},{"name":"birth_place","label_bn":"জন্মস্থান","type":"text","required":true},{"name":"dob","label_bn":"জন্ম তারিখ","type":"text","required":true},{"name":"gender_blood","label_bn":"রক্তের গ্রুপ / লিঙ্গ","type":"text","required":false},{"name":"issue_date","label_bn":"প্রদানের তারিখ","type":"text","required":false},{"name":"address","label_bn":"ঠিকানা","type":"textarea","required":true}]',
-         1, 0, 1, 1, 'active')
-      `).run()
-    }
-    servicesInitialized = true
-  } catch (err) {
-    console.error('ensureDefaultServices error:', err)
-  }
-}
-
 // POST /api/services/nid-analyze — Proxy to SkSeba Real NID Analysis API
+// (keeps the third-party key server-side; returns the provider JSON verbatim)
 services.post('/nid-analyze', async (c) => {
-  try {
-    const formData = await c.req.formData()
-    const pdfFile = formData.get('pdf')
-    if (!pdfFile || typeof (pdfFile as any).name !== 'string') {
-      return c.json({ status: 'error', message: 'পিডিএফ ফাইল আপলোড করা প্রয়োজন।' }, 400)
-    }
-
-    const rawKey = String(process.env.SKSEBA_API_KEY || (c.env as any)?.SKSEBA_API_KEY || '2f5b625b1c1864256f418c8c00ad5307')
-    const apiKey = (rawKey.match(/[a-f0-9]{32}/i)?.[0]) || '2f5b625b1c1864256f418c8c00ad5307'
-    const apiUrl = 'https://core.skseba.shop/api/v2/nid/analyze'
-    const referer = c.req.header('referer') || c.req.header('origin') || 'https://core.skseba.shop'
-
-    const forwardForm = new FormData()
-    forwardForm.append('key', apiKey)
-    const fileName = (pdfFile as any).name || 'nid_slip.pdf'
-    forwardForm.append('pdf', pdfFile, fileName)
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      body: forwardForm,
-      headers: {
-        'Referer': referer,
-      },
-    })
-
-    const text = await response.text()
-    try {
-      const data = JSON.parse(text)
-      return c.json(data)
-    } catch {
-      return c.json({ status: 'error', message: 'API থেকে অপ্রত্যাশিত রেসপন্স এসেছে: ' + text.slice(0, 200) }, 500)
-    }
-  } catch (err: any) {
-    console.error('NID Analyze Proxy Error:', err)
-    return c.json({ status: 'error', message: 'সার্ভার সংযোগে ত্রুটি: ' + (err.message || String(err)) }, 500)
-  }
+  const formData = await c.req.formData()
+  const referer = c.req.header('referer') || c.req.header('origin') || undefined
+  const data = await CatalogService.analyzeNidPdf(c.env, formData.get('pdf') as File | null, referer)
+  return c.json(data)
 })
 
-// GET /api/services  — list all active services with categories
+// GET /api/services — list all active services with categories
 services.get('/', authOptional, async (c) => {
-  await ensureDefaultServices(c.env.DB)
-
-  const categorySlug = c.req.query('category')
-  const search = c.req.query('q')
-
-  let query = `
-    SELECT s.id, s.name_bn, s.name_en, s.slug, s.description_bn, s.icon, s.price,
-           s.avg_delivery_minutes, s.requires_captcha, s.is_featured, s.fulfillment_mode,
-           s.total_orders, s.success_orders, c.slug as category_slug, c.name_bn as category_name_bn
-    FROM services s
-    LEFT JOIN service_categories c ON c.id = s.category_id
-    WHERE s.status = 'active'
-  `
-  const params: any[] = []
-  if (categorySlug) {
-    query += ' AND c.slug = ?'
-    params.push(categorySlug)
-  }
-  if (search) {
-    query += ' AND (s.name_bn LIKE ? OR s.name_en LIKE ?)'
-    params.push(`%${search}%`, `%${search}%`)
-  }
-  query += ' ORDER BY s.is_featured DESC, s.sort_order ASC'
-
-  const { results } = await c.env.DB.prepare(query).bind(...params).all()
-
-  const categories = await c.env.DB.prepare(
-    `SELECT id, name_bn, name_en, slug, icon FROM service_categories WHERE status = 'active' ORDER BY sort_order ASC`
-  ).all()
-
-  return c.json({ success: true, services: results, categories: categories.results })
+  const result = await CatalogService.listServices(c.env, {
+    category: c.req.query('category'),
+    q: c.req.query('q'),
+  })
+  return c.json({ success: true, ...result })
 })
 
 // GET /api/services/:slug — service detail incl. form_schema for dynamic form rendering
 services.get('/:slug', async (c) => {
-  await ensureDefaultServices(c.env.DB)
-  const paramSlug = c.req.param('slug')
-  const slug = paramSlug === 'nibandan-pdf-create' ? 'nid-create' : paramSlug
-  const service = await c.env.DB.prepare(
-    `SELECT s.id, s.name_bn, s.name_en, s.slug, s.description_bn, s.icon, s.price,
-            s.form_schema, s.avg_delivery_minutes, s.requires_captcha, s.fulfillment_mode,
-            s.total_orders, s.success_orders, c.name_bn as category_name_bn
-     FROM services s
-     LEFT JOIN service_categories c ON c.id = s.category_id
-     WHERE s.slug = ? AND s.status = 'active'`
-  )
-    .bind(slug)
-    .first<any>()
-
-  if (!service) {
-    return c.json({ success: false, message: 'সার্ভিসটি খুঁজে পাওয়া যায়নি।' }, 404)
-  }
-
-  let formSchema = []
-  try {
-    formSchema = JSON.parse(service.form_schema)
-  } catch {
-    formSchema = []
-  }
-
-  return c.json({ success: true, service: { ...service, form_schema: formSchema } })
+  const service = await CatalogService.getServiceBySlug(c.env, c.req.param('slug'))
+  return c.json({ success: true, service })
 })
 
 export default services

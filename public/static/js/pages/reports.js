@@ -31,7 +31,7 @@ async function renderReportsPage() {
 
   let data
   try {
-    data = await API.get('/reports/overview')
+    data = await ReportService.overview()
   } catch (err) {
     content.innerHTML = emptyState('fa-triangle-exclamation', 'রিপোর্ট লোড করা যায়নি', getErrorMessage(err))
     return

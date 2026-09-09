@@ -28,7 +28,7 @@ async function renderWalletPage() {
 
   let summary
   try {
-    summary = await API.get('/wallet/summary')
+    summary = await WalletService.summary()
   } catch (err) {
     content.innerHTML = emptyState('fa-triangle-exclamation', 'তথ্য লোড করা যায়নি', getErrorMessage(err))
     return
@@ -92,7 +92,7 @@ async function renderRechargeTab(container) {
 
   let data
   try {
-    data = await API.get('/wallet/payment-methods')
+    data = await WalletService.paymentMethods()
   } catch (err) {
     container.innerHTML = emptyState('fa-triangle-exclamation', 'পেমেন্ট পদ্ধতি লোড করা যায়নি', getErrorMessage(err))
     return
@@ -238,7 +238,7 @@ async function renderRechargeTab(container) {
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> সাবমিট হচ্ছে...`
     try {
       const fd = new FormData(qs('#recharge-form', container))
-      const res = await API.postForm('/wallet/recharge-request', fd)
+      const res = await WalletService.createRechargeRequest(fd)
       showToast(res.message, 'success')
       qs('#recharge-form', container).reset()
       qs('#rf-proof-label', container).textContent = 'স্ক্রিনশট আপলোড করুন অথবা এখানে টেনে আনুন'
@@ -255,13 +255,13 @@ async function renderRechargeTab(container) {
     const code = qs('#coupon-code', container).value.trim()
     if (!code) return
     try {
-      const res = await API.post('/wallet/redeem-coupon', { code })
+      const res = await WalletService.redeemCoupon(code)
       showToast(res.message, 'success')
       qs('#coupon-code', container).value = ''
       const u = getStoredUser()
-      if (u) { try { const me = await API.get('/auth/me'); setStoredUser({ ...u, balance: me.user.balance }) } catch {} }
+      if (u) { try { const me = await AuthService.me(); setStoredUser({ ...u, balance: me.balance }) } catch {} }
       const bal = qs('#w-stat-balance')
-      if (bal) { try { const s = await API.get('/wallet/summary'); animateCount(bal, s.balance || 0, 600, (n) => formatMoney(n)) } catch {} }
+      if (bal) { try { const s = await WalletService.summary(); animateCount(bal, s.balance || 0, 600, (n) => formatMoney(n)) } catch {} }
     } catch (err) {
       showToast(getErrorMessage(err), 'error')
     }
@@ -275,7 +275,7 @@ async function renderRechargeHistoryTab(container) {
   container.innerHTML = skeletonCard('h-96')
   let data
   try {
-    data = await API.get('/wallet/recharge-requests')
+    data = await WalletService.rechargeRequests()
   } catch (err) {
     container.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
     return
@@ -329,7 +329,7 @@ async function renderTransactionsTab(container) {
     listEl.innerHTML = skeletonCard('h-96')
     let data
     try {
-      data = await API.get(`/wallet/transactions?page=${currentPage}`)
+      data = await WalletService.transactions(currentPage)
     } catch (err) {
       listEl.innerHTML = emptyState('fa-triangle-exclamation', 'লোড করা যায়নি', getErrorMessage(err))
       return

@@ -102,6 +102,7 @@
     }
   </script>
   <link href="/static/css/app.css" rel="stylesheet">
+  <link href="/static/css/design-system-v2.css" rel="stylesheet">
 </head>
 <body class="bg-ink-950 text-slate-100 font-sans antialiased min-h-screen overflow-x-hidden">
   <!-- Live Notice ticker -->
@@ -164,6 +165,14 @@
 
   <script src="/static/js/utils.js" defer></script>
   <script src="/static/js/api.js" defer></script>
+  <!-- Service layer: every API call + client-side business logic lives here -->
+  <script src="/static/js/services/auth.service.js" defer></script>
+  <script src="/static/js/services/catalog.service.js" defer></script>
+  <script src="/static/js/services/order.service.js" defer></script>
+  <script src="/static/js/services/wallet.service.js" defer></script>
+  <script src="/static/js/services/dashboard.service.js" defer></script>
+  <script src="/static/js/services/support.service.js" defer></script>
+  <script src="/static/js/services/admin.service.js" defer></script>
   <script src="/static/js/components.js" defer></script>
   <script src="/static/js/pages/landing.js" defer></script>
   <script src="/static/js/pages/auth.js" defer></script>

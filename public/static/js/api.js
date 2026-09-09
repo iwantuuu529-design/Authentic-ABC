@@ -36,6 +36,7 @@ const API = {
   get(path) { return this.request('GET', path) },
   post(path, data) { return this.request('POST', path, data) },
   put(path, data) { return this.request('PUT', path, data) },
+  patch(path, data) { return this.request('PATCH', path, data) },
   del(path) { return this.request('DELETE', path) },
   postForm(path, formData) { return this.request('POST', path, formData, true) },
   putForm(path, formData) { return this.request('PUT', path, formData, true) },

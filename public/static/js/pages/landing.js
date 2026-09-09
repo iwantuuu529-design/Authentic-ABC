@@ -6,9 +6,9 @@ async function renderLandingPage() {
   let services = []
   let categories = []
   try {
-    const res = await API.get('/services')
-    services = (res.services || []).filter((s) => s.is_featured).slice(0, 6)
-    categories = res.categories || []
+    const catalog = await CatalogService.list()
+    services = catalog.services.filter((s) => s.is_featured).slice(0, 6)
+    categories = catalog.categories
   } catch {}
 
   const user = getStoredUser()

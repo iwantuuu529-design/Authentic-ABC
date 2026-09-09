@@ -46,8 +46,7 @@ async function renderOrdersPage() {
 
     let data
     try {
-      const q = activeStatus ? `?status=${activeStatus}&page=${currentPage}` : `?page=${currentPage}`
-      data = await API.get(`/orders${q}`)
+      data = await OrderService.list({ status: activeStatus, page: currentPage })
     } catch (err) {
       listEl.innerHTML = emptyState('fa-triangle-exclamation', 'অর্ডার লোড করা যায়নি', getErrorMessage(err))
       return
@@ -139,7 +138,7 @@ async function renderOrderDetailPage(params) {
 
   let data
   try {
-    data = await API.get(`/orders/${params.id}`)
+    data = await OrderService.get(params.id)
   } catch (err) {
     content.innerHTML = emptyState('fa-triangle-exclamation', 'অর্ডার পাওয়া যায়নি', getErrorMessage(err), `<a href="/dashboard/orders" data-link class="btn-glow bg-brand-500 text-white text-sm font-bold px-5 py-2.5 rounded-xl">অর্ডার তালিকায় ফিরুন</a>`)
     return

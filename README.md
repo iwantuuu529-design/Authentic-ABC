@@ -139,3 +139,54 @@
 - Real UddoktaPay (or other) auto payment-gateway webhook/callback integration — currently only a placeholder inactive DB row + admin config UI; the actual payment-collect + webhook-verify code path has not been implemented
 - End-to-end UI testing of every admin.js modal/flow in a real browser (only API-level curl testing done this session due to sandbox constraints)
 - OTP/SMS provider integration for phone verification (currently `otp_codes` table exists but no real SMS gateway wired up)
+
+---
+
+## Architecture Update (2026-09-09): Full Service-Layer Refactor + UI/UX v2
+
+### Backend — Service Layer (`src/services/`)
+সব ব্যবসায়িক লজিক (SQL, validation, wallet rules, fulfillment, notifications) এখন route ফাইল থেকে সরিয়ে ডোমেইন-ভিত্তিক সার্ভিস মডিউলে থাকে। রুটগুলো এখন শুধুই পাতলা HTTP অ্যাডাপ্টার: ইনপুট পার্স → সার্ভিস কল → রেসপন্স এনভেলপ।
+
+```
+src/services/
+├── errors.ts                  # ApiError + helpers (badRequest/notFound/conflict…)
+├── auth.service.ts            # register, login (lockout), profile, password
+├── catalog.service.ts         # সার্ভিস লিস্ট/ডিটেইল, ডিফল্ট সিডিং, NID analyze প্রক্সি
+├── order.service.ts           # অর্ডার তৈরি + ফুলফিলমেন্ট ইঞ্জিন (auto/api/hybrid/manual)
+├── wallet.service.ts          # সামারি, লেজার, রিচার্জ রিকোয়েস্ট, কুপন রিডিম
+├── dashboard.service.ts       # ইউজার ড্যাশবোর্ড এগ্রিগেশন
+├── support.service.ts         # টিকেট লাইফসাইকেল (ইউজার + অ্যাডমিন দুই পাশ)
+├── engagement.service.ts      # Notification / Referral / Report / Misc
+└── admin/
+    ├── dashboard.service.ts   # প্ল্যাটফর্ম KPI
+    ├── user.service.ts        # ইউজার ম্যানেজমেন্ট (অনুমোদন/ব্যালেন্স/KYC/ডিলিট)
+    ├── order.service.ts       # অ্যাডমিন অর্ডার কনসোল (অ্যাপ্রুভ/রিজেক্ট/রিফান্ড)
+    ├── recharge.service.ts    # রিচার্জ অনুমোদন + রেফারেল বোনাস
+    ├── catalog.service.ts     # সার্ভিস/ক্যাটাগরি CRUD + রেট আপডেট
+    ├── provider.service.ts    # API প্রোভাইডার CRUD + টেস্ট
+    ├── coupon.service.ts      # কুপন CRUD
+    ├── settings.service.ts    # সেটিংস + পেমেন্ট মেথড/গেটওয়ে
+    └── storage.service.ts     # R2 usage + orphan purge
+```
+
+- **Global error handler**: `app.onError` ApiError → `{success:false, message}` JSON — রুটে আর try/catch বয়লারপ্লেট নেই।
+- **সব অ্যাগ্রেসিভ এন্ড-টু-এন্ড টেস্ট পাস**: রেজিস্ট্রেশন→পেন্ডিং→অনুমোদন→লগইন→রিচার্জ→অনুমোদন→অর্ডার→অটো-ফুলফিলমেন্ট→রিফান্ড/রিজেক্ট ফ্লো।
+
+### Frontend — Service Layer (`public/static/js/services/`)
+ফ্রন্টএন্ডের সব `/api/*` কল এখন ডোমেইন সার্ভিস মডিউলে কেন্দ্রীভূত — পেজ ফাইলগুলোতে কোনো সরাসরি `API.get/post` কল নেই (০টি বাকি):
+`auth / catalog / order / wallet / dashboard / support / admin (dashboard, users, orders, recharge, services, providers, coupons, support, settings, storage) + notification/referral/report/misc`।
+
+### বাগ ফিক্স (রিফ্যাক্টরের সময় ধরা পড়েছে)
+1. **`API.patch()` ছিল না** — অ্যাডমিন "রেট পরিবর্তন" বাটন নীরবে ভাঙা ছিল (`API.patch is not a function`)। API ক্লায়েন্টে `patch()` যোগ + `AdminService.services.updateRate()`।
+2. **`API.delete()` ছিল না** — অ্যাডমিন ইউজার ডিলিট ভাঙা ছিল (মেথড `del()`)। `AdminService.users.remove()` দিয়ে ঠিক।
+3. **`#nav-user-balance` সিলেক্টর ভুল** — টপবার ব্যালেন্স কখনো আপডেট হতো না; এখন সঠিক `#topbar-balance`।
+
+### UI/UX v2 (`public/static/css/design-system-v2.css`)
+- **মোবাইল বটম নেভিগেশন** — ফোনে ৫টি প্রধান সেকশন থাম্ব-রিচে (ইউজার + অ্যাডমিন দুই প্যানেলে)।
+- **ব্যালেন্স চিপ** টপবারে (সব স্ক্রিন সাইজে দৃশ্যমান, ক্লিকে ওয়ালেট)।
+- **অ্যাক্সেসিবিলিটি**: `:focus-visible` রিং, `prefers-reduced-motion` সম্মান, সেম্যান্টিক লেবেল/aria।
+- **অথেনটিকেশন পেজ রিরাইট**: পাসওয়ার্ড দেখানো/লুকানো টগল, ইনলাইন ভ্যালিডেশন (সার্ভার রুল মিরর করে), লাইভ পাসওয়ার্ড-স্ট্রেংথ মিটার, পেন্ডিং-অনুমোদন পেজে "এরপর কী হবে" স্টেপস।
+- ডিজাইন টোকেন, রিফাইনড ফর্ম/টেবিল কম্পোনেন্ট, স্কেলিটন শিমার আপগ্রেড, সফটার পেজ ট্রানজিশন।
+
+### টেক নোট
+- লোকাল ডেভেলপমেন্টে Node ≥ 22.5 প্রয়োজন (`node:sqlite` — d1Adapter)।

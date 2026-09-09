@@ -49,6 +49,29 @@ export const CatalogService = {
         )
         .run()
 
+      // 2b. Restore core catalog services that may be absent on older
+      // production databases (self-heal, idempotent).
+      await db
+        .prepare(
+          `INSERT INTO services (category_id, name_bn, name_en, slug, description_bn, icon, price, cost_price, fulfillment_mode, api_provider_id, field_mapping, form_schema, avg_delivery_minutes, requires_captcha, is_featured, sort_order, status)
+           SELECT 1, 'জন্ম নিবন্ধন যাচাই', 'Birth Certificate Search', 'birth-certificate-search',
+             'জন্ম নিবন্ধন নম্বর ও জন্ম তারিখ দিয়ে সরকারি তথ্য যাচাই করুন।', 'fa-magnifying-glass', 2.00, 0.50, 'hybrid', NULL, '{"ubrn":"ubrn","dob":"dob"}',
+             '[{"name":"ubrn","label_bn":"জন্ম নিবন্ধন নম্বর (UBRN)","type":"text","required":true,"pattern":"^[0-9]{17}$","placeholder":"১৭ ডিজিটের নম্বর দিন"},{"name":"dob","label_bn":"জন্ম তারিখ","type":"date","required":true}]',
+             15, 1, 1, 1, 'active'
+           WHERE NOT EXISTS (SELECT 1 FROM services WHERE slug = 'birth-certificate-search')`
+        )
+        .run()
+      await db
+        .prepare(
+          `INSERT INTO services (category_id, name_bn, name_en, slug, description_bn, icon, price, cost_price, fulfillment_mode, form_schema, avg_delivery_minutes, requires_captcha, is_featured, sort_order, status)
+           SELECT 1, 'জন্ম নিবন্ধন আবেদন', 'Birth Registration Application', 'birth-registration-application',
+             'নতুন জন্ম নিবন্ধনের জন্য সম্পূর্ণ আবেদন ফরম পূরণ করুন।', 'fa-file-signature', 50.00, 20.00, 'manual',
+             '[{"name":"child_name_bn","label_bn":"শিশুর নাম (বাংলা)","type":"text","required":true},{"name":"child_name_en","label_bn":"Child Name (English)","type":"text","required":true},{"name":"dob","label_bn":"জন্ম তারিখ","type":"date","required":true},{"name":"gender","label_bn":"লিঙ্গ","type":"select","options":["পুরুষ","মহিলা","অন্যান্য"],"required":true},{"name":"father_name_bn","label_bn":"পিতার নাম (বাংলা)","type":"text","required":true},{"name":"mother_name_bn","label_bn":"মাতার নাম (বাংলা)","type":"text","required":true},{"name":"address","label_bn":"স্থায়ী ঠিকানা","type":"textarea","required":true}]',
+             1440, 0, 1, 2, 'active'
+           WHERE NOT EXISTS (SELECT 1 FROM services WHERE slug = 'birth-registration-application')`
+        )
+        .run()
+
       const checkNid = await db.prepare("SELECT id FROM services WHERE slug = 'nid-create'").first()
       if (!checkNid) {
         await db

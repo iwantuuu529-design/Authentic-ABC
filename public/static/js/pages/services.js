@@ -288,6 +288,27 @@ async function renderSuperFastPdfServicePage(content, service) {
         </span>
       </div>
 
+      <!-- BDRIS Auto-Fetch Panel: BRN + DOB -> official data auto-fill -->
+      <div class="mb-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-5">
+        <div class="flex items-center gap-2 mb-1 flex-wrap">
+          <i class="fa-solid fa-bolt text-amber-300"></i>
+          <h3 class="text-sm font-black text-white">নিবন্ধন নম্বর দিয়ে অটো তৈরি করুন</h3>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">১০০% অটো</span>
+        </div>
+        <p class="text-xs text-slate-300 mb-4">শুধু জন্ম নিবন্ধন নম্বর ও জন্ম তারিখ দিন — সরকারি ডাটাবেস থেকে নাম, পিতা-মাতা, ঠিকানাসহ সব তথ্য অটোমেটিক ফর্মে চলে আসবে।</p>
+        <div class="grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_auto] gap-3">
+          <input id="bdris-brn-input" type="text" inputmode="numeric" maxlength="17" placeholder="১৭ ডিজিটের জন্ম নিবন্ধন নম্বর"
+                 class="w-full px-4 py-2.5 rounded-xl glass text-sm text-white placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-emerald-500/50 border border-white/10 tracking-widest">
+          <input id="bdris-dob-input" type="date"
+                 class="w-full px-4 py-2.5 rounded-xl glass text-sm text-white outline-none focus:ring-2 focus:ring-emerald-500/50 border border-white/10">
+          <button type="button" id="bdris-fetch-btn"
+                  class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs sm:text-sm font-black transition-all shadow-lg shadow-emerald-500/25 whitespace-nowrap">
+            <i class="fa-solid fa-database"></i> সরকারি ডাটা আনুন
+          </button>
+        </div>
+        <p id="bdris-fetch-msg" class="text-xs mt-2.5 hidden"></p>
+      </div>
+
       <!-- Step 1: Drag-and-drop / Browse PDF or Image Box -->
       <div id="super-pdf-dropzone" class="border-2 border-dashed border-sky-500/40 hover:border-sky-400 bg-sky-500/[0.03] hover:bg-sky-500/[0.08] rounded-2xl p-8 sm:p-12 text-center transition-all cursor-pointer relative group">
         <div class="w-16 h-16 rounded-full bg-sky-500/15 group-hover:bg-sky-500/25 flex items-center justify-center mx-auto mb-4 text-sky-400 group-hover:text-sky-300 group-hover:scale-110 transition-all shadow-lg shadow-sky-500/15">
@@ -557,6 +578,167 @@ async function renderSuperFastPdfServicePage(content, service) {
   const logoInput = qs('#form-logo-input')
   const logoPreview = qs('#form-logo-preview')
   const previewModal = qs('#certificate-modal')
+
+  // --- BDRIS auto-fetch: BRN + DOB -> captcha -> official record -> auto-fill
+  const bdrisBtn = qs('#bdris-fetch-btn')
+  const bdrisMsg = qs('#bdris-fetch-msg')
+  const bdrisBrnInput = qs('#bdris-brn-input')
+  const bdrisDobInput = qs('#bdris-dob-input')
+  let bdrisSessionId = null
+  let bdrisBusy = false
+
+  const bdrisSay = (text, tone) => {
+    if (!bdrisMsg) return
+    bdrisMsg.textContent = text
+    bdrisMsg.className = `text-xs mt-2.5 ${tone === 'error' ? 'text-rose-400' : 'text-emerald-300'}`
+  }
+
+  function mapBdrisRecord(raw) {
+    const d = raw && raw.data && typeof raw.data === 'object' ? { ...raw, ...raw.data } : { ...(raw || {}) }
+    const pick = (...keys) => {
+      for (const k of keys) {
+        const v = d[k]
+        if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim()
+      }
+      return ''
+    }
+    return {
+      name_bn: pick('name_bn', 'nameBangla', 'bangla_name', 'holder_name_bn', 'name', 'holder_name', 'holderName'),
+      name_en: pick('name_en', 'nameEnglish', 'english_name', 'name_eng'),
+      registration_no: pick('registration_no', 'brn', 'birth_registration_no', 'birthRegistrationNo', 'reg_no'),
+      book_no: pick('book_no', 'bookNo', 'pin_no', 'book'),
+      father_name_bn: pick('father_name_bn', 'fatherNameBangla', 'father_name', 'fatherName', 'father'),
+      mother_name_bn: pick('mother_name_bn', 'motherNameBangla', 'mother_name', 'motherName', 'mother'),
+      birth_place: pick('birth_place', 'birthPlace', 'place_of_birth', 'district', 'birth_district'),
+      dob: pick('dob', 'date_of_birth', 'dateOfBirth', 'birth_date', 'birthDate'),
+      gender_blood: pick('gender_blood', 'gender', 'sex'),
+      issue_date: pick('issue_date', 'issueDate'),
+      address: pick('address', 'permanent_address', 'present_address', 'village'),
+    }
+  }
+
+  function fillFormFromBdris(record) {
+    const mapped = mapBdrisRecord(record)
+    const set = (sel, v) => {
+      const el = qs(sel)
+      if (el && v) el.value = v
+    }
+    set('#uf-name-bn', mapped.name_bn)
+    set('#uf-name-en', mapped.name_en)
+    set('#uf-reg-no', mapped.registration_no)
+    set('#uf-book-no', mapped.book_no)
+    set('#uf-father-name', mapped.father_name_bn)
+    set('#uf-mother-name', mapped.mother_name_bn)
+    set('#uf-birth-place', mapped.birth_place)
+    set('#uf-dob', mapped.dob)
+    set('#uf-gender-blood', mapped.gender_blood)
+    set('#uf-issue-date', mapped.issue_date)
+    set('#uf-address', mapped.address)
+    if (formSection) formSection.classList.remove('hidden')
+    return mapped
+  }
+
+  function openBdrisCaptchaModal(captchaImage, onVerify) {
+    openModal(`
+      <div class="p-6">
+        <h3 class="font-black text-base mb-1 flex items-center gap-2"><i class="fa-solid fa-shield-halved text-emerald-400"></i> ক্যাপচা যাচাই</h3>
+        <p class="text-xs text-slate-400 mb-4">সরকারি ডাটাবেসে ঢুকতে নিচের কোডটি লিখুন।</p>
+        <div class="flex justify-center mb-4">
+          ${captchaImage
+            ? `<img id="bdris-modal-img" src="${captchaImage}" alt="ক্যাপচা" class="h-16 rounded-xl ring-1 ring-white/15 bg-white object-contain">`
+            : `<p class="text-xs text-rose-400">ক্যাপচা ইমেজ পাওয়া যায়নি — আবার চেষ্টা করুন।</p>`}
+        </div>
+        <div class="flex gap-2">
+          <input id="bdris-modal-input" type="text" inputmode="numeric" autocomplete="off" placeholder="ক্যাপচা কোড"
+                 class="flex-1 glass rounded-xl px-4 py-3 text-sm outline-none input-glow tracking-widest placeholder:text-slate-500">
+          <button id="bdris-modal-btn" type="button"
+                  class="btn-glow bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold px-5 py-3 rounded-xl whitespace-nowrap">
+            <i class="fa-solid fa-check mr-1.5"></i>যাচাই
+          </button>
+        </div>
+        <p id="bdris-modal-msg" class="text-xs text-rose-400 mt-3 hidden"></p>
+      </div>
+    `, { maxWidth: 'max-w-sm' })
+    const inp = qs('#bdris-modal-input')
+    const btn = qs('#bdris-modal-btn')
+    const msg = qs('#bdris-modal-msg')
+    inp?.focus()
+    async function run() {
+      const code = (inp?.value || '').trim()
+      if (!code) {
+        if (msg) { msg.textContent = 'ক্যাপচা কোডটি লিখুন।'; msg.classList.remove('hidden') }
+        return
+      }
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>হচ্ছে…' }
+      try {
+        await onVerify(code)
+      } catch (err) {
+        if (msg) { msg.textContent = getErrorMessage(err); msg.classList.remove('hidden') }
+        inp?.select()
+        throw err
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check mr-1.5"></i>যাচাই' }
+      }
+    }
+    btn?.addEventListener('click', () => { run().catch(() => {}) })
+    inp?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); run().catch(() => {}) } })
+    return {
+      updateImage(newImage) {
+        const img = qs('#bdris-modal-img')
+        if (img && newImage) img.src = newImage
+      },
+    }
+  }
+
+  async function bdrisStart(brn, dob) {
+    const res = await CatalogService.bdrisStart(brn, dob)
+    bdrisSessionId = res.session_id
+    return res
+  }
+
+  if (bdrisBtn) {
+    bdrisBtn.addEventListener('click', async () => {
+      if (bdrisBusy) return
+      const brn = (bdrisBrnInput?.value || '').trim()
+      const dob = (bdrisDobInput?.value || '').trim()
+      if (!/^\d{13,17}$/.test(brn)) { bdrisSay('সঠিক জন্ম নিবন্ধন নম্বর দিন (১৩–১৭ ডিজিট)।', 'error'); return }
+      if (!dob) { bdrisSay('জন্ম তারিখ দিন।', 'error'); return }
+
+      bdrisBusy = true
+      bdrisBtn.disabled = true
+      bdrisBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> সরকারি সার্ভারে যোগাযোগ হচ্ছে…'
+      bdrisSay('', 'ok')
+      try {
+        const start = await bdrisStart(brn, dob)
+        const modal = openBdrisCaptchaModal(start.captcha_image, async (code) => {
+          try {
+            const out = await CatalogService.bdrisVerify(bdrisSessionId, code)
+            closeModal()
+            const mapped = fillFormFromBdris(out.record)
+            const filled = Object.values(mapped).filter(Boolean).length
+            showToast(filled > 0 ? 'সরকারি ডাটা ফর্মে যুক্ত হয়েছে ✅ এবার নিচে “তৈরি করুন” বাটনে চাপ দিন।' : 'ডাটা পাওয়া গেছে — ফর্ম চেক করে নিন।', 'success')
+            bdrisSay('সরকারি ডাটাবেস থেকে তথ্য আনা সম্পন্ন ✅ ফর্ম অটো-পূরণ হয়েছে।', 'ok')
+            formSection?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          } catch (err) {
+            if (err && err.captcha_issue) {
+              // wrong/expired captcha -> silently issue a fresh one
+              try {
+                const fresh = await bdrisStart(brn, dob)
+                modal.updateImage(fresh.captcha_image)
+              } catch {}
+            }
+            throw err
+          }
+        })
+      } catch (err) {
+        bdrisSay(getErrorMessage(err), 'error')
+      } finally {
+        bdrisBusy = false
+        bdrisBtn.disabled = false
+        bdrisBtn.innerHTML = '<i class="fa-solid fa-database"></i> সরকারি ডাটা আনুন'
+      }
+    })
+  }
 
   browseBtn.addEventListener('click', (e) => {
     e.stopPropagation()

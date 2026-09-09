@@ -6,6 +6,7 @@
 
 import type { Bindings } from '../types/bindings'
 import { ApiError, notFound } from './errors'
+import { getBdrisApiKey, bdrisStartCaptcha, bdrisVerify, fetchCaptchaImage } from '../lib/bdris'
 
 let servicesInitialized = false
 
@@ -171,5 +172,55 @@ export const CatalogService = {
       console.error('NID Analyze Proxy Error:', err)
       throw new ApiError(500, 'সার্ভার সংযোগে ত্রুটি: ' + (err.message || String(err)), { status: 'error' })
     }
+  },
+
+  /**
+   * BDRIS step 1 (pre-order, for the AUTO designer) — starts the govt
+   * lookup and returns the session id + captcha image as a base64 data
+   * URI so the service page can show it inline. Stateless: the client
+   * carries `session_id` forward to bdrisVerify.
+   */
+  async bdrisStart(env: Bindings, brn: string, dob: string) {
+    const cleanBrn = String(brn || '').trim()
+    const cleanDob = String(dob || '').trim()
+    if (!/^\d{13,17}$/.test(cleanBrn)) throw new ApiError(400, 'সঠিক জন্ম নিবন্ধন নম্বর দিন (১৩–১৭ ডিজিট)।')
+    if (!cleanDob) throw new ApiError(400, 'জন্ম তারিখ দিন।')
+
+    const apiKey = await getBdrisApiKey(env.DB, env)
+    const started = await bdrisStartCaptcha(apiKey, cleanBrn, cleanDob)
+    if (!started.ok || !started.sessionId) {
+      throw new ApiError(400, started.error || 'সরকারি সার্ভারে সংযোগ করা যায়নি।')
+    }
+
+    let captchaImage: string | null = null
+    if (started.captchaUrl) {
+      const img = await fetchCaptchaImage(started.captchaUrl)
+      if (img) {
+        const bytes = new Uint8Array(img.bytes)
+        let bin = ''
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i])
+        captchaImage = `data:${img.contentType || 'image/png'};base64,${btoa(bin)}`
+      }
+    }
+    return { session_id: started.sessionId, captcha_image: captchaImage }
+  },
+
+  /**
+   * BDRIS step 2 (pre-order) — verifies the solved captcha and returns
+   * the OFFICIAL record. The designer auto-fills the certificate form
+   * from this data — the platform never invents any of it.
+   */
+  async bdrisVerify(env: Bindings, sessionId: string, captcha: string) {
+    const sid = String(sessionId || '').trim()
+    const code = String(captcha || '').trim()
+    if (!sid) throw new ApiError(400, 'সেশন পাওয়া যায়নি — আবার শুরু করুন।')
+    if (!code) throw new ApiError(400, 'ক্যাপচা কোডটি লিখুন।')
+
+    const apiKey = await getBdrisApiKey(env.DB, env)
+    const result = await bdrisVerify(apiKey, sid, code)
+    if (!result.ok) {
+      throw new ApiError(400, result.error || 'যাচাই ব্যর্থ হয়েছে।', { captcha_issue: Boolean(result.captchaIssue) })
+    }
+    return { record: result.data }
   },
 }

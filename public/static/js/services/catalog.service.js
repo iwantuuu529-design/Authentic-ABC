@@ -29,4 +29,14 @@ const CatalogService = {
     fd.append('pdf', pdfFile, pdfFile.name || 'nid_slip.pdf')
     return API.postForm('/services/nid-analyze', fd)
   },
+
+  /** POST /api/services/bdris/start — BDRIS step 1 (BRN + DOB -> captcha). */
+  async bdrisStart(brn, dob) {
+    return API.post('/services/bdris/start', { brn, dob })
+  },
+
+  /** POST /api/services/bdris/verify — BDRIS step 2 (solved captcha -> official record). */
+  async bdrisVerify(sessionId, captcha) {
+    return API.post('/services/bdris/verify', { session_id: sessionId, captcha })
+  },
 }

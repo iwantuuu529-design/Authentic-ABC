@@ -518,7 +518,7 @@ a[data-link], button, .page-btn {
   flex-direction: row;
   justify-content: center;
   align-items: flex-start;
-  gap: 6mm;
+  gap: 2.5mm;
   background: transparent;
   padding: 8px;
   font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', 'Segoe UI', Arial, sans-serif;
@@ -529,7 +529,7 @@ a[data-link], button, .page-btn {
   flex-direction: row;
   justify-content: center;
   align-items: flex-start;
-  gap: 6mm;
+  gap: 2.5mm;
   background: transparent;
   padding: 0;
   margin: 0 auto;
@@ -544,8 +544,7 @@ a[data-link], button, .page-btn {
   max-height: 53.98mm;
   border: 0.8px solid #000000;
   border-radius: 0px;
-  background-color: #fafcf8;
-  background-image: linear-gradient(135deg, rgba(235, 246, 235, 0.45) 0%, rgba(254, 252, 245, 0.55) 50%, rgba(253, 246, 238, 0.35) 100%);
+  background-color: #ffffff;
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
@@ -562,8 +561,8 @@ a[data-link], button, .page-btn {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 140px;
-  height: 140px;
+  width: 118px;
+  height: 118px;
   pointer-events: none;
   user-select: none;
   z-index: 1;
@@ -576,7 +575,7 @@ a[data-link], button, .page-btn {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  opacity: 0.16;
+  opacity: 0.42;
   pointer-events: none;
   user-select: none;
 }
@@ -593,7 +592,7 @@ a[data-link], button, .page-btn {
 
 @media print {
   @page {
-    size: A4 portrait;
+    size: letter portrait;
     margin: 0;
   }
   html, body {
@@ -678,8 +677,7 @@ a[data-link], button, .page-btn {
     max-height: 53.98mm !important;
     border: 0.8px solid #000000 !important;
     border-radius: 0px !important;
-    background-color: #fafcf8 !important;
-    background-image: linear-gradient(135deg, rgba(235, 246, 235, 0.45) 0%, rgba(254, 252, 245, 0.55) 50%, rgba(253, 246, 238, 0.35) 100%) !important;
+    background-color: #ffffff !important;
     box-shadow: none !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

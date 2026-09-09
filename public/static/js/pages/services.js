@@ -235,8 +235,8 @@ async function renderSuperFastPdfServicePage(content, service) {
 
   const sampleNidPhoto = '/static/img/sample_nid_photo.jpg'
   const sampleNidSign = '/static/img/sample_nid_sign_ripon.svg'
-  const defaultBdGovtLogo = '/static/img/bd_govt_logo.svg'
-  const defaultBdWatermark = '/static/img/bd_nid_watermark.svg'
+  const defaultBdGovtLogo = '/static/img/bd_govt_seal.png'
+  const defaultBdWatermark = '/static/img/bd_emblem_gold.png'
 
   let uploadedPdfFile = null
   let photoBase64 = isNid ? sampleNidPhoto : ''
@@ -1152,16 +1152,16 @@ async function renderSuperFastPdfServicePage(content, service) {
       <svg class="nid-guilloche-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 324 204" preserveAspectRatio="none">
         <defs>
           <pattern id="nid-guilloche-pattern" width="18" height="18" patternUnits="userSpaceOnUse">
-            <path d="M 0 9 Q 4.5 0, 9 9 T 18 9" fill="none" stroke="#006a4e" stroke-width="0.32" opacity="0.08"/>
+            <path d="M 0 9 Q 4.5 0, 9 9 T 18 9" fill="none" stroke="#007000" stroke-width="0.32" opacity="0.08"/>
             <path d="M 0 4.5 Q 4.5 13.5, 9 4.5 T 18 4.5" fill="none" stroke="#c9a030" stroke-width="0.3" opacity="0.07"/>
-            <circle cx="9" cy="9" r="7" fill="none" stroke="#006a4e" stroke-width="0.22" opacity="0.05" stroke-dasharray="1 1.5"/>
+            <circle cx="9" cy="9" r="7" fill="none" stroke="#007000" stroke-width="0.22" opacity="0.05" stroke-dasharray="1 1.5"/>
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#nid-guilloche-pattern)"/>
       </svg>
       <!-- Central 100% Authentic National Monogram Watermark Seal -->
       <div class="nid-watermark-seal">
-        <img src="${wm}" alt="National Monogram Watermark" onerror="this.src='/static/img/bd_nid_watermark.png'">
+        <img src="${wm}" alt="National Monogram Watermark" onerror="this.src='/static/img/bd_emblem_gold.png'">
       </div>
     `
   }
@@ -1217,14 +1217,14 @@ async function renderSuperFastPdfServicePage(content, service) {
             <div class="flex items-center relative z-10" style="min-height: 38px; padding: 2px 4px 0 2px;">
               <!-- Official Bangladesh Emblem Seal -->
               <div style="width: 36px; height: 36px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-right: 6px;">
-                <img src="${certData.logo}" alt="বাংলাদেশ সরকার" style="width: 36px; height: 36px; object-fit: contain; border-radius: 50%; display: block;" onerror="this.src='/static/img/bd_govt_logo.png'">
+                <img src="${certData.logo}" alt="বাংলাদেশ সরকার" style="width: 36px; height: 36px; object-fit: contain; border-radius: 50%; display: block;" onerror="this.src='/static/img/bd_govt_seal.png'">
               </div>
 
               <div class="text-center flex-1" style="overflow: hidden; padding-right: 8px;">
                 <div style="color: #000000; font-weight: 700; font-size: 10pt; line-height: 1.18; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif; white-space: nowrap; letter-spacing: 0.2px;">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</div>
-                <div style="color: #006a4e; font-weight: 700; font-size: 6.8pt; line-height: 1.1; font-family: Arial, 'Segoe UI', sans-serif; letter-spacing: 0.2px; white-space: nowrap; margin-top: 1px;">Government of the People's Republic of Bangladesh</div>
+                <div style="color: #007000; font-weight: 700; font-size: 6.8pt; line-height: 1.1; font-family: Arial, 'Segoe UI', sans-serif; letter-spacing: 0.2px; white-space: nowrap; margin-top: 1px;">Government of the People's Republic of Bangladesh</div>
                 <div style="font-size: 8pt; line-height: 1.2; margin-top: 1.5px; white-space: nowrap;">
-                  <span style="color: #c8102e; font-family: Arial, 'Segoe UI', sans-serif; font-weight: 700;">National ID Card</span><span style="color: #006a4e; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif; font-weight: 700;"> / জাতীয় পরিচয় পত্র</span>
+                  <span style="color: #f00000; font-family: Arial, 'Segoe UI', sans-serif; font-weight: 700;">National ID Card</span><span style="color: #007000; font-family: 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif; font-weight: 700;"> / জাতীয় পরিচয় পত্র</span>
                 </div>
               </div>
             </div>
@@ -1261,11 +1261,11 @@ async function renderSuperFastPdfServicePage(content, service) {
                 </div>
                 <div class="flex items-baseline">
                   <span style="color: #000000; margin-right: 4px; font-size: 8.5pt; font-weight: 500;">Date of Birth:</span>
-                  <strong style="color: #c8102e; font-size: 9.5pt; font-weight: 700; font-family: Arial, 'Segoe UI', sans-serif;">${certData.dob}</strong>
+                  <strong style="color: #f00000; font-size: 9.5pt; font-weight: 700; font-family: Arial, 'Segoe UI', sans-serif;">${certData.dob}</strong>
                 </div>
                 <div class="flex items-baseline">
                   <span style="color: #000000; margin-right: 4px; font-size: 9pt; font-weight: 600;">ID NO:</span>
-                  <strong style="color: #c8102e; font-size: 11.5pt; font-weight: 800; letter-spacing: 0.5px; font-family: 'Courier New', monospace, sans-serif;">${certData.reg_no}</strong>
+                  <strong style="color: #f00000; font-size: 11.5pt; font-weight: 800; letter-spacing: 0.5px; font-family: 'Courier New', monospace, sans-serif;">${certData.reg_no}</strong>
                 </div>
               </div>
             </div>
@@ -1291,7 +1291,7 @@ async function renderSuperFastPdfServicePage(content, service) {
             <div style="border-bottom: 0.75px solid #000000; padding: 2px 8px; font-size: 7.6pt; line-height: 1.2; color: #000000; min-height: 18px;" class="relative z-10 flex items-center justify-between">
               <div>
                 <span>রক্তের গ্রুপ / Blood Group: </span>
-                ${certData.gender_blood ? `<strong style="color: #c8102e; font-weight: 700;">${certData.gender_blood}</strong>` : ''}
+                ${certData.gender_blood ? `<strong style="color: #f00000; font-weight: 700;">${certData.gender_blood}</strong>` : ''}
                 <span style="margin-left: ${certData.gender_blood ? '12px' : '22px'};">জন্মস্থান: </span>
                 <span style="font-weight: 600;">${certData.birth_place || ''}</span>
               </div>
@@ -1630,13 +1630,13 @@ async function renderSuperFastPdfServicePage(content, service) {
       if (!targetEl) return
       const rawRegNo = qs('#uf-reg-no')?.value || 'NID_Card'
       if (window.html2pdf) {
-        showToast('উচ্চমানের A4 PDF প্রস্তুত হচ্ছে...', 'info')
+        showToast('উচ্চমানের PDF প্রস্তুত হচ্ছে (US Letter)...', 'info')
         const opt = {
-          margin: nidWrapper ? [24, 16.4, 0, 16.4] : [10, 10, 10, 10],
+          margin: nidWrapper ? [15.5, 21, 0, 21] : [10, 10, 10, 10],
           filename: `${isNid ? 'NID' : 'Certificate'}_${rawRegNo}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: { scale: 3, useCORS: true, letterRendering: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
         }
         window.html2pdf().set(opt).from(targetEl).save().then(() => {
           showToast('PDF ফাইল সফলভাবে ডাউনলোড হয়েছে!', 'success')

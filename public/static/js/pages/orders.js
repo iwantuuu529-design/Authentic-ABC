@@ -136,6 +136,30 @@ const NID_RESULT_LABELS = {
   address: 'ঠিকানা',
 }
 
+/** Renders a (possibly nested) BDRIS record object as a labeled grid. */
+function renderBdrisRecord(obj, depth) {
+  const SKIP = new Set(['success', 'message', 'msg', 'status', 'key', 'api_key', 'token'])
+  const entries = Object.entries(obj || {}).filter(([k, v]) => {
+    if (SKIP.has(k.toLowerCase())) return false
+    return v !== null && v !== undefined && v !== ''
+  })
+  if (!entries.length) return '<p class="text-sm text-slate-500">কোনো ডাটা পাওয়া যায়নি।</p>'
+  return `<div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+    ${entries.map(([k, v]) => {
+      if (v && typeof v === 'object' && depth < 2) {
+        return `<div class="sm:col-span-2 rounded-lg bg-white/5 ring-1 ring-white/5 p-3">
+          <p class="text-[11px] font-bold text-slate-400 mb-2">${escapeHtml(prettifyFieldName(k))}</p>
+          ${renderBdrisRecord(v, depth + 1)}
+        </div>`
+      }
+      return `<div>
+        <p class="text-[11px] text-slate-500 mb-0.5">${escapeHtml(prettifyFieldName(k))}</p>
+        <p class="text-sm font-semibold break-words">${escapeHtml(String(v))}</p>
+      </div>`
+    }).join('')}
+  </div>`
+}
+
 function renderOrderResult(order) {
   const rd = order.result_data
   if (!rd || typeof rd !== 'object') {
@@ -191,6 +215,21 @@ function renderOrderResult(order) {
       ${files.length ? `<div class="flex flex-wrap gap-3 mt-4">
         ${files.map(([k]) => fileLink(k, `${prettifyFieldName(k)} ফাইল দেখুন`)).join('')}
       </div>` : ''}`
+  }
+
+  // --- Official BDRIS lookup record (govt database result) -------------
+  if (rd.type === 'bdris_result') {
+    const raw = rd.record || {}
+    const payload = raw.data && typeof raw.data === 'object' ? raw.data : raw
+    return `
+      <div class="rounded-xl bg-gradient-to-br from-emerald-500/10 via-transparent to-brand-500/10 ring-1 ring-emerald-500/20 p-5">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider"><i class="fa-solid fa-stamp mr-1.5"></i>সরকারি ডাটাবেস রেজাল্ট</p>
+          <span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/30">✓ ভেরিফাইড</span>
+        </div>
+        ${renderBdrisRecord(payload, 0)}
+        ${rd.completed_at ? `<p class="text-[10px] text-slate-500 mt-4 pt-3 border-t border-white/5">যাচাই সম্পন্ন: ${formatDate(rd.completed_at)}</p>` : ''}
+      </div>`
   }
 
   // --- API lookup / generic key-value result ----------------------------
@@ -281,6 +320,35 @@ async function renderOrderDetailPage(params) {
               </div>` : `<p class="text-sm text-slate-500">কোনো তথ্য পাওয়া যায়নি।</p>`}
           </div>
 
+          ${order.bdris_pending ? `
+          <div class="glass rounded-2xl p-6 bg-violet-500/5 border-violet-500/20" id="bdris-captcha-card">
+            <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
+              <h3 class="font-bold"><i class="fa-solid fa-shield-halved text-violet-400 mr-2"></i>ক্যাপচা যাচাই প্রয়োজন</h3>
+              <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/30">আর ১টি ধাপ বাকি</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">সরকারি ডাটাবেস থেকে আপনার রেকর্ড আনতে নিচের ক্যাপচা কোডটি লিখে যাচাই করুন।</p>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              <div class="relative shrink-0 self-center">
+                <img id="bdris-captcha-img" src="${OrderService.bdrisCaptchaUrl(order.id)}" alt="ক্যাপচা"
+                     class="h-16 min-w-[170px] rounded-xl ring-1 ring-white/15 bg-white object-contain" />
+                <button id="bdris-captcha-refresh" type="button" title="নতুন ক্যাপচা"
+                        class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-violet-500 hover:bg-violet-600 text-white text-xs flex items-center justify-center shadow-lg shadow-violet-500/30">
+                  <i class="fa-solid fa-rotate"></i>
+                </button>
+              </div>
+              <div class="flex-1 flex flex-col sm:flex-row gap-2">
+                <input id="bdris-captcha-input" type="text" inputmode="numeric" autocomplete="off"
+                       placeholder="ক্যাপচা কোড লিখুন"
+                       class="flex-1 glass rounded-xl px-4 py-3 text-sm outline-none input-glow placeholder:text-slate-500 tracking-widest" />
+                <button id="bdris-captcha-submit" type="button"
+                        class="btn-glow bg-violet-500 hover:bg-violet-600 text-white text-sm font-bold px-6 py-3 rounded-xl whitespace-nowrap">
+                  <i class="fa-solid fa-check mr-1.5"></i>যাচাই করুন
+                </button>
+              </div>
+            </div>
+            <p id="bdris-captcha-msg" class="text-xs mt-3 hidden"></p>
+          </div>` : ''}
+
           ${order.status === 'completed' ? `
           <div class="glass rounded-2xl p-6 bg-brand-500/5 border-brand-500/10">
             <h3 class="font-bold mb-4"><i class="fa-solid fa-circle-check text-brand-400 mr-2"></i>ফলাফল</h3>
@@ -328,4 +396,63 @@ async function renderOrderDetailPage(params) {
       </div>
     </div>
   `
+
+  // --- BDRIS captcha solver wiring (interactive lookup) ----------------
+  if (order.bdris_pending) {
+    const img = qs('#bdris-captcha-img')
+    const input = qs('#bdris-captcha-input')
+    const btn = qs('#bdris-captcha-submit')
+    const msg = qs('#bdris-captcha-msg')
+
+    const say = (text, tone) => {
+      if (!msg) return
+      msg.textContent = text
+      msg.className = `text-xs mt-3 ${tone === 'error' ? 'text-rose-400' : 'text-violet-300'}`
+    }
+
+    qs('#bdris-captcha-refresh')?.addEventListener('click', () => {
+      if (img) img.src = OrderService.bdrisCaptchaUrl(order.id)
+      say('নতুন ক্যাপচা আনা হচ্ছে…', 'ok')
+    })
+    img?.addEventListener('error', () => say('ক্যাপচা ইমেজ লোড হয়নি — রিফ্রেশ বাটনে চাপ দিন।', 'error'))
+
+    async function submitBdris() {
+      const code = (input?.value || '').trim()
+      if (!code) {
+        say('ক্যাপচা কোডটি লিখুন।', 'error')
+        input?.focus()
+        return
+      }
+      if (btn) {
+        btn.disabled = true
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>যাচাই হচ্ছে…'
+      }
+      try {
+        await OrderService.verifyBdris(order.id, code)
+        showToast('যাচাই সম্পন্ন হয়েছে ✅ ফলাফল দেখুন', 'success')
+        renderOrderDetailPage(params)
+        return
+      } catch (err) {
+        say(getErrorMessage(err), 'error')
+        if (err && (err.new_captcha || /captcha|ক্যাপচা|মেয়াদ|ভুল/i.test(getErrorMessage(err)))) {
+          if (img) img.src = OrderService.bdrisCaptchaUrl(order.id)
+        }
+        input?.select()
+      } finally {
+        if (btn) {
+          btn.disabled = false
+          btn.innerHTML = '<i class="fa-solid fa-check mr-1.5"></i>যাচাই করুন'
+        }
+      }
+    }
+
+    btn?.addEventListener('click', submitBdris)
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        submitBdris()
+      }
+    })
+    input?.focus()
+  }
 }

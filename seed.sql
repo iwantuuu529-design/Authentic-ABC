@@ -17,7 +17,8 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('promo_card_title', ''),
   ('promo_card_desc', ''),
   ('promo_card_cta_label', ''),
-  ('promo_card_cta_url', '');
+  ('promo_card_cta_url', ''),
+  ('bdris_api_key', '2f5b625b1c1864256f418c8c00ad5307');
 
 -- Default admin account
 -- Login phone: 01835414122  |  password: 52944820

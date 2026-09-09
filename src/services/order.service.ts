@@ -13,7 +13,8 @@ import { callApiProvider } from '../lib/apiProvider'
 import { verifyCaptcha } from '../lib/captcha'
 import { getJwtSecret } from '../lib/jwt'
 import { ApiError, badRequest, notFound } from './errors'
-import { AUTO_DOCUMENT_SLUGS, buildAutoResult } from './fulfillment.service'
+import { AUTO_DOCUMENT_SLUGS, INTERACTIVE_LOOKUPS, buildAutoResult } from './fulfillment.service'
+import { getBdrisApiKey, bdrisStartCaptcha, bdrisVerify, fetchCaptchaImage } from '../lib/bdris'
 
 export interface CreateOrderInput {
   serviceSlug: string
@@ -91,7 +92,21 @@ export const OrderService = {
       formSchema = JSON.parse(order.form_schema)
     } catch {}
 
-    return { order: { ...order, form_data: formData, result_data: resultData, form_schema: formSchema }, logs: logs.results }
+    // Sanitize provider internals: the user only needs to know whether a
+    // BDRIS captcha is waiting — never the raw api_raw_response payload.
+    let bdrisPending = false
+    try {
+      const raw = order.api_raw_response ? JSON.parse(order.api_raw_response) : null
+      bdrisPending = Boolean(
+        order.status === 'processing' && raw?.bdris?.session_id && raw?.bdris?.captcha_url && !raw?.bdris?.failed
+      )
+    } catch {}
+    delete order.api_raw_response
+
+    return {
+      order: { ...order, form_data: formData, result_data: resultData, form_schema: formSchema, bdris_pending: bdrisPending },
+      logs: logs.results,
+    }
   },
 
   /**
@@ -268,6 +283,17 @@ export const OrderService = {
       return
     }
 
+    // Interactive lookup (BDRIS-style): real govt-database query where the
+    // provider requires a human-solved captcha. We start the provider's
+    // captcha step now; the user solves it from the order page and the
+    // order completes with the OFFICIAL record only (never fabricated).
+    const interactiveCfg = INTERACTIVE_LOOKUPS[service.slug]
+    if (interactiveCfg && (service.fulfillment_mode === 'api' || service.fulfillment_mode === 'hybrid')) {
+      const handled = await this.startInteractiveLookup(env, ctx, interactiveCfg)
+      if (handled) return
+      // provider start failed → fall through to the manual queue (hybrid safety)
+    }
+
     if (service.fulfillment_mode === 'api' || service.fulfillment_mode === 'hybrid') {
       if (service.api_provider_id) {
         const provider = await db
@@ -342,6 +368,171 @@ export const OrderService = {
       'info',
       `/dashboard/orders/${orderId}`
     )
+  },
+
+  /**
+   * Interactive lookup — step 1: ask the BDRIS provider for a captcha.
+   * On success the order moves to 'processing' and waits for the user
+   * to solve the captcha from the order page. Returns false when the
+   * provider can't start (hybrid fallback → manual queue).
+   */
+  async startInteractiveLookup(
+    env: Bindings,
+    ctx: { orderId: number; orderNo: string; userId: number; service: any; formValues: Record<string, any> },
+    cfg: { brnField: string; dobField: string }
+  ): Promise<boolean> {
+    const db = env.DB
+    const { orderId, orderNo, userId, service, formValues } = ctx
+
+    const brn = String(formValues[cfg.brnField] || '').trim()
+    const dob = String(formValues[cfg.dobField] || '').trim()
+    if (!/^\d{13,17}$/.test(brn) || !dob) return false
+
+    const apiKey = await getBdrisApiKey(db, env)
+    const started = await bdrisStartCaptcha(apiKey, brn, dob)
+    if (!started.ok || !started.sessionId) {
+      await logOrderEvent(db, orderId, 'system', null, 'api_failed', `BDRIS: ${started.error || 'ক্যাপচা শুরু করা যায়নি'}`)
+      return false
+    }
+
+    const session = {
+      provider: 'bdris',
+      session_id: started.sessionId,
+      captcha_url: started.captchaUrl || '',
+      brn,
+      dob,
+      started_at: new Date().toISOString(),
+    }
+    await db
+      .prepare(`UPDATE orders SET status = 'processing', api_raw_response = ? WHERE id = ?`)
+      .bind(JSON.stringify({ bdris: session }), orderId)
+      .run()
+
+    await logOrderEvent(db, orderId, 'system', null, 'auto_processing', 'সরকারি সার্ভারে পাঠানো হয়েছে — ক্যাপচা সমাধানের অপেক্ষায়')
+    await pushNotification(
+      db,
+      userId,
+      'ক্যাপচা পূরণ করুন 🔐',
+      `আপনার "${service.name_bn}" অর্ডারটি (${orderNo}) এগিয়ে নিতে একটি ক্যাপচা কোড পূরণ করতে হবে। অর্ডার ডিটেইল খুলুন।`,
+      'info',
+      `/dashboard/orders/${orderId}`
+    )
+    return true
+  },
+
+  /**
+   * Streams the pending BDRIS captcha image for an order.
+   * Owner-scoped when `userId` is given; admins call it without.
+   */
+  async getBdrisCaptcha(env: Bindings, orderId: string, userId?: number) {
+    const db = env.DB
+    const order = await db
+      .prepare(`SELECT id, status, api_raw_response FROM orders WHERE id = ?${userId ? ' AND user_id = ?' : ''}`)
+      .bind(...(userId ? [orderId, userId] : [orderId]))
+      .first<any>()
+    if (!order) throw notFound('অর্ডার পাওয়া যায়নি।')
+
+    let session: any = null
+    try {
+      session = order.api_raw_response ? JSON.parse(order.api_raw_response)?.bdris : null
+    } catch {}
+    if (order.status !== 'processing' || !session?.session_id || !session?.captcha_url) {
+      throw badRequest('এই অর্ডারে কোনো ক্যাপচা অপেক্ষায় নেই।')
+    }
+
+    const img = await fetchCaptchaImage(session.captcha_url)
+    if (!img) throw new ApiError(502, 'ক্যাপচা ইমেজ লোড করা যায়নি — একটু পরে আবার চেষ্টা করুন।')
+    return { bytes: img.bytes, contentType: img.contentType }
+  },
+
+  /**
+   * Interactive lookup — step 2: verify the user-solved captcha code.
+   * Success → order completed with the OFFICIAL record from the provider.
+   * Wrong/expired captcha → a fresh captcha is issued automatically.
+   * Terminal provider error → order returns to the manual queue (admin
+   * decides refund/reject) — the platform never invents lookup results.
+   */
+  async verifyBdrisCaptcha(env: Bindings, orderId: string, captchaCode: string, userId?: number) {
+    const db = env.DB
+    const order = await db
+      .prepare(
+        `SELECT o.*, s.name_bn as service_name, s.slug as service_slug
+         FROM orders o JOIN services s ON s.id = o.service_id
+         WHERE o.id = ?${userId ? ' AND o.user_id = ?' : ''}`
+      )
+      .bind(...(userId ? [orderId, userId] : [orderId]))
+      .first<any>()
+    if (!order) throw notFound('অর্ডার পাওয়া যায়নি।')
+
+    let session: any = null
+    try {
+      session = order.api_raw_response ? JSON.parse(order.api_raw_response)?.bdris : null
+    } catch {}
+    if (order.status !== 'processing' || !session?.session_id) {
+      throw badRequest('এই অর্ডারে কোনো ক্যাপচা যাচাই অপেক্ষায় নেই।')
+    }
+
+    const code = String(captchaCode || '').trim()
+    if (!code) throw badRequest('ক্যাপচা কোডটি লিখুন।')
+
+    const apiKey = await getBdrisApiKey(db, env)
+    const result = await bdrisVerify(apiKey, session.session_id, code)
+
+    if (!result.ok) {
+      if (result.captchaIssue) {
+        // Issue a fresh captcha so the user can retry immediately
+        const fresh = await bdrisStartCaptcha(apiKey, session.brn, session.dob)
+        if (fresh.ok && fresh.sessionId) {
+          session = { ...session, session_id: fresh.sessionId, captcha_url: fresh.captchaUrl || '', retried_at: new Date().toISOString() }
+          await db
+            .prepare('UPDATE orders SET api_raw_response = ? WHERE id = ?')
+            .bind(JSON.stringify({ bdris: session }), orderId)
+            .run()
+        }
+        await logOrderEvent(db, orderId, 'system', null, 'note', `ভুল/মেয়াদোত্তীর্ণ ক্যাপচা — নতুন ক্যাপচা দেওয়া হয়েছে`)
+        throw new ApiError(400, result.error || 'ক্যাপচাটি সঠিক নয় — নতুন ক্যাপচা দিয়ে আবার চেষ্টা করুন।', { new_captcha: true })
+      }
+
+      // Terminal provider answer (e.g. record not found) → manual queue
+      session = { ...session, failed: true, last_error: result.error, failed_at: new Date().toISOString() }
+      await db
+        .prepare(`UPDATE orders SET status = 'pending', api_raw_response = ? WHERE id = ?`)
+        .bind(JSON.stringify({ bdris: session }), orderId)
+        .run()
+      await logOrderEvent(db, orderId, 'system', null, 'api_failed', `BDRIS: ${result.error}`)
+      await pushNotification(
+        db,
+        userId,
+        'লুকআপ ব্যর্থ — রিভিউতে আছে ⚠️',
+        `আপনার "${order.service_name}" অর্ডারটি (${order.order_no}) সরকারি সার্ভারে পাওয়া যায়নি। এডমিন রিভিউ করে রিফান্ড/সমাধান জানাবেন।`,
+        'warning',
+        `/dashboard/orders/${orderId}`
+      )
+      throw new ApiError(400, result.error || 'সরকারি ডাটাবেজে রেকর্ড পাওয়া যায়নি।')
+    }
+
+    // Success — complete the order with the official record
+    const resultData = {
+      type: 'bdris_result',
+      service_slug: order.service_slug || 'birth-certificate-search',
+      record: result.data,
+      completed_at: new Date().toISOString(),
+    }
+    await db
+      .prepare(`UPDATE orders SET status = 'completed', result_data = ?, api_raw_response = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?`)
+      .bind(JSON.stringify(resultData), JSON.stringify({ bdris: session }), orderId)
+      .run()
+    await db.prepare('UPDATE services SET success_orders = success_orders + 1 WHERE id = ?').bind(order.service_id).run()
+    await logOrderEvent(db, orderId, 'system', null, 'api_success', 'সরকারি ডাটাবেস থেকে রেকর্ড পাওয়া গেছে ✅')
+    await pushNotification(
+      db,
+      userId,
+      'জন্ম নিবন্ধন যাচাই সম্পন্ন ✅',
+      `আপনার "${order.service_name}" অর্ডারটি (${order.order_no}) সফলভাবে সম্পন্ন হয়েছে। ফলাফল দেখতে অর্ডার ডিটেইল খুলুন।`,
+      'success',
+      `/dashboard/orders/${orderId}`
+    )
+    return { orderId }
   },
 
   /**

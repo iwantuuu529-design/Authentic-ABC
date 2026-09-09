@@ -71,6 +71,14 @@ const AdminService = {
       }
       return API.putForm(`/admin/orders/${id}/approve`, fd)
     },
+    /** Cache-busted URL for a pending BDRIS lookup captcha (admin view). */
+    bdrisCaptchaUrl(id) {
+      return `/api/admin/orders/${id}/bdris-captcha?t=${Date.now()}`
+    },
+    /** Admin solves the BDRIS captcha on the customer's behalf. */
+    verifyBdris(id, captcha) {
+      return API.post(`/admin/orders/${id}/bdris-verify`, { captcha })
+    },
     reject(id, reason) {
       return API.put(`/admin/orders/${id}/reject`, { reason })
     },

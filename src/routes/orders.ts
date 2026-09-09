@@ -41,6 +41,28 @@ orders.get('/:id/upload/:fieldName', authRequired, async (c) => {
   })
 })
 
+// GET /api/orders/:id/bdris-captcha — streams the pending BDRIS lookup
+// captcha image (owner-scoped) so the user can solve it on the order page.
+orders.get('/:id/bdris-captcha', authRequired, async (c) => {
+  const user = c.get('user')!
+  const img = await OrderService.getBdrisCaptcha(c.env, c.req.param('id'), user.id)
+  return new Response(img.bytes as any, {
+    headers: {
+      'Content-Type': img.contentType,
+      'Cache-Control': 'no-store',
+    },
+  })
+})
+
+// POST /api/orders/:id/bdris-verify — submits the solved captcha code,
+// completing the lookup with the official record on success.
+orders.post('/:id/bdris-verify', authRequired, async (c) => {
+  const user = c.get('user')!
+  const body = await c.req.json().catch(() => ({}))
+  const result = await OrderService.verifyBdrisCaptcha(c.env, c.req.param('id'), body?.captcha, user.id)
+  return c.json({ success: true, message: 'যাচাই সম্পন্ন হয়েছে ✅', ...result })
+})
+
 // POST /api/orders — create a new order (supports multipart for file fields)
 orders.post('/', authRequired, async (c) => {
   const user = c.get('user')!

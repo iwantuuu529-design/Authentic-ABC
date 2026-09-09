@@ -325,6 +325,13 @@ async function renderAdminOrderDetail(params) {
     ;(order.form_schema || []).forEach((f) => { fieldTypeByName[f.name] = f.type })
     const canAct = !['completed', 'rejected', 'refunded'].includes(order.status)
 
+    // BDRIS interactive lookup: admin can solve the pending captcha here
+    let bdrisPending = false
+    try {
+      const raw = order.api_raw_response ? JSON.parse(order.api_raw_response) : null
+      bdrisPending = Boolean(order.status === 'processing' && raw?.bdris?.session_id && raw?.bdris?.captcha_url && !raw?.bdris?.failed)
+    } catch {}
+
     content.innerHTML = `
       <div class="max-w-5xl mx-auto space-y-6">
         <a href="/admin/orders" data-link class="text-xs text-slate-400 hover:text-brand-400 flex items-center gap-1.5"><i class="fa-solid fa-arrow-left"></i> সব অর্ডার</a>
@@ -371,6 +378,34 @@ async function renderAdminOrderDetail(params) {
                 </div>` : `<p class="text-sm text-slate-500">কোনো তথ্য পাওয়া যায়নি।</p>`}
             </div>
 
+            ${bdrisPending ? `
+            <div class="glass rounded-2xl p-6 bg-violet-500/5 border-violet-500/20">
+              <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
+                <h3 class="font-bold"><i class="fa-solid fa-shield-halved text-violet-400 mr-2"></i>BDRIS ক্যাপচা সমাধান করুন</h3>
+                <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/30">ইউজারের পক্ষে যাচাই</span>
+              </div>
+              <p class="text-xs text-slate-400 mb-4">কাস্টমার ক্যাপচা পূরণ না করলে আপনি এখানে কোড লিখে যাচাই সম্পন্ন করতে পারেন।</p>
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                <div class="relative shrink-0 self-center">
+                  <img id="ab-captcha-img" src="${AdminService.orders.bdrisCaptchaUrl(order.id)}" alt="ক্যাপচা"
+                       class="h-16 min-w-[170px] rounded-xl ring-1 ring-white/15 bg-white object-contain" />
+                  <button id="ab-captcha-refresh" type="button" title="নতুন ক্যাপচা"
+                          class="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-violet-500 hover:bg-violet-600 text-white text-xs flex items-center justify-center shadow-lg shadow-violet-500/30">
+                    <i class="fa-solid fa-rotate"></i>
+                  </button>
+                </div>
+                <div class="flex-1 flex flex-col sm:flex-row gap-2">
+                  <input id="ab-captcha-input" type="text" inputmode="numeric" autocomplete="off" placeholder="ক্যাপচা কোড লিখুন"
+                         class="flex-1 glass rounded-xl px-4 py-3 text-sm outline-none input-glow placeholder:text-slate-500 tracking-widest" />
+                  <button id="ab-captcha-submit" type="button"
+                          class="btn-glow bg-violet-500 hover:bg-violet-600 text-white text-sm font-bold px-6 py-3 rounded-xl whitespace-nowrap">
+                    <i class="fa-solid fa-check mr-1.5"></i>যাচাই করুন
+                  </button>
+                </div>
+              </div>
+              <p id="ab-captcha-msg" class="text-xs mt-3 hidden"></p>
+            </div>` : ''}
+
             ${order.status === 'completed' ? `
             <div class="glass rounded-2xl p-6 bg-brand-500/5 border-brand-500/10">
               <h3 class="font-bold mb-4"><i class="fa-solid fa-circle-check text-brand-400 mr-2"></i>ফলাফল</h3>
@@ -404,6 +439,59 @@ async function renderAdminOrderDetail(params) {
         </div>
       </div>
     `
+
+    if (bdrisPending) {
+      const abImg = qs('#ab-captcha-img')
+      const abInput = qs('#ab-captcha-input')
+      const abBtn = qs('#ab-captcha-submit')
+      const abMsg = qs('#ab-captcha-msg')
+      const abSay = (text, tone) => {
+        if (!abMsg) return
+        abMsg.textContent = text
+        abMsg.className = `text-xs mt-3 ${tone === 'error' ? 'text-rose-400' : 'text-violet-300'}`
+      }
+      qs('#ab-captcha-refresh')?.addEventListener('click', () => {
+        if (abImg) abImg.src = AdminService.orders.bdrisCaptchaUrl(order.id)
+        abSay('নতুন ক্যাপচা আনা হচ্ছে…', 'ok')
+      })
+      abImg?.addEventListener('error', () => abSay('ক্যাপচা ইমেজ লোড হয়নি — রিফ্রেশ বাটনে চাপ দিন।', 'error'))
+      async function abSubmit() {
+        const code = (abInput?.value || '').trim()
+        if (!code) {
+          abSay('ক্যাপচা কোডটি লিখুন।', 'error')
+          abInput?.focus()
+          return
+        }
+        if (abBtn) {
+          abBtn.disabled = true
+          abBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>যাচাই হচ্ছে…'
+        }
+        try {
+          await AdminService.orders.verifyBdris(order.id, code)
+          showToast('যাচাই সম্পন্ন হয়েছে ✅', 'success')
+          load()
+          return
+        } catch (err) {
+          abSay(getErrorMessage(err), 'error')
+          if (err && (err.new_captcha || /captcha/i.test(getErrorMessage(err)))) {
+            if (abImg) abImg.src = AdminService.orders.bdrisCaptchaUrl(order.id)
+          }
+          abInput?.select()
+        } finally {
+          if (abBtn) {
+            abBtn.disabled = false
+            abBtn.innerHTML = '<i class="fa-solid fa-check mr-1.5"></i>যাচাই করুন'
+          }
+        }
+      }
+      abBtn?.addEventListener('click', abSubmit)
+      abInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          abSubmit()
+        }
+      })
+    }
 
     qs('#ao-approve-btn')?.addEventListener('click', () => openOrderApproveModal(order, load))
     qs('#ao-reject-btn')?.addEventListener('click', async () => {

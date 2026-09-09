@@ -5,7 +5,7 @@
 import { Hono } from 'hono'
 import type { AppEnv } from '../../types/bindings'
 import { sanitizeText } from '../../utils/validate'
-import { AdminOrderService } from '../../services'
+import { AdminOrderService, OrderService } from '../../services'
 
 const adminOrders = new Hono<AppEnv>()
 
@@ -24,6 +24,26 @@ adminOrders.get('/', async (c) => {
 adminOrders.get('/:id', async (c) => {
   const result = await AdminOrderService.getOrderDetail(c.env, c.req.param('id'))
   return c.json({ success: true, ...result })
+})
+
+// GET /api/admin/orders/:id/bdris-captcha — stream the pending BDRIS
+// lookup captcha so admin can solve it on the customer's behalf.
+adminOrders.get('/:id/bdris-captcha', async (c) => {
+  const img = await OrderService.getBdrisCaptcha(c.env, c.req.param('id'))
+  return new Response(img.bytes as any, {
+    headers: {
+      'Content-Type': img.contentType,
+      'Cache-Control': 'no-store',
+    },
+  })
+})
+
+// POST /api/admin/orders/:id/bdris-verify — admin submits the solved
+// captcha code; completes the order with the official record on success.
+adminOrders.post('/:id/bdris-verify', async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const result = await OrderService.verifyBdrisCaptcha(c.env, c.req.param('id'), body?.captcha)
+  return c.json({ success: true, message: 'যাচাই সম্পন্ন হয়েছে ✅', ...result })
 })
 
 // GET /api/admin/orders/:id/upload/:fieldName — stream a user-uploaded

@@ -45,6 +45,18 @@ export const HUMAN_SLUGS = new Set<string>([
   'custom-request',
 ])
 
+/**
+ * INTERACTIVE lookups: real govt-database queries that need a human to
+ * solve a provider captcha mid-flow. The engine starts the provider's
+ * captcha step on order creation; the user (or admin) solves it from the
+ * order page; the order completes with the OFFICIAL returned record only.
+ *
+ *   slug → { brnField, dobField } : where the lookup keys live in form_data
+ */
+export const INTERACTIVE_LOOKUPS: Record<string, { brnField: string; dobField: string }> = {
+  'birth-certificate-search': { brnField: 'ubrn', dobField: 'dob' },
+}
+
 export interface AutoResult {
   resultData: Record<string, any>
   /** note written to order_logs */
@@ -115,9 +127,10 @@ export function buildAutoResult(
   }
 }
 
-/** Returns the fulfillment family for a service (auto_document | lookup | human | generic). */
-export function serviceFamily(slug: string, fulfillmentMode: string): 'auto_document' | 'lookup' | 'human' | 'generic' {
+/** Returns the fulfillment family for a service (auto_document | interactive_lookup | lookup | human | generic). */
+export function serviceFamily(slug: string, fulfillmentMode: string): 'auto_document' | 'interactive_lookup' | 'lookup' | 'human' | 'generic' {
   if (AUTO_DOCUMENT_SLUGS.has(slug) || fulfillmentMode === 'auto') return 'auto_document'
+  if (INTERACTIVE_LOOKUPS[slug]) return 'interactive_lookup'
   if (LOOKUP_SLUGS.has(slug)) return 'lookup'
   if (HUMAN_SLUGS.has(slug)) return 'human'
   return 'generic'

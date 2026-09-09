@@ -62,4 +62,14 @@ const OrderService = {
   uploadFileUrl(id, fieldName) {
     return `/api/orders/${id}/upload/${encodeURIComponent(fieldName)}`
   },
+
+  /** Cache-busted URL for the pending BDRIS lookup captcha image. */
+  bdrisCaptchaUrl(id) {
+    return `/api/orders/${id}/bdris-captcha?t=${Date.now()}`
+  },
+
+  /** POST /api/orders/:id/bdris-verify — submits the solved captcha code. */
+  async verifyBdris(id, captcha) {
+    return API.post(`/orders/${id}/bdris-verify`, { captcha })
+  },
 }

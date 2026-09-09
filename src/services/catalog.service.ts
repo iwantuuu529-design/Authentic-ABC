@@ -65,6 +65,30 @@ export const CatalogService = {
           )
           .run()
       }
+
+      // 3. Per-service fulfillment logic (mirrors migrations 0003/0004 so
+      // production D1 self-heals without running wrangler migrations):
+      //    - doc-generation services -> auto
+      //    - lookups -> hybrid + correct field_mapping
+      //    - bdris_api_key setting
+      await db.prepare(`UPDATE services SET fulfillment_mode = 'auto' WHERE slug IN ('nid-create', 'nibandan-pdf-create', 'nid-make')`).run()
+      await db.prepare(`UPDATE services SET fulfillment_mode = 'hybrid', field_mapping = '{"ubrn":"ubrn","dob":"dob"}' WHERE slug = 'birth-certificate-search'`).run()
+      await db
+        .prepare(
+          `UPDATE services SET fulfillment_mode = 'hybrid', field_mapping = '{"name":"name","father_name":"father_name","year_from":"year_from","year_to":"year_to","gender":"gender"}' WHERE slug = 'birth-ministry-data'`
+        )
+        .run()
+      await db.prepare(`UPDATE services SET fulfillment_mode = 'hybrid', field_mapping = '{"nid_number":"nid_number","dob":"dob"}' WHERE slug = 'nid-sign-copy'`).run()
+      await db
+        .prepare(
+          `UPDATE services SET fulfillment_mode = 'hybrid', field_mapping = '{"district":"district","upazila":"upazila","mouza":"mouza","khatian_no":"khatian_no","owner_name":"owner_name"}' WHERE slug = 'land-dakhila-finder'`
+        )
+        .run()
+      await db
+        .prepare(`UPDATE services SET field_mapping = '{"nid_number":"nid_number","dob":"dob"}' WHERE slug = 'nid-server-copy' AND (field_mapping IS NULL OR field_mapping = '')`)
+        .run()
+      await db.prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES ('bdris_api_key', '2f5b625b1c1864256f418c8c00ad5307')`).run()
+
       servicesInitialized = true
     } catch (err) {
       console.error('ensureDefaultServices error:', err)

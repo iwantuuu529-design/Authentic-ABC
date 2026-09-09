@@ -13,6 +13,7 @@ import { callApiProvider } from '../lib/apiProvider'
 import { verifyCaptcha } from '../lib/captcha'
 import { getJwtSecret } from '../lib/jwt'
 import { ApiError, badRequest, notFound } from './errors'
+import { AUTO_DOCUMENT_SLUGS, buildAutoResult } from './fulfillment.service'
 
 export interface CreateOrderInput {
   serviceSlug: string
@@ -218,12 +219,20 @@ export const OrderService = {
 
     await this.fulfill(env, { orderId, orderNo, userId, service, formValues, fileKeys })
 
-    return db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first()
+    const created = await db.prepare('SELECT * FROM orders WHERE id = ?').bind(orderId).first<any>()
+    // Parse JSON blobs so the create-response matches the detail-response shape
+    try {
+      created.form_data = JSON.parse(created.form_data)
+    } catch {}
+    try {
+      created.result_data = created.result_data ? JSON.parse(created.result_data) : null
+    } catch {}
+    return created
   },
 
   /**
-   * Fulfillment engine.
-   *  - auto / nid-create : build the NID result card instantly
+   * Fulfillment engine — config-driven via FulfillmentService.
+   *  - auto (AUTO_DOCUMENT family) : build the service-specific result instantly
    *  - api               : call configured provider; refund on failure
    *  - hybrid            : call provider; fall back to manual review
    *  - manual            : notify + wait for admin
@@ -235,39 +244,23 @@ export const OrderService = {
     const db = env.DB
     const { orderId, orderNo, userId, service, formValues, fileKeys } = ctx
 
-    if (service.fulfillment_mode === 'auto' || service.slug === 'nid-create') {
-      // Instant Auto Fulfillment
-      const nidResultData = {
-        type: 'nid_card',
-        service_slug: service.slug,
-        name_bn: formValues.name_bn || '',
-        name_en: formValues.name_en || '',
-        registration_no: formValues.registration_no || '',
-        book_no: formValues.book_no || '',
-        father_name_bn: formValues.father_name_bn || '',
-        mother_name_bn: formValues.mother_name_bn || '',
-        birth_place: formValues.birth_place || '',
-        dob: formValues.dob || '',
-        gender_blood: formValues.gender_blood || '',
-        issue_date: formValues.issue_date || '',
-        address: formValues.address || '',
-        photo_file: fileKeys['photo_file'] || formValues['photo_file'] || null,
-        sign_file: fileKeys['sign_file'] || formValues['sign_file'] || null,
-        completed_at: new Date().toISOString(),
-      }
+    if (service.fulfillment_mode === 'auto' || AUTO_DOCUMENT_SLUGS.has(service.slug)) {
+      // Instant auto fulfillment — per-service result builder packages the
+      // user-submitted data (the server never invents data on its own).
+      const { resultData, logNote, notifTitle } = buildAutoResult(service, formValues, fileKeys)
 
       await db
         .prepare(`UPDATE orders SET status = 'completed', result_data = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?`)
-        .bind(JSON.stringify(nidResultData), orderId)
+        .bind(JSON.stringify(resultData), orderId)
         .run()
 
       await db.prepare('UPDATE services SET success_orders = success_orders + 1 WHERE id = ?').bind(service.id).run()
 
-      await logOrderEvent(db, orderId, 'system', null, 'auto_completed', 'স্বয়ংক্রিয়ভাবে এনআইডি কার্ড তৈরি সম্পন্ন হয়েছে')
+      await logOrderEvent(db, orderId, 'system', null, 'auto_completed', logNote)
       await pushNotification(
         db,
         userId,
-        'এনআইডি তৈরি সম্পন্ন ✅',
+        notifTitle,
         `আপনার "${service.name_bn}" অর্ডারটি (${orderNo}) স্বয়ংক্রিয়ভাবে সম্পন্ন হয়েছে। ওয়ালেট থেকে ৳${service.price} ফি কর্তন করা হয়েছে।`,
         'success',
         `/dashboard/orders/${orderId}`

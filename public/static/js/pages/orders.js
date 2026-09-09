@@ -114,8 +114,99 @@ function prettifyFieldName(name) {
   return String(name || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+// ------------------------------------------------------------
+// Result renderer — understands the structured result_data shapes
+// produced by the per-service fulfillment engine:
+//   type=nid_card      → document preview (photo + signature + fields)
+//   type=auto_document → submitted fields grid + file links
+//   anything else      → generic key/value grid (API lookup results)
+// ------------------------------------------------------------
+
+const NID_RESULT_LABELS = {
+  name_bn: 'নাম (বাংলা)',
+  name_en: 'নাম (ইংরেজি)',
+  registration_no: 'নিবন্ধন নম্বর',
+  book_no: 'বই / পিন নম্বর',
+  father_name_bn: 'পিতার নাম',
+  mother_name_bn: 'মাতার নাম',
+  birth_place: 'জন্মস্থান',
+  dob: 'জন্ম তারিখ',
+  gender_blood: 'লিঙ্গ / রক্তের গ্রুপ',
+  issue_date: 'প্রদানের তারিখ',
+  address: 'ঠিকানা',
+}
+
+function renderOrderResult(order) {
+  const rd = order.result_data
+  if (!rd || typeof rd !== 'object') {
+    return `<p class="text-sm whitespace-pre-wrap">${escapeHtml(String(rd ?? ''))}</p>`
+  }
+
+  const fileLink = (fieldName, label) => `
+    <a href="/api/orders/${order.id}/upload/${encodeURIComponent(fieldName)}" target="_blank"
+       class="btn-glow inline-flex items-center gap-2 bg-brand-500/15 text-brand-400 ring-1 ring-brand-500/30 text-xs font-semibold px-3 py-2 rounded-lg">
+      <i class="fa-solid fa-eye"></i> ${escapeHtml(label)}
+    </a>`
+
+  // --- NID / certificate card produced by the auto pipeline -------------
+  if (rd.type === 'nid_card') {
+    const fields = Object.entries(NID_RESULT_LABELS)
+      .map(([k, label]) => ({ k, label, v: rd[k] }))
+      .filter((f) => f.v)
+    return `
+      <div class="rounded-xl bg-gradient-to-br from-brand-500/10 via-transparent to-violet-500/10 ring-1 ring-brand-500/20 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <p class="text-xs font-bold text-brand-400 uppercase tracking-wider"><i class="fa-solid fa-id-card mr-1.5"></i>ডকুমেন্ট প্রিভিউ</p>
+          <span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">✓ অটো-সম্পন্ন</span>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-5">
+          <div class="flex sm:flex-col gap-4 shrink-0">
+            ${rd.photo_file ? `<div><img src="/api/orders/${order.id}/upload/photo_file" alt="ছবি" class="w-24 h-28 object-cover rounded-lg ring-1 ring-white/10 bg-white/5" onerror="this.outerHTML='<div class=\\'w-24 h-28 rounded-lg bg-white/5 ring-1 ring-white/10 flex items-center justify-center text-slate-600\\'><i class=\\'fa-solid fa-user text-2xl\\'></i></div>'"></div>` : ''}
+            ${rd.sign_file ? `<div><img src="/api/orders/${order.id}/upload/sign_file" alt="স্বাক্ষর" class="w-24 h-12 object-contain rounded-lg ring-1 ring-white/10 bg-white/90 p-1" onerror="this.remove()"></div>` : ''}
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 flex-1">
+            ${fields.map((f) => `
+              <div>
+                <p class="text-[11px] text-slate-500 mb-0.5">${escapeHtml(f.label)}</p>
+                <p class="text-sm font-semibold break-words">${escapeHtml(String(f.v))}</p>
+              </div>`).join('') || '<p class="text-sm text-slate-500">কোনো ফিল্ড ডাটা পাওয়া যায়নি।</p>'}
+          </div>
+        </div>
+        ${rd.source_pdf ? `<div class="mt-4 pt-3 border-t border-white/5">${fileLink('pdf_file', 'সোর্স পিডিএফ দেখুন')}</div>` : ''}
+      </div>`
+  }
+
+  // --- Generic auto document --------------------------------------------
+  if (rd.type === 'auto_document') {
+    const fields = Object.entries(rd.fields || {}).filter(([, v]) => v !== '' && v != null)
+    const files = Object.entries(rd.files || {})
+    return `
+      ${fields.length ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        ${fields.map(([k, v]) => `
+          <div>
+            <p class="text-xs text-slate-500 mb-1">${escapeHtml(prettifyFieldName(k))}</p>
+            <p class="text-sm font-medium break-words">${escapeHtml(String(v))}</p>
+          </div>`).join('')}
+      </div>` : ''}
+      ${files.length ? `<div class="flex flex-wrap gap-3 mt-4">
+        ${files.map(([k]) => fileLink(k, `${prettifyFieldName(k)} ফাইল দেখুন`)).join('')}
+      </div>` : ''}`
+  }
+
+  // --- API lookup / generic key-value result ----------------------------
+  return `
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      ${Object.entries(rd).map(([k, v]) => `
+        <div>
+          <p class="text-xs text-slate-500 mb-1">${escapeHtml(prettifyFieldName(k))}</p>
+          <p class="text-sm font-medium break-words">${typeof v === 'object' ? escapeHtml(JSON.stringify(v)) : escapeHtml(String(v ?? '-'))}</p>
+        </div>`).join('')}
+    </div>`
+}
+
 const ORDER_LOG_ICON = {
   created: { icon: 'fa-plus', color: 'text-sky-400 bg-sky-500/10' },
+  auto_completed: { icon: 'fa-bolt', color: 'text-brand-400 bg-brand-500/10' },
   auto_processing: { icon: 'fa-bolt', color: 'text-violet-400 bg-violet-500/10' },
   api_success: { icon: 'fa-circle-check', color: 'text-brand-400 bg-brand-500/10' },
   api_failed: { icon: 'fa-triangle-exclamation', color: 'text-amber-400 bg-amber-500/10' },
@@ -199,14 +290,7 @@ async function renderOrderDetailPage(params) {
               </a>` : ''}
             ${order.result_data ? `
               <div class="mt-4 ${order.result_file_key ? 'pt-4 border-t border-white/5' : ''}">
-                ${typeof order.result_data === 'object' ? `
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    ${Object.entries(order.result_data).map(([k, v]) => `
-                      <div>
-                        <p class="text-xs text-slate-500 mb-1">${escapeHtml(prettifyFieldName(k))}</p>
-                        <p class="text-sm font-medium break-words">${escapeHtml(String(v ?? '-'))}</p>
-                      </div>`).join('')}
-                  </div>` : `<p class="text-sm whitespace-pre-wrap">${escapeHtml(String(order.result_data))}</p>`}
+                ${renderOrderResult(order)}
               </div>` : ''}
             ${!order.result_file_key && !order.result_data ? `<p class="text-sm text-slate-500">ফলাফল শীঘ্রই আপডেট করা হবে।</p>` : ''}
           </div>` : ''}

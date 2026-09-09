@@ -2,6 +2,21 @@
 // Services catalog + dynamic order form
 // ============================================================
 
+/**
+ * Human-friendly processing-type label, mirrors the backend
+ * FulfillmentService.processingLabel() families:
+ *   auto   → instant document generation (Super-Fast pipeline)
+ *   api    → fully automated via configured provider
+ *   hybrid → provider dispatch with manual fallback
+ *   manual → processed by an admin
+ */
+function serviceModeBadge(mode) {
+  if (mode === 'auto') return { icon: 'fa-bolt text-emerald-400', label: 'ইনস্ট্যান্ট অটো' }
+  if (mode === 'api') return { icon: 'fa-bolt text-brand-400', label: 'স্বয়ংক্রিয়' }
+  if (mode === 'hybrid') return { icon: 'fa-arrows-spin text-violet-400', label: 'অটো + ম্যানুয়াল' }
+  return { icon: 'fa-user-gear', label: 'ম্যানুয়াল' }
+}
+
 async function renderServicesPage() {
   qs('#app').innerHTML = `<div class="page-enter">${dashboardShell(USER_NAV, '/dashboard/services')}</div>`
   bindShellEvents()
@@ -48,13 +63,13 @@ async function renderServicesPage() {
           <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-400/20 to-violet-500/20 flex items-center justify-center">
             <i class="fa-solid ${s.icon || 'fa-file-lines'} text-brand-400 text-lg"></i>
           </div>
-          ${(s.slug === 'nid-create' || s.slug === 'nid-make' || s.slug === 'nibandan-pdf-create') ? '<span class="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">⚡ সুপার ফাস্ট</span>' : (s.is_featured ? '<span class="text-[10px] font-bold px-2 py-1 rounded-full bg-violet-500/15 text-violet-300">জনপ্রিয়</span>' : '')}
+          ${(s.slug === 'nid-create' || s.slug === 'nid-make' || s.slug === 'nibandan-pdf-create' || s.fulfillment_mode === 'auto') ? '<span class="text-[10px] font-bold px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">⚡ সুপার ফাস্ট</span>' : (s.is_featured ? '<span class="text-[10px] font-bold px-2 py-1 rounded-full bg-violet-500/15 text-violet-300">জনপ্রিয়</span>' : '')}
         </div>
         <h3 class="font-bold mb-1.5">${escapeHtml(s.name_bn)}</h3>
         <p class="text-slate-400 text-xs mb-4 line-clamp-2 h-8">${escapeHtml(s.description_bn || '')}</p>
         <div class="flex items-center justify-between text-xs text-slate-500 mb-4">
           <span><i class="fa-regular fa-clock mr-1"></i>${s.avg_delivery_minutes < 60 ? toBnDigits(s.avg_delivery_minutes) + ' মিনিট' : toBnDigits(Math.round(s.avg_delivery_minutes / 60)) + ' ঘন্টা'}</span>
-          <span><i class="fa-solid ${s.fulfillment_mode === 'api' ? 'fa-bolt text-brand-400' : 'fa-user-gear'} mr-1"></i>${s.fulfillment_mode === 'api' ? 'স্বয়ংক্রিয়' : s.fulfillment_mode === 'hybrid' ? 'হাইব্রিড' : 'ম্যানুয়াল'}</span>
+          <span><i class="fa-solid ${serviceModeBadge(s.fulfillment_mode).icon} mr-1"></i>${serviceModeBadge(s.fulfillment_mode).label}</span>
         </div>
         <div class="flex items-center justify-between">
           <span class="font-extrabold text-brand-400 text-lg">${formatMoney(s.price)}</span>
@@ -142,7 +157,7 @@ async function renderServiceOrderPage(params) {
             </div>
             <div class="flex items-center justify-between">
               <span class="text-slate-400">প্রসেসিং টাইপ</span>
-              <span class="font-semibold">${service.fulfillment_mode === 'api' ? '⚡ স্বয়ংক্রিয়' : service.fulfillment_mode === 'hybrid' ? '🔄 হাইব্রিড' : '👤 ম্যানুয়াল'}</span>
+              <span class="font-semibold">${service.fulfillment_mode === 'auto' ? '⚡ ইনস্ট্যান্ট অটো' : service.fulfillment_mode === 'api' ? '⚡ স্বয়ংক্রিয়' : service.fulfillment_mode === 'hybrid' ? '🔄 অটো + ম্যানুয়াল' : '👤 ম্যানুয়াল'}</span>
             </div>
           </div>
         </div>

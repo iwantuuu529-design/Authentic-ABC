@@ -37,6 +37,25 @@ export function createLocalD1Database(dbFilePath?: string): D1Database {
       console.log('[D1 Adapter] Seed data applied.')
     }
   } else {
+    // Apply pending migrations (0002+) on every startup. They are idempotent
+    // (deterministic UPDATEs / INSERT OR IGNORE), so re-running is safe and
+    // keeps older local databases in sync with the latest per-service logic.
+    try {
+      const migrationsDir = path.join(rootDir, 'migrations')
+      const migrationFiles = fs
+        .readdirSync(migrationsDir)
+        .filter((f) => f.endsWith('.sql') && !f.startsWith('0001'))
+        .sort()
+      for (const file of migrationFiles) {
+        db.exec(fs.readFileSync(path.join(migrationsDir, file), 'utf-8'))
+      }
+      if (migrationFiles.length) {
+        console.log(`[D1 Adapter] Re-applied migrations: ${migrationFiles.join(', ')}`)
+      }
+    } catch (e) {
+      console.error('[D1 Adapter] Error applying migrations:', e)
+    }
+
     // Ensure the NID CREATE (nid-create) service is present even if DB was previously initialized
     try {
       db.prepare(`
@@ -58,7 +77,7 @@ export function createLocalD1Database(dbFilePath?: string): D1Database {
           (category_id, name_bn, name_en, slug, description_bn, icon, price, cost_price, fulfillment_mode, form_schema, avg_delivery_minutes, requires_captcha, is_featured, sort_order, status)
           VALUES
           (2, 'এনআইডি ক্রিয়েট', 'NID CREATE', 'nid-create',
-           'পিডিএফ আপলোড করে অটো-প্রসেসিংয়ের মাধ্যমে ইউনিক ফরম্যাটে এনআইডি কার্ড প্রস্তুত করুন।', 'fa-id-card', 4.00, 1.00, 'manual',
+           'পিডিএফ আপলোড করে অটো-প্রসেসিংয়ের মাধ্যমে ইউনিক ফরম্যাটে এনআইডি কার্ড প্রস্তুত করুন।', 'fa-id-card', 4.00, 1.00, 'auto',
            '[{"name":"pdf_file","label_bn":"পিডিএফ আপলোড করুন","type":"file","accept":".pdf","required":true},{"name":"name_bn","label_bn":"নাম (বাংলা)","type":"text","required":true},{"name":"name_en","label_bn":"নাম (ইংরেজি)","type":"text","required":true},{"name":"registration_no","label_bn":"এনআইডি নম্বর","type":"text","required":true},{"name":"book_no","label_bn":"পিন নম্বর","type":"text","required":false},{"name":"father_name_bn","label_bn":"পিতার নাম","type":"text","required":true},{"name":"mother_name_bn","label_bn":"মাতার নাম","type":"text","required":true},{"name":"birth_place","label_bn":"জন্মস্থান","type":"text","required":true},{"name":"dob","label_bn":"জন্ম তারিখ","type":"text","required":true},{"name":"gender_blood","label_bn":"রক্তের গ্রুপ / লিঙ্গ","type":"text","required":false},{"name":"issue_date","label_bn":"প্রদানের তারিখ","type":"text","required":false},{"name":"address","label_bn":"ঠিকানা","type":"textarea","required":true}]',
            5, 0, 1, 1, 'active')
         `).run()

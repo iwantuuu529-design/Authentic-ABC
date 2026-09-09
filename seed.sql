@@ -41,7 +41,7 @@ INSERT OR IGNORE INTO services
  (id, category_id, name_bn, name_en, slug, description_bn, icon, price, cost_price, fulfillment_mode, api_provider_id, field_mapping, form_schema, avg_delivery_minutes, requires_captcha, is_featured, sort_order, status)
 VALUES
 (1, 1, 'জন্ম নিবন্ধন যাচাই', 'Birth Certificate Search', 'birth-certificate-search',
- 'জন্ম নিবন্ধন নম্বর ও জন্ম তারিখ দিয়ে সরকারি তথ্য যাচাই করুন।', 'fa-magnifying-glass', 2.00, 0.50, 'manual', NULL, NULL,
+ 'জন্ম নিবন্ধন নম্বর ও জন্ম তারিখ দিয়ে সরকারি তথ্য যাচাই করুন।', 'fa-magnifying-glass', 2.00, 0.50, 'hybrid', NULL, '{"ubrn":"ubrn","dob":"dob"}',
  '[{"name":"ubrn","label_bn":"জন্ম নিবন্ধন নম্বর (UBRN)","type":"text","required":true,"pattern":"^[0-9]{17}$","placeholder":"১৭ ডিজিটের নম্বর দিন"},{"name":"dob","label_bn":"জন্ম তারিখ","type":"date","required":true}]',
  15, 1, 1, 1, 'active'),
 
@@ -51,12 +51,12 @@ VALUES
  1440, 0, 1, 2, 'active'),
 
 (3, 1, 'জন্ম নিবন্ধন মন্ত্রণালয় তথ্য', 'Birth Ministry Data Lookup', 'birth-ministry-data',
- 'নাম, পিতার নাম, জন্ম সাল দিয়ে বিস্তারিত অনুসন্ধান।', 'fa-database', 130.00, 60.00, 'manual', NULL, NULL,
+ 'নাম, পিতার নাম, জন্ম সাল দিয়ে বিস্তারিত অনুসন্ধান।', 'fa-database', 130.00, 60.00, 'hybrid', NULL, '{"name":"name","father_name":"father_name","year_from":"year_from","year_to":"year_to","gender":"gender"}',
  '[{"name":"name","label_bn":"নাম","type":"text","required":true},{"name":"father_name","label_bn":"পিতার নাম","type":"text","required":false},{"name":"year_from","label_bn":"জন্ম সাল (শুরু)","type":"number","required":false},{"name":"year_to","label_bn":"জন্ম সাল (শেষ)","type":"number","required":false},{"name":"gender","label_bn":"লিঙ্গ","type":"select","options":["পুরুষ","মহিলা"],"required":false}]',
  720, 1, 0, 3, 'active'),
 
 (4, 2, 'এনআইডি মেক', 'NID Make', 'nid-make',
- 'পিডিএফ আপলোড করে এনআইডি কার্ড তৈরি করুন।', 'fa-id-badge', 2.00, 0.50, 'manual', NULL, NULL,
+ 'পিডিএফ আপলোড করে এনআইডি কার্ড তৈরি করুন।', 'fa-id-badge', 2.00, 0.50, 'auto', NULL, NULL,
  '[{"name":"pdf_file","label_bn":"পিডিএফ আপলোড করুন","type":"file","accept":".pdf","required":true}]',
  20, 0, 1, 4, 'active'),
 
@@ -76,12 +76,12 @@ VALUES
  5, 1, 1, 7, 'active'),
 
 (8, 2, 'এনআইডি সাইন কপি', 'NID Sign Copy', 'nid-sign-copy',
- 'সরকারি ডাটাবেজ থেকে স্বাক্ষর কপি সংগ্রহ করুন।', 'fa-signature', 20.00, 8.00, 'manual', NULL, NULL,
+ 'সরকারি ডাটাবেজ থেকে স্বাক্ষর কপি সংগ্রহ করুন।', 'fa-signature', 20.00, 8.00, 'hybrid', NULL, '{"nid_number":"nid_number","dob":"dob"}',
  '[{"name":"nid_number","label_bn":"এনআইডি নম্বর","type":"text","required":true},{"name":"dob","label_bn":"জন্ম তারিখ","type":"date","required":true}]',
  45, 1, 0, 8, 'active'),
 
 (9, 3, 'ভূমি দাখিলা ফাইন্ডার', 'Land Dakhila Finder', 'land-dakhila-finder',
- 'জমির খতিয়ান ও দাখিলা তথ্য খুঁজুন।', 'fa-map-pin', 150.00, 70.00, 'manual', NULL, NULL,
+ 'জমির খতিয়ান ও দাখিলা তথ্য খুঁজুন।', 'fa-map-pin', 150.00, 70.00, 'hybrid', NULL, '{"district":"district","upazila":"upazila","mouza":"mouza","khatian_no":"khatian_no","owner_name":"owner_name"}',
  '[{"name":"district","label_bn":"জেলা","type":"text","required":true},{"name":"upazila","label_bn":"উপজেলা","type":"text","required":true},{"name":"mouza","label_bn":"মৌজা","type":"text","required":true},{"name":"khatian_no","label_bn":"খতিয়ান নম্বর","type":"text","required":false},{"name":"owner_name","label_bn":"মালিকের নাম","type":"text","required":false}]',
  2880, 1, 0, 9, 'active'),
 
@@ -91,7 +91,7 @@ VALUES
  1440, 0, 0, 10, 'active'),
 
 (11, 1, 'নিবন্ধন পিডিএফ তৈরি', 'NIBANDAN PDF CREATE', 'nibandan-pdf-create',
- 'পিডিএফ আপলোড করে অটো-প্রসেসিংয়ের মাধ্যমে ইউনিক ফরম্যাটে জন্ম নিবন্ধন সনদ প্রস্তুত করুন।', 'fa-file-pdf', 4.00, 1.00, 'manual', NULL, NULL,
+ 'পিডিএফ আপলোড করে অটো-প্রসেসিংয়ের মাধ্যমে ইউনিক ফরম্যাটে জন্ম নিবন্ধন সনদ প্রস্তুত করুন।', 'fa-file-pdf', 4.00, 1.00, 'auto', NULL, NULL,
  '[{"name":"pdf_file","label_bn":"পিডিএফ আপলোড করুন","type":"file","accept":".pdf","required":true},{"name":"name_bn","label_bn":"নাম (বাংলা)","type":"text","required":true},{"name":"name_en","label_bn":"নাম (ইংরেজি)","type":"text","required":true},{"name":"registration_no","label_bn":"নিবন্ধন নম্বর","type":"text","required":true},{"name":"book_no","label_bn":"পিন / বুক নম্বর","type":"text","required":false},{"name":"father_name_bn","label_bn":"পিতার নাম","type":"text","required":true},{"name":"mother_name_bn","label_bn":"মাতার নাম","type":"text","required":true},{"name":"birth_place","label_bn":"জন্মস্থান","type":"text","required":true},{"name":"dob","label_bn":"জন্ম তারিখ","type":"text","required":true},{"name":"gender_blood","label_bn":"লিঙ্গ / রক্তের গ্রুপ","type":"text","required":false},{"name":"issue_date","label_bn":"প্রদানের তারিখ","type":"text","required":false},{"name":"address","label_bn":"ঠিকানা","type":"textarea","required":true}]',
  5, 0, 1, 1, 'active');
 

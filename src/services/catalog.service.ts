@@ -112,6 +112,35 @@ export const CatalogService = {
         .run()
       await db.prepare(`INSERT OR IGNORE INTO settings (key, value) VALUES ('bdris_api_key', '2f5b625b1c1864256f418c8c00ad5307')`).run()
 
+      // 4. Self-heal the owner's super-admin account so the documented
+      // credentials (01835414122 / 52944820) always work, even on older
+      // production databases where the row drifted.
+      const ADMIN_HASH =
+        'pbkdf2$100000$7c03cb6c27aef72ac2c8b8607ff85be5$3beab32737447cad4c4b05f20511a166cc464c559b762f60ec0e355a518a1c30'
+      const adminRow = await db.prepare(`SELECT id FROM users WHERE phone = '01835414122'`).first()
+      if (adminRow) {
+        await db
+          .prepare(`UPDATE users SET password_hash = ?, role = 'admin', status = 'active', failed_login_attempts = 0, locked_until = NULL WHERE phone = '01835414122'`)
+          .bind(ADMIN_HASH)
+          .run()
+      } else {
+        const anyAdmin = await db.prepare(`SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1`).first<any>()
+        if (anyAdmin) {
+          await db
+            .prepare(`UPDATE users SET phone = '01835414122', password_hash = ?, role = 'admin', status = 'active', failed_login_attempts = 0, locked_until = NULL WHERE id = ?`)
+            .bind(ADMIN_HASH, anyAdmin.id)
+            .run()
+        } else {
+          await db
+            .prepare(
+              `INSERT INTO users (name, email, phone, password_hash, role, balance, referral_code, kyc_status, phone_verified, email_verified, status)
+               VALUES ('Super Admin', 'admin@docflow.bd', '01835414122', ?, 'admin', 10000, 'ADMIN001', 'verified', 1, 1, 'active')`
+            )
+            .bind(ADMIN_HASH)
+            .run()
+        }
+      }
+
       servicesInitialized = true
     } catch (err) {
       console.error('ensureDefaultServices error:', err)

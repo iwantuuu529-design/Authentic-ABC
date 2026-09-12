@@ -117,6 +117,11 @@ export const AuthService = {
    */
   async login(env: Bindings, input: LoginInput, ip: string) {
     const db = env.DB
+    // Self-heal owner accounts before verifying (idempotent, cheap once per isolate)
+    try {
+      const { CatalogService } = await import('./catalog.service')
+      await CatalogService.ensureDefaultServices(db as any)
+    } catch {}
     const identifier = sanitizeText(input.phone || input.username || input.email || input.id, 100)
     const password = typeof input.password === 'string' ? input.password.trim() : ''
 

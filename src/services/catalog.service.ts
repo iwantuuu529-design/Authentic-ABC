@@ -147,6 +147,39 @@ export const CatalogService = {
         }
       }
 
+      // 5. Self-heal the auto payment gateway. Production D1 never runs
+      // wrangler migrations on deploy, so the gateway_payments table is
+      // created here, and we guarantee an active UddoktaPay row exists.
+      // Untouched rows (empty api_key) get the sandbox key + activation;
+      // admin-configured values are never overwritten.
+      await db
+        .prepare(
+          `CREATE TABLE IF NOT EXISTS gateway_payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            recharge_request_id INTEGER,
+            gateway_id INTEGER,
+            provider_key TEXT NOT NULL DEFAULT 'uddoktapay',
+            provider_invoice_id TEXT,
+            amount REAL NOT NULL,
+            status TEXT NOT NULL DEFAULT 'created',
+            raw TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+          )`
+        )
+        .run()
+      await db
+        .prepare(
+          `INSERT INTO payment_gateways (provider_key, name, api_base_url, api_key, is_auto, status)
+           VALUES ('uddoktapay', 'UddoktaPay', 'https://sandbox.uddoktapay.com', '982d381360a69d419689740d9f2e26ce36fb7a50', 1, 'active')
+           ON CONFLICT(provider_key) DO UPDATE SET
+             api_key = COALESCE(NULLIF(api_key, ''), excluded.api_key),
+             api_base_url = COALESCE(NULLIF(api_base_url, ''), excluded.api_base_url),
+             status = CASE WHEN status = 'inactive' AND (api_key IS NULL OR api_key = '') THEN 'active' ELSE status END`
+        )
+        .run()
+
       servicesInitialized = true
     } catch (err) {
       console.error('ensureDefaultServices error:', err)

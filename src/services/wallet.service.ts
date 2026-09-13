@@ -9,6 +9,7 @@ import { generateRequestNo } from '../utils/crypto'
 import { sanitizeText, isValidBDPhone } from '../utils/validate'
 import { pushNotification } from '../lib/notify'
 import { creditWallet } from '../lib/wallet'
+import { uddoktaCreateCheckout, uddoktaVerifyPayment } from '../lib/uddoktapay'
 import { ApiError, badRequest, notFound, conflict } from './errors'
 
 const VALID_METHODS = ['bkash', 'nagad', 'rocket', 'upay', 'other']
@@ -194,9 +195,126 @@ export const WalletService = {
       .bind(coupon.id, userId, 'standalone_redeem', bonusAmount)
       .run()
 
-    await pushNotification(db, userId, 'কুপন রিডিম সফল 🎁', `৳${bonusAmount} আপনার ওয়ালেটে যোগ হয়েছে।`, 'success')
+    await pushNotification(db, userId, 'কুপন রিডিম সফল 🎁', `${bonusAmount} আপনার ওয়ালেটে যোগ হয়েছে।`, 'success')
 
     return { message: `৳${bonusAmount} সফলভাবে যোগ হয়েছে!`, bonus: bonusAmount }
+  },
+
+
+  // ------------------------- AUTO RECHARGE (UddoktaPay) -------------------------
+
+  /**
+   * Starts an automatic recharge through the UddoktaPay gateway:
+   * creates a pending auto recharge request + gateway payment row,
+   * opens a checkout on the gateway and returns the payment URL.
+   */
+  async startAutoRecharge(env: Bindings, userId: number, amountRaw: unknown, origin: string) {
+    const db = env.DB
+    const amount = Math.round(parseFloat(String(amountRaw)))
+    const minRow = await db.prepare(`SELECT value FROM settings WHERE key = 'min_recharge_amount'`).first<any>()
+    const min = parseFloat(minRow?.value || '50')
+    if (!amount || amount < min) throw badRequest(`সর্বনিম্ন রিচার্জ ৳${min}।`)
+    if (amount > 100000) throw badRequest('সর্বোচ্চ রিচার্জ ৳১,০০,০০০।')
+
+    const gateway = await db
+      .prepare(`SELECT * FROM payment_gateways WHERE provider_key = 'uddoktapay' AND status = 'active' AND is_auto = 1`)
+      .first<any>()
+    if (!gateway || !gateway.api_key) throw badRequest('অটো পেমেন্ট গেটওয়ে সক্রিয় নেই — ম্যানুয়াল রিচার্জ ব্যবহার করুন।')
+
+    const user = await db.prepare('SELECT name, phone, email FROM users WHERE id = ?').bind(userId).first<any>()
+
+    const requestNo = generateRequestNo()
+    const reqIns = await db
+      .prepare(
+        `INSERT INTO recharge_requests (request_no, user_id, method, sender_number, whatsapp_number, transaction_id, amount, is_auto, status)
+         VALUES (?, ?, 'uddoktapay', ?, ?, '', ?, 1, 'pending')`
+      )
+      .bind(requestNo, userId, user?.phone || '', user?.phone || '', amount)
+      .run()
+    const requestId = reqIns.meta.last_row_id as number
+
+    const gpIns = await db
+      .prepare(
+        `INSERT INTO gateway_payments (user_id, recharge_request_id, gateway_id, provider_key, amount, status)
+         VALUES (?, ?, ?, 'uddoktapay', ?, 'created')`
+      )
+      .bind(userId, requestId, gateway.id, amount)
+      .run()
+    const gpId = gpIns.meta.last_row_id as number
+
+    const out = await uddoktaCreateCheckout(
+      { baseUrl: gateway.api_base_url, apiKey: gateway.api_key },
+      {
+        amount,
+        fullName: user?.name || `User ${userId}`,
+        email: user?.email || `user${userId}@docflow.bd`,
+        phone: user?.phone,
+        reference: `GP${gpId}`,
+        redirectUrl: `${origin}/dashboard/wallet?pay=success`,
+        cancelUrl: `${origin}/dashboard/wallet?pay=cancel`,
+        webhookUrl: `${origin}/api/webhooks/uddoktapay`,
+      }
+    )
+
+    if (!out.ok) {
+      await db.prepare(`UPDATE gateway_payments SET status = 'failed', raw = ? WHERE id = ?`).bind(JSON.stringify({ error: out.error }), gpId).run()
+      await db.prepare(`UPDATE recharge_requests SET status = 'rejected', admin_note = ? WHERE id = ?`).bind(`গেটওয়ে এরর: ${out.error}`, requestId).run()
+      throw new ApiError(502, out.error || 'পেমেন্ট শুরু করা যায়নি।')
+    }
+
+    await db
+      .prepare(`UPDATE gateway_payments SET provider_invoice_id = ?, raw = ? WHERE id = ?`)
+      .bind(out.invoiceId || '', JSON.stringify({ payment_url: out.paymentUrl }), gpId)
+      .run()
+    await db.prepare(`UPDATE recharge_requests SET transaction_id = ? WHERE id = ?`).bind(out.invoiceId || '', requestId).run()
+
+    return {
+      payment_url: out.paymentUrl || `${String(gateway.api_base_url).replace(/\/+$/, '')}/pay/${out.invoiceId}`,
+      invoice_id: out.invoiceId,
+      request_id: requestId,
+    }
+  },
+
+  /**
+   * Verifies a gateway payment (after user redirect or webhook) and,
+   * when paid, completes the recharge exactly like an admin approval
+   * (wallet credit + first-recharge referral bonus). Idempotent.
+   */
+  async verifyAutoRecharge(env: Bindings, userId: number | null, invoiceId: string) {
+    const db = env.DB
+    const sid = String(invoiceId || '').trim()
+    if (!sid) throw badRequest('ইনভয়েস আইডি দিন।')
+
+    const gp = await db
+      .prepare(`SELECT * FROM gateway_payments WHERE provider_invoice_id = ?${userId ? ' AND user_id = ?' : ''}`)
+      .bind(...(userId ? [sid, userId] : [sid]))
+      .first<any>()
+    if (!gp) throw notFound('পেমেন্টটি খুঁজে পাওয়া যায়নি।')
+    if (gp.status === 'paid') return { already: true, message: 'পেমেন্ট ইতোমধ্যে সম্পন্ন হয়েছে।' }
+
+    const gateway = await db.prepare(`SELECT * FROM payment_gateways WHERE id = ?`).bind(gp.gateway_id).first<any>()
+    if (!gateway || !gateway.api_key) throw badRequest('গেটওয়ে কনফিগারেশন পাওয়া যায়নি।')
+
+    const v = await uddoktaVerifyPayment({ baseUrl: gateway.api_base_url, apiKey: gateway.api_key }, sid)
+    if (!v.ok) throw new ApiError(502, v.error || 'পেমেন্ট ভেরিফাই করা যায়নি।')
+    if (!v.paid) {
+      await db.prepare(`UPDATE gateway_payments SET status = 'failed', raw = ? WHERE id = ?`).bind(JSON.stringify(v.data || {}), gp.id).run()
+      throw badRequest('পেমেন্ট এখনো সম্পন্ন হয়নি — পেমেন্ট শেষ হলে আবার চেষ্টা করুন।')
+    }
+
+    await db.prepare(`UPDATE gateway_payments SET status = 'paid', raw = ? WHERE id = ?`).bind(JSON.stringify(v.data || {}), gp.id).run()
+
+    // Complete the recharge through the same path as admin approval
+    // (null admin = system actor; logAdminAction is skipped for it).
+    const { AdminRechargeService } = await import('./admin/recharge.service')
+    try {
+      await AdminRechargeService.approve(env, null, String(gp.recharge_request_id))
+    } catch (e: any) {
+      // Recharge may have already been approved (duplicate webhook/redirect) — not fatal.
+      if (!String(e?.message || '').includes('ইতোমধ্যে')) throw e
+    }
+
+    return { paid: true, message: 'পেমেন্ট সফল — ব্যালেন্স যোগ হয়েছে! ✅' }
   },
 }
 

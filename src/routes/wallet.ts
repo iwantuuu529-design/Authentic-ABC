@@ -28,6 +28,23 @@ wallet.get('/payment-methods', authRequired, async (c) => {
   return c.json({ success: true, ...result })
 })
 
+// POST /api/wallet/recharge/auto — start UddoktaPay auto-recharge checkout
+wallet.post('/recharge/auto', authRequired, async (c) => {
+  const user = c.get('user')!
+  const body: any = await c.req.json().catch(() => ({}))
+  const origin = new URL(c.req.url).origin
+  const result = await WalletService.startAutoRecharge(c.env, user.id, body.amount, origin)
+  return c.json({ success: true, ...result })
+})
+
+// POST /api/wallet/recharge/auto/verify — buyer returned with invoice_id
+wallet.post('/recharge/auto/verify', authRequired, async (c) => {
+  const user = c.get('user')!
+  const body: any = await c.req.json().catch(() => ({}))
+  const result = await WalletService.verifyAutoRecharge(c.env, user.id, String(body.invoice_id || ''))
+  return c.json({ success: true, ...result })
+})
+
 // POST /api/wallet/recharge-request — manual recharge (with proof upload)
 wallet.post('/recharge-request', authRequired, async (c) => {
   const user = c.get('user')!

@@ -59,7 +59,7 @@ export const AdminRechargeService = {
    * referral bonus ONLY on the referred user's first APPROVED recharge
    * (protects against fake/self-referral abuse via unapproved requests).
    */
-  async approve(env: Bindings, adminId: number, requestId: string) {
+  async approve(env: Bindings, adminId: number | null, requestId: string) {
     const db = env.DB
 
     const req = await db.prepare('SELECT * FROM recharge_requests WHERE id = ?').bind(requestId).first<any>()
@@ -73,7 +73,9 @@ export const AdminRechargeService = {
       .bind(adminId, requestId)
       .run()
 
-    await logAdminAction(db, adminId, 'recharge_approved', 'recharge_request', parseInt(requestId), `৳${req.amount}`)
+    if (adminId) {
+      await logAdminAction(db, adminId, 'recharge_approved', 'recharge_request', parseInt(requestId), `৳${req.amount}`)
+    }
     await pushNotification(
       db,
       req.user_id,

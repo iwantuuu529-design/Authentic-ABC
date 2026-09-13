@@ -45,6 +45,16 @@ const WalletService = {
     return API.get('/wallet/recharge-requests')
   },
 
+  /** POST /api/wallet/recharge/auto — start UddoktaPay auto-recharge checkout. */
+  async startAutoRecharge(amount) {
+    return API.post('/wallet/recharge/auto', { amount })
+  },
+
+  /** POST /api/wallet/recharge/auto/verify — verify after gateway redirect. */
+  async verifyAutoRecharge(invoiceId) {
+    return API.post('/wallet/recharge/auto/verify', { invoice_id: invoiceId })
+  },
+
   /** POST /api/wallet/redeem-coupon */
   async redeemCoupon(code) {
     return API.post('/wallet/redeem-coupon', { code })

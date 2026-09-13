@@ -12,6 +12,7 @@ import support from './routes/support'
 import reports from './routes/reports'
 import referral from './routes/referral'
 import misc from './routes/misc'
+import webhooks from './routes/webhooks'
 import admin from './routes/admin'
 
 const app = new Hono<AppEnv>()
@@ -55,6 +56,7 @@ app.route('/api/notifications', notifications)
 app.route('/api/support', support)
 app.route('/api/reports', reports)
 app.route('/api/referral', referral)
+app.route('/api/webhooks', webhooks)
 app.route('/api', misc)
 app.route('/api/admin', admin)
 

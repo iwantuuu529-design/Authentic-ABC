@@ -10,7 +10,7 @@ import { hashPassword, verifyPassword, generateReferralCode } from '../utils/cry
 import { isValidBDPhone, isValidEmail, isStrongPassword, sanitizeText } from '../utils/validate'
 import { signToken, getJwtSecret } from '../lib/jwt'
 import { pushNotification } from '../lib/notify'
-import { ApiError, badRequest, conflict, unauthorized } from './errors'
+import { ApiError, badRequest, conflict, forbidden, unauthorized } from './errors'
 
 export interface RegisterInput {
   name?: unknown

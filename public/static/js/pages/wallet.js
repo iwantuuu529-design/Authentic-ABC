@@ -11,6 +11,29 @@ const RECHARGE_METHOD_LABELS = {
 }
 
 async function renderWalletPage() {
+  // ---- Returning from an auto payment gateway (UddoktaPay)? ----
+  // The gateway redirects back to /dashboard/wallet?pay=success&invoice_id=...
+  // We pull-verify the invoice, credit the wallet and reload.
+  const qp = new URLSearchParams(window.location.search)
+  const payState = qp.get('pay')
+  const payInvoice = qp.get('invoice_id')
+  if (payState) {
+    window.history.replaceState({}, '', window.location.pathname)
+    if (payState === 'cancel') {
+      showToast('পেমেন্ট বাতিল করা হয়েছে — ব্যালেন্স যোগ হয়নি।', 'error')
+    } else if (payState === 'success' && payInvoice) {
+      showToast('আপনার পেমেন্ট যাচাই করা হচ্ছে…', 'info')
+      try {
+        const res = await WalletService.verifyAutoRecharge(payInvoice)
+        showToast(res.message || 'পেমেন্ট সফল — ব্যালেন্স যোগ হয়েছে! ✅', 'success')
+        setTimeout(() => window.location.reload(), 1500)
+      } catch (err) {
+        showToast(getErrorMessage(err), 'error')
+      }
+      return
+    }
+  }
+
   qs('#app').innerHTML = `<div class="page-enter">${dashboardShell(USER_NAV, '/dashboard/wallet')}</div>`
   bindShellEvents()
 
@@ -106,17 +129,20 @@ async function renderRechargeTab(container) {
       <div class="lg:col-span-2 space-y-6">
 
         ${autoGateways.length ? `
-        <div class="glass rounded-2xl p-6">
-          <h3 class="font-bold mb-4"><i class="fa-solid fa-bolt text-brand-400 mr-2"></i>দ্রুত অটো রিচার্জ</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            ${autoGateways.map((g) => `
-              <button disabled class="btn-glow glass rounded-xl p-4 flex items-center gap-3 opacity-60 cursor-not-allowed text-left">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-violet-500 flex items-center justify-center"><i class="fa-solid fa-bolt text-white"></i></div>
-                <div>
-                  <p class="font-semibold text-sm">${escapeHtml(g.name)}</p>
-                  <p class="text-[11px] text-slate-500">শীঘ্রই আসছে</p>
-                </div>
-              </button>`).join('')}
+        <div class="glass rounded-2xl p-6 bg-emerald-500/5 border-emerald-500/10">
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h3 class="font-bold"><i class="fa-solid fa-bolt text-emerald-400 mr-2"></i>অটো রিচার্জ — সাথে সাথে ব্যালেন্স</h3>
+            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300">ইনস্ট্যান্ট</span>
+          </div>
+          <p class="text-xs text-slate-400 mb-4">পরিমাণ লিখে \"পেমেন্ট করুন\" চাপুন — সিকিউর পেমেন্ট পেজে (${escapeHtml(autoGateways[0].name)}) পেমেন্ট সম্পন্ন হলেই ব্যালেন্স স্বয়ংক্রিয়ভাবে যোগ হয়ে যাবে। এডমিন অনুমোদনের অপেক্ষা করতে হবে না।</p>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input type="number" id="auto-amount" min="50" max="100000" step="1" inputmode="numeric" placeholder="পরিমাণ লিখুন (৳)" class="flex-1 glass rounded-xl px-4 py-3 text-sm outline-none input-glow" />
+            <button type="button" id="auto-pay-btn" class="btn-glow bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 shrink-0">
+              <i class="fa-solid fa-bolt"></i> পেমেন্ট করুন
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2 mt-3">
+            ${[100, 200, 500, 1000, 2000, 5000].map((a) => `<button type="button" data-amt="${a}" class="auto-quick-btn text-xs px-3 py-1.5 rounded-lg glass text-slate-300 hover:text-emerald-300 transition-colors">৳${a.toLocaleString('bn-BD')}</button>`).join('')}
           </div>
         </div>` : ''}
 
@@ -224,6 +250,36 @@ async function renderRechargeTab(container) {
       }
     })
   })
+
+  // ---- Auto recharge (UddoktaPay): quick amounts + pay button ----
+  const autoBtn = qs('#auto-pay-btn', container)
+  if (autoBtn) {
+    qsa('.auto-quick-btn', container).forEach((b) =>
+      b.addEventListener('click', () => {
+        const inp = qs('#auto-amount', container)
+        if (inp) inp.value = b.dataset.amt || ''
+      })
+    )
+    autoBtn.addEventListener('click', async () => {
+      const amount = parseInt(qs('#auto-amount', container).value || '0', 10)
+      if (!amount || amount < 50) return showToast('সর্বনিম্ন ৳৫০ রিচার্জ করতে পারবেন।', 'error')
+      if (amount > 100000) return showToast('সর্বোচ্চ ৳১,০০,০০০ রিচার্জ করা যায়।', 'error')
+      autoBtn.disabled = true
+      autoBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> পেমেন্ট পেজ খোলা হচ্ছে…'
+      try {
+        const res = await WalletService.startAutoRecharge(amount)
+        if (res.payment_url) {
+          window.location.href = res.payment_url
+        } else {
+          showToast('পেমেন্ট লিংক পাওয়া যায়নি। আবার চেষ্টা করুন।', 'error')
+        }
+      } catch (err) {
+        showToast(getErrorMessage(err), 'error')
+        autoBtn.disabled = false
+        autoBtn.innerHTML = '<i class="fa-solid fa-bolt"></i> পেমেন্ট করুন'
+      }
+    })
+  }
 
   bindFileDropzones(container)
   qs('#rf-proof', container)?.addEventListener('change', () => {
